@@ -1,0 +1,247 @@
+# CAFR -- base configuration.
+#
+# SOURCE OF TRUTH: 11_technical_specification_rev2.md.
+# Every parameter in handoff §5.7 appears here, and nowhere else as a literal.
+# Nothing in this file may be changed to make an experiment pass (handoff §14 rule 4).
+#
+# Frozen before the single test-split run; reported in T7.
+
+project: cafr
+version: "0.1.0"
+
+# One root seed. Every other seed is derived from it (cafr/utils/seeds.py),
+# so a single change propagates everywhere.
+seed_root: 42
+
+# ---------------------------------------------------------------------------
+# sim -- the inventory simulator (M5). Rev 2 §15.6, handoff §2.12 / §7.1.
+# ---------------------------------------------------------------------------
+sim:
+  L: 2                      # lead time, periods. Swept {1,2,4} in E6.
+  R: 3                      # protection interval = L + 1. ASSERTED, not a knob.
+  review_period: 1          # monthly review
+
+  # FLAGGED DISCREPANCY -- see cafr/sim/inventory.py's module docstring.
+  # Rev 2 §15.6 defines R = L + 1 and calls it a definition. Under this module's
+  # timing (order placed at end of t, arrives at start of t+L) the demand the level
+  # must cover at end of t is y_{t+1} .. y_{t+L}, which is L periods, not L + 1.
+  #   "L+1"  the spec's value. Default, so the pre-registered run is as written.
+  #   "L"    the value implied by this module's timing.
+  # Both are measured by the three-part sanity test (gate 1.2, +/-0.02). Report
+  # whichever matches; if it is not the spec's, escalate it -- do NOT relax the gate.
+  protection_convention: "L+1"
+  unmet_model: lost_sales    # lost_sales | backorder. See sim/inventory.py docstring.
+
+  # Order-up-to level S = Q_alpha, the R-period AGGREGATE quantile. Rev 2 §15.6.
+  # NOT R*mu + z*sigma -- that form understates safety stock by 42.3 % at R = 3.
+  quantile_window: 24       # trailing window of R-period aggregates used for F_hat
+  min_aggregates: 4         # below this, S falls back to R*mu_hat and a flag is raised
+  quantile_method: linear
+
+  # Service-level controller state bounds (Rev 2 §7.1). The upper bound is applied
+  # per decision as min(alpha_max_cap, 1 - 1/(n+1)) with n = nonzero cycles available.
+  alpha_min: 0.50
+  alpha_max_cap: 0.999
+
+  # Cost. H per unit-period held; B per unit short. B/H swept in E6.
+  # The B/H sweep lives once, under `sweeps:` below. SimConfig.from_config is strict
+  # (an unknown key is an error), so a duplicate here would break every Step 1 test.
+  H: 1.0
+  B_over_H: 19              # => newsvendor CSL = B/(B+H) = 0.95
+
+  # C7's injection scales the safety factor only -- the forecast is never touched.
+  c7_safety_factor_scale: 1.0
+
+# ---------------------------------------------------------------------------
+# forecast -- the forecaster pool (M0). Rev 2 §15.6 / handoff §7.2.
+# ---------------------------------------------------------------------------
+forecast:
+  # fit_on is the forecaster's FITTING input. Rev 2 §14.3 rule 6.
+  #   observed    fit on demand_observed. Realistic; makes C7 undetectable.
+  #   uncensored  DEFAULT. Impute lost sales on stock-out periods, then fit.
+  #   true        fit on demand_true. An idealisation -- declare it as such.
+  # H-3: RUF has no stock-out record, so `observed` is FORCED on RUF. It is not a choice.
+  fit_on: uncensored
+  # "true" is QUOTED: unquoted YAML parses it as the boolean True, and the closed
+  # value set would then contain a bool where a string is expected.
+  fit_on_valid: [observed, uncensored, "true"]
+  pool: [croston, sba, tsb, msba, mtsb, ses_sizes, lightgbm_global]
+
+  croston_alpha: 0.1
+  tsb_alpha_d: 0.2
+  tsb_alpha_p: 0.2
+  msba_alpha: 0.1
+  mtsb_alpha_d: 0.2
+  mtsb_alpha_p: 0.2
+  ses_alpha: 0.1
+
+  # Reward standardisation floor (OD-3, frozen). Rev 2 §9.3, handoff §2.8.
+  # Without it the reward explodes for SKUs with near-constant cost, and those
+  # updates dominate the bandit.
+  sigma_floor_frac: 0.05
+
+  lightgbm:
+    n_estimators: 300
+    learning_rate: 0.05
+    num_leaves: 31
+    min_child_samples: 20
+    n_jobs: 1               # determinism: gate 2.4
+    deterministic: true
+    force_col_wise: true
+
+# ---------------------------------------------------------------------------
+# monitor -- the outcome monitor (M1). All eight horizons are config parameters.
+# Rev 2 §6.1, handoff §2.4. Do not hard-code any of them.
+# ---------------------------------------------------------------------------
+monitor:
+  windows:
+    W_short: 24             # C1 bias
+    W_sign_stability: 96    # 4 x W_short
+    W_cal: 30               # C2 coverage
+    W_occ: 36               # C3 occurrence AUC. H-1: Rev 2 says 60; RUF has 60 periods.
+    W_sz: 24                # C4 size dispersion
+    W_class: 30             # C6 ADI/CV2 cell
+    W_svc: 30               # C7 service gap
+  min_evidence:
+    c1_nonzero: 8
+    c3_nonzero: 10
+    c4_nonzero: 10
+    c2_coverage_obs: 30
+    c6_periods: 30
+    c7_periods: 30
+    c7_unmet_cycles: 2
+
+# ---------------------------------------------------------------------------
+# detection -- Rev 2 §6.3, handoff §7.6.
+# ---------------------------------------------------------------------------
+detection:
+  z_b_crit: 1.96
+  binomial_p: 0.05
+  tau_cov: 0.10             # C2 coverage gap
+  delta_svc: 0.10           # C7 service gap
+
+  # C6's boundary is the REACHABLE one. Rev 2 §5: ADI* = 4.0, NOT the textbook 1.32.
+  # A spare-parts panel has ADI >= 2 by construction, so 1.32 can never be crossed.
+  adi_star: 4.0
+  cv2_star: 0.49
+
+  # CUSUM. Co-designed with the injection magnitudes via the detectability budget.
+  # Tuning these AFTER generation silently breaks the budget (handoff §14 rule 6).
+  cusum_k: 0.25
+  cusum_h: 4.0
+
+  c3_auc_threshold: 0.65
+  c3_fz_threshold: 0.30
+  c4_r_threshold: 1.5
+  c4_sustain_windows: 2
+  c6_sustain_windows: 3
+  c6_bootstrap_n: 1000
+  c6_bootstrap_stability: 0.90
+
+  tau_conf: 0.35            # confidence gate
+  # tau_conf is TUNED on train to hit the <= 10 % FP design target, reported on
+  # validation, and the test panel is CONFIRMATORY ONLY. State this ordering in the paper.
+
+# ---------------------------------------------------------------------------
+# remedies -- M3. Rev 2 §7, handoff §2.3.
+# ---------------------------------------------------------------------------
+remedies:
+  r1_lambda_occ: 1.0        # occurrence residuals are less noisy
+  r1_lambda_sz: 0.5         # size residuals are noisier -- half damping
+  r2_W_cal: 24
+  r7_kappa: 1.0             # service-probability units per unit CSL gap
+
+# ---------------------------------------------------------------------------
+# churn -- Rev 2 §11, handoff §2.9.
+# ---------------------------------------------------------------------------
+churn:
+  dwell: 3                  # after any action at t, no switch before t + dwell
+  dwell_sweep: [1, 3, 5, .inf]
+  # A C5 CUSUM alarm overrides the dwell. Every override is logged.
+
+# ---------------------------------------------------------------------------
+# bandit -- M4. Rev 2 §9, handoff §2.10 / §7.8.
+# ---------------------------------------------------------------------------
+bandit:
+  # Forgetting is REQUIRED: C5 and C6 are non-stationarity injections, and a plain
+  # Thompson sampler's variance collapses exactly when the world changes.
+  # HARD REQUIREMENT: identical on (f), (f'), A4. If A4 adapts at a different speed,
+  # H1' measures adaptation speed, not attribution.
+  forgetting: cusum_alarm    # cusum_alarm | discount
+  discount_gamma: 0.99
+  prior_var: 1.0
+  exploration: staggered
+  staggered_modulus: 9       # force uniform-random for {i : hash(i+t) mod 9 == 0}
+
+# ---------------------------------------------------------------------------
+# arms -- Rev 2 §12, handoff §2.6.
+# ---------------------------------------------------------------------------
+arms:
+  all: [a, b, c, d, e, f, f_prime, g, h, A4]
+  # A4 is NOT an optional ablation: it carries the co-primary hypothesis H1'.
+  # Its context differs from (f) by exactly one thing: the attribution block.
+  # Four hard constraints (handoff §8.2) -- violating any invalidates H1':
+  a4_constraints:
+    same_action_space: true      # {R0..R7}
+    same_reward: true            # the OD-3 standardised cost reward
+    same_action_schedule: true   # dwell, gate and forgetting identical to (f)
+    report_realised_churn_in_T3: true
+
+# ---------------------------------------------------------------------------
+# splits / panels -- Rev 2 §14.1, handoff §3.4 (H-1) and §3.10.
+# ---------------------------------------------------------------------------
+splits:
+  burn_in: 24               # UNCHANGED from Rev 2
+  evaluated: 36             # H-1: Rev 2 said 60; RUF has 60 periods TOTAL
+  # Two different splits for two different purposes. Do not conflate them.
+  sku_level: [0.6, 0.2, 0.2]   # for the attribution classifier -- stratified by cause
+  origin_advance: 1            # for forecasting / inventory evaluation
+
+synthetic:
+  T: 200                    # our generator. Ours, so unaffected by H-1.
+  tau_inj: 120              # 60 % of T
+  p_range: [0.05, 0.50]
+  mu_z_range: [5, 200]
+  n_per_cause: 200          # 7 x 200 = 1,400
+  n_control: 200            # C0 control panel
+  n_ambiguous: 200          # mixture panel (Rev 2 §15.3)
+  seeds:
+    main: 42
+    heldout: 43
+
+sweeps:
+  B_over_H: [4, 9, 19, 49]
+  L: [1, 2, 4]
+  alpha: [0.80, 0.90, 0.95]
+
+# ---------------------------------------------------------------------------
+# stats -- Rev 2 §22, handoff §5.7.
+# ---------------------------------------------------------------------------
+stats:
+  bootstrap_n: 10000        # clustered by SKU AND by generator parameter cell
+  rope: 0.02                # 2 %, everywhere
+  multiplicity: holm_bonferroni
+  family_alpha: 0.05
+  macro_f1_classes: [C1, C2, C3, C4, C5, C6, C7]   # C0 and ambiguous are NEVER folded in
+  min_class_f1: 0.40
+  ci_method: wilson         # Wilson, not the normal approximation
+  seed_sweep_n: 5
+
+# ---------------------------------------------------------------------------
+# panels -- data paths. Relative to the repo root.
+# ---------------------------------------------------------------------------
+panels:
+  ruf:
+    path: data/ruf/demand_panel.parquet
+    meta: data/ruf/sku_meta.parquet
+    attributes: data/ruf/sku_attributes.parquet   # EVALUATION ONLY -- never a policy input
+    profile: data/ruf/panel_profile.json
+    n_periods: 60
+    fit_on: observed        # H-3: forced, RUF has no stock-out record
+  m5:
+    path: data/m5/demand_panel.parquet
+    enabled: false          # H-4: adopt the 250-item pre-filtered panel when added
+  synth:
+    path: data/synth/demand_panel.parquet
+    ground_truth: data/synth/ground_truth.parquet
+    enabled: false

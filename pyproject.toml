@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cafr"
+version = "0.1.0"
+description = "Cause-Attributed Forecast Repair for intermittent / spare-parts demand"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy==2.5.3",
+    "pandas==2.3.3",
+    "scipy==1.18.1",
+    "pyarrow==25.0.1",
+    "PyYAML==6.0.3",
+    "statsforecast==2.1.1",
+    "lightgbm==4.7.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[project.scripts]
+cafr = "cafr.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["cafr*"]
+
+[tool.setuptools.package-data]
+cafr = ["configs/*.yaml"]
+
+# ---------------------------------------------------------------------------
+# pytest. `importmode=prepend` + no tests/__init__.py is what lets the test
+# modules do `from conftest import ...`; adding an __init__.py under tests/
+# turns tests into a package and breaks those imports.
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+filterwarnings = [
+    "error::FutureWarning",
+]
+markers = [
+    "slow: the full 500-SKU gate runs (gate 1.2 needs >= 500 SKUs x 200 periods)",
+]

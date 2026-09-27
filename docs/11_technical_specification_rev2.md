@@ -1,0 +1,1854 @@
+# 11 — COMPLETE TECHNICAL RESEARCH SPECIFICATION (CAFR)
+
+**Revision 2** · **Date:** 2026-09-23
+**Supersedes:** Revision 1 (`11_technical_specification.md` — retained unmodified on disk)
+**Status:** Pre-implementation. **No experiments have been run. No results exist in this document.**
+**Read first:** `08_final_novelty_search.md` (analysis) → `09_round3_confirmation_search.md` (evidence log) → `10_paper_plan_and_handoff.md` (paper plan) → `12_methodology_audit.md` (the review) → `13_methodology_revision_proposal.md` (the corrections) → this file (what to build).
+**Audience:** the implementer (Himanshi) and the two other student tracks.
+
+> **How to read this document.** Every number in this spec is either (a) a **proposed default parameter**, (b) a **threshold to be tuned**, or (c) an **acceptance criterion**. **None of them is a result.** Anything genuinely undecided is marked **OPEN DECISION** with an ID and a recommendation — do not resolve an OD silently.
+
+> **REVISION 2 — what changed and why.** This revision applies every correction in `13_methodology_revision_proposal.md`, which resolved the four pre-coding blockers and eleven further critical issues found in `12_methodology_audit.md`.
+>
+> **Unchanged in this revision:** the research question (§1), the seven-cause taxonomy by name and meaning (§5), the CAFR architecture (§4), the novelty framing and scope wording (§2, §3), and the remedies R0–R7 (§7).
+>
+> **Changed:** the synthetic injections, the detection statistics, the monitor windows, the C7 controller, the order-up-to formula, the simulator sanity test, the forecaster's fitting input, the `sku_meta` schema, the no-look-ahead test, the exploration schedule, the A4/A5/A6 ablations, and the success criteria — so that they now agree with each other. **The corrections make the existing taxonomy faithful to itself; they do not redesign it.**
+>
+> The full section-by-section list is the **REVISION 2 CHANGELOG** at the end of this file.
+
+> **OPEN DECISIONS in this revision: OD-1, OD-5, OD-6, OD-8.**
+> **Resolved and frozen: OD-2, OD-3, OD-4, OD-7, OD-9.** Frozen decisions are stated in full at the point where they are used, and collected in the Handoff Package §D.
+> **Documentation fix.** Earlier drafts promised IDs "OD-1 … OD-10". **There is no OD-10** — the promise was an error and is withdrawn. The set is **OD-1 … OD-9**, every one of which is defined somewhere in this document and listed in the Handoff Package §D. There are no dangling IDs in this revision.
+
+---
+
+## 1. FINAL RESEARCH PROBLEM
+
+**Domain.** Industrial spare-parts inventory. Demand is *intermittent*: many zero-demand periods, occasional irregular nonzero sizes. Planning is periodic-review, order-up-to.
+
+**Core problem.** Standard practice for this setting is **accuracy-based adaptive model selection**: at each review period, evaluate candidate forecasters (Croston, SBA, TSB, mSBA, mTSB, SES-on-sizes, gradient-boosted global model) on an accuracy metric such as MASE, and switch to whichever currently scores best. This is the state of the art (AHSIV, arXiv `2602.13939`; LCMA, KBS 2026; the adaptive-selection literature).
+
+This practice has three documented failures:
+
+1. **Accuracy does not predict service.** Across 38 methods, the Spearman correlation between accuracy rank and achieved contractual service rank is **−0.555** (arXiv `2609.13840`, ICDM-26). Choosing the most accurate model can make service *worse*.
+2. **It never asks why.** When a forecast fails, selection changes the model without diagnosing the mechanism. A failure caused by a mis-set safety stock is "repaired" by changing the forecaster — which cannot help.
+3. **It churns.** Continuous re-selection switches the active model constantly; churn is neither measured nor constrained, and its own cost–service effect is unaccounted for.
+
+**Research question.**
+
+> For intermittent industrial spare-parts demand, does attributing each forecast failure to a specific **mechanism** — persistent bias, uncertainty mis-calibration, occurrence failure, size failure, level shift, intermittency change, or inventory-policy mis-set — and applying the **matched** corrective action, produce a better inventory cost–service trade-off than selecting a forecasting model by forecast accuracy, **at the same level of model churn**?
+
+**Sub-questions.**
+
+- **RQ1 (attribution).** Can these mechanisms be separated reliably from *observable* residual and inventory signals alone, without knowing the true data-generating process?
+- **RQ2 (learning).** Does a cause→remedy mapping **learned** from service/cost feedback beat a fixed, hand-written mapping?
+- **RQ3 (decomposition).** How much of the gain comes from **non-forecast** remedies (policy adjustment, interval recalibration, no-action) versus forecast-model changes?
+
+---
+
+## 2. RESEARCH GAP
+
+### 2.1 The four-part seam
+
+No work was found that does **all four** of these together (file `08`, "The seam that is still open"):
+
+| # | Element | Nearest work that holds it | Does it hold the whole element? |
+|---|---|---|---|
+| 1 | Classify **why an intermittent-demand forecast failed**, by mechanism | Clements & Hendry (econometric, macro data, not intermittent demand); PtC (no attribution at all); arXiv `2510.01006` (bias/lifecycle/regime only, no action set); LCMA (classifies *demand patterns*, not *failures*) | **No** |
+| 2 | Map each mechanism to a **matched remedy, including non-forecast actions** (recalibrate interval, adjust policy, do nothing) | Patent US20100125489 (policy actions, but not intermittency-specific, human-confirmed, rule-based, root-cause only in dependent claims); LOWDII (safety stock only, no attribution); Sensors 2023 (interval widening exists as a method, with no diagnostic trigger) | **No** |
+| 3 | **Learn** that mapping from **downstream inventory service/cost feedback** | PtC (reward is forecast *error*: `r_t = τ(e_ML,t − e_CB,t)`); LOWDII (service outcome, but no mapping is learned); `2609.13840` (benchmarks the problem, proposes no repair loop) | **No** |
+| 4 | **Explicitly control model/action churn** by design | EMC drift machinery (a control mechanism, but not a repair loop); LCMA's design *contravenes* churn control (continuous dynamic switching) | **No** |
+
+### 2.2 Required novelty wording (do not deviate)
+
+> **No directly matching work was found in the searched databases (OpenAlex, IEEE Xplore, Crossref, web search). Scopus and Web of Science were not searched.**
+
+Never write "100% unique", "the first ever", or "nobody has done this". The searched-database scope in file `08` §0 is the strongest claim this project is entitled to make.
+
+---
+
+## 3. EXACT CONTRIBUTION OF CAFR
+
+**One-sentence contribution (verbatim from file `08` §E — do not weaken or inflate):**
+
+> **We introduce a cause-attributed forecast-repair layer for intermittent spare-parts demand that classifies each forecast failure by mechanism — separating occurrence failure, size failure, level shift, intermittency change, uncertainty mis-calibration, and inventory-policy mis-set — and selects the matched corrective action, where the cause→remedy mapping is learned from downstream inventory service-level feedback rather than from forecast accuracy.**
+
+**Falsifiable claim (the paper's centrepiece):**
+
+> *At equal model churn, cause-attributed repair beats accuracy-based model selection on the inventory cost–service frontier.*
+
+If the experiment does not show this, **the claim fails and the paper says so**. Agree this before running the test set.
+
+> **OPEN DECISION OD-1 — six causes or seven?** *(unchanged in Revision 2 — still open, still a team decision)*
+> File `08` §D and §E enumerate **six** mechanisms (the list above). The attribution table in file `08` §F has **seven** causes plus a no-action row: persistent directional bias is cause 1 there but is absent from the contribution sentence.
+> **Recommendation:** present **seven** causes (the §F table is the technical core and is the more complete construction), and amend the one-sentence contribution to read "…by mechanism — *persistent bias*, occurrence failure, size failure, level shift, intermittency change, uncertainty mis-calibration, and inventory-policy mis-set —…". This does not weaken the claim; it makes the table and the sentence agree.
+> **This is a team decision, not an implementer decision.** The implementer builds seven causes regardless, since the ablation in §21 can collapse C1 into C5 if the team keeps six.
+
+### 3.1 Explicit distinction from the closest work
+
+This table must appear in the paper (expanded into prose in Related Work). It is the defence against the reviewers' first four objections.
+
+| Work | What it actually does | How CAFR differs |
+|---|---|---|
+| **PtC** — arXiv `2607.16354` (Lei, Ma & Jackson, 2026). *Closest neighbour.* | Bandit correction loop on a demand forecast. **One** continuous multiplicative action factor, clipped to [−1, 2]. Reward is **forecast error** (`r_t = τ(e_ML,t − e_CB,t)`). No attribution module — context carries only a raw error summary. **Lumpy SKUs deliberately excluded.** No churn control. | CAFR's action space is a **set of mechanism-matched remedies** including non-forecast actions; PtC's is one scalar. CAFR's reward is **operational** (inventory cost / service); PtC's is accuracy. CAFR **attributes**; PtC does not. CAFR targets **lumpy** demand, the regime PtC excludes. PtC is a degenerate single-action case of CAFR's action space. **Cite first, in the introduction, not a footnote.** |
+| **Patent US20100125489** — *Root Cause Analysis and Early Warning of Inventory Problems* | Cause → forecast adjustments **and** "adjustments to published inventory policy parameters (such as safety stock targets)" → "self-tuning". | Never mentions **spare parts or intermittent demand**. Root-cause language sits in **dependent** claims 7/14, not the independent claims (which recite only "optimize the inventory policy parameters"). The planner **confirms root cause via collaboration and consensus** — human-in-the-loop. Causes prioritised by business rules; **no mechanism taxonomy**. CAFR is automated, intermittency-specific, mechanism-typed, and learned from service feedback. *(Content summary of the patent, not legal advice.)* |
+| **LOWDII** — arXiv `2607.19835` | Evaluates the distributional influence of each historical forecast error on the empirical uncertainty distribution → safety-stock calibration; hits target service at 5.1–22.6 % less stock. | It is a **statistical refinement of the error distribution, not a cause attribution** — no mechanism is named, no remedy is selected. Domain is **FMCG, not intermittent demand**. It is the closest thing to CAFR's **C2/C7 machinery**, and must be cited when justifying those rows. |
+| **Clements & Hendry** — `10.1007/978-1-4614-1653-1_9` (+ 2000; Hendry & Mizon 2011) | A **general forecast-error taxonomy**: 3 model components × 3 problems = **9 error sources**; structural change is the "prime culprit". Established cause-matched remedy: **intercept corrections**. | Macroeconometric series (continuous, dense, can be negative). **No intermittency, no inventory, no service level, no online automation, no empirical attribution from data.** CAFR **operationalises** the taxonomy idea for intermittent demand + inventory. **Never claim the taxonomy concept.** Frame explicitly as operationalisation. |
+| **LCMA** — KBS 2026, `10.1016/j.knosys.2026.116334` | LLM/RAG multi-agent for large-scale spare parts; a Model Selection Agent dynamically matches forecasting models to **demand patterns**. | It classifies **demand patterns**, not **forecast failures**. Its only action is model↔pattern matching. It is **the paradigm CAFR argues against**, and its dynamic-switching design **contravenes** churn control rather than merely lacking it. Use as the foil in Related Work. |
+| **Stock-Out Distortion** — ISNCC 2026, `10.1109/ISNCC70543.2026.11693859` | Diagnoses **one** cause — stock-out censoring distorts the training signal → systematic under-forecasting, across SARIMA / XGBoost (Tweedie) / CNN-LSTM on 33 lubricant SKUs. | **Stops at the diagnosis**: no remedy selection, no action space, no learning loop, no inventory feedback. Its own finding is that the effect **weakens on intermittent SKUs** "whose zeros are largely structural" — i.e. it applies *where CAFR does not*, and CAFR's subject is exactly where its mechanism fails. Two uses in the introduction: (i) evidence the field is *starting* to ask why; (ii) evidence that diagnosing is not yet repairing. CAFR's censoring guard (§6, C-guard) is the direct technical response. |
+
+---
+
+## 4. SYSTEM ARCHITECTURE / PIPELINE
+
+Six modules. `M0`–`M5` naming is kept from file `08` §F so the spec and the analysis line up.
+
+```
+                    ┌──────────────────────────────────────────────┐
+                    │  M5  EVALUATION HARNESS (periodic-review sim) │
+                    │  rolling origin · logs churn · oracle replay  │
+                    └──────────────────────────────────────────────┘
+                                    ▲
+        realised demand             │  inventory outcome (CSL, cost, PIS/NOS)
+        (censored)                  │
+┌───────────────┐   ┌───────────────┴────┐   ┌──────────────┐   ┌──────────────┐
+│  M0 FORECASTER│──▶│  M1 OUTCOME MONITOR│──▶│ M2 ATTRIBUTION│──▶│ M3 REMEDIES  │
+│  POOL         │   │  per SKU × period  │   │  cause + conf │   │  library     │
+│  Croston,SBA, │   │  residuals, bias,  │   │  rules first, │   │  + no-action │
+│  TSB,mSBA,mTSB│   │  coverage, ADI,CV²,│   │  classifier   │   └──────┬───────┘
+│  SES,LightGBM │   │  CUSUM ×2, CSL,PIS │   └──────────────┘          │
+└───────▲───────┘   └────────────────────┘                             ▼
+        │                                            ┌──────────────────────────┐
+        │            action applied to               │  M4 SELECTION POLICY     │
+        └──────────── forecaster or policy ◀─────────│  contextual bandit (TS)  │
+                                                     │  reward = cost/service   │
+                                                     │  churn constraint        │
+                                                     └──────────────────────────┘
+```
+
+**M0 — Base forecaster pool.** Croston, SBA, TSB, mSBA, mTSB, SES on nonzero sizes, and a global LightGBM (all SKUs pooled, with SKU-level static features and lagged demand features). All cheap, all reproducible, no GPU. **Every forecaster has a configurable fitting input `fit_on` (§14.3, rule 6) — this is not optional and is identical across all arms.**
+
+**M1 — Outcome monitor.** Per SKU, per review period: rolling residuals, bias sign and magnitude (separately for the occurrence sub-process and the size sub-process), empirical prediction-interval coverage, ADI, CV², **two CUSUMs (one per sub-process)**, and the **realised inventory outcome** (achieved CSL, fill rate, backorders, PIS, NOS).
+
+**M2 — Attribution module.** Maps the M1 feature vector to one of seven causes **plus an abstain option**, with a confidence score. **Rules first** (auditable, and this is what makes the paper's table a *method* rather than a black box); an optional small classifier over the same M1 features as a refinement, evaluated against the rules, not instead of them.
+
+**M3 — Remedy library.** One matched action per cause, plus a deliberate **no-action**. Includes actions that do **not** touch the forecaster (§7).
+
+**M4 — Remedy-selection policy.** Thompson-sampling contextual bandit over the remedy set, **with a forgetting mechanism (§9.1)**. Reward is the **change in inventory cost/service over the review period — not accuracy**. A hard dwell-time constraint limits switching. *(The bandit itself is not novel: arXiv `2310.16096` and PtC `2607.16354` both already put bandits on inventory/demand. **Say so openly in the paper.** The novelty is the action space and the reward signal, not the bandit.)*
+
+**M5 — Evaluation harness.** Simulated periodic-review inventory; rolling-origin backtest; churn logging; oracle replay (fork the simulator from a decision point and run every arm from the same state).
+
+**Data flow, one decision point.** At the end of review period *t* for SKU *i*: M1 emits the feature vector → M2 emits (cause, confidence) → M4 selects an arm from M3's library (or abstains) → the action is applied → M5 advances the simulator one period with the action in force → the realised cost/service becomes the reward → the bandit updates. This is a **closed loop**; no look-ahead is permitted anywhere (see §14.3).
+
+---
+
+## 5. EXACT DEFINITION OF THE FORECAST-FAILURE TAXONOMY
+
+Seven causes, plus an explicit abstain. **Cause IDs C1–C7 and the row order match file `08` §F exactly.**
+
+A cause is a **hypothesis about the mechanism that produced the observed forecast error**. It is not a description of the error. Two different causes can produce similar errors; that overlap is the substance of RQ1, not a defect of the design.
+
+| ID | Cause | One-line definition |
+|---|---|---|
+| **C1** | **Persistent directional bias** | The forecaster is systematically wrong in one direction, and the wrongness is **stable and gradual** — it worsens or persists over successive windows rather than appearing abruptly. Present in the **size** sub-process. † |
+| **C2** | **Uncertainty mis-calibration** | The point forecast is acceptable, but the **predictive interval** is wrong: empirical coverage of the nominal α-interval is persistently below (or above) α. |
+| **C3** | **Occurrence failure** | The forecaster misjudges **whether** demand occurs — occurrence AUC-ROC is low and/or the false-zero rate is high — while the size model, conditional on occurrence, is fine. |
+| **C4** | **Size failure** | Occurrence is predicted acceptably, but the **nonzero size** is mis-modelled: the **dispersion** of the error on nonzero periods is high and growing relative to the SKU's own baseline, at an unchanged mean. |
+| **C5** | **Level / regime shift** | An **abrupt** change in the demand-generating process — a step in the level or in the occurrence rate — which the estimator has not absorbed because it still averages over pre-shift data. |
+| **C6** | **Intermittency change** | The SKU's **intermittency class** has crossed a boundary and stayed there, so the method family in use is no longer appropriate. The boundary used in this project is the reachable one defined in §15.1 and §15.2, **not** the textbook ADI cut-off. † |
+| **C7** | **Inventory-policy mis-set** | The forecast is **acceptable** by every other test, yet the achieved service level persistently misses target. The fault is in the policy parameters (safety factor / reorder point), not in the forecast. |
+| **C0** | **No actionable signal** *(not a cause — the abstain)* | Attribution confidence is below threshold. **Do nothing.** This is a first-class action, not a fallback, and it is an ablation target (§21, A2). |
+
+> **† Two definitional amendments in Revision 2 — necessary consequences of the corrections in §6.3, flagged here so they are not mistaken for silent edits.**
+> 1. **C1 no longer requires the bias to be present in *both* sub-processes.** Revision 1 defined C1 as bias present in both the occurrence and the size sub-process, and §6.3 made that a gating condition. Under the corrected C1 injection (§15.2) the ramp is in `μ_z` only — the occurrence process `δ ~ Bernoulli(p)` is untouched, so the forecaster's occurrence model stays correct and the occurrence bias is ≈ 0. **The gate would therefore make C1 undetectable.** It is removed as a gate and retained as a *reported corroborating statistic* (§6.3, C1). C1's discriminating statistic is now the **size-sub-process mean error**, which is orthogonal to C4's dispersion statistic and insensitive to C6's occurrence-rate drift.
+> 2. **C6's boundary is no longer the textbook ADI cut-off 1.32.** A spare-parts panel has ADI ≥ 2 by construction (`ADI = 1/p`, `p ≤ 0.50`), so 1.32 can never be crossed. The boundary used is the reachable one derived in §15.1. **The name and meaning of C6 are unchanged.**
+
+**Why C7 exists and matters.** C7 operationalises the "Accuracy Is Not Service" reversal: sometimes the forecast is fine and the *policy* is wrong. No forecasting paper can fix that by changing the forecast. C7's remedy is the only one in the library that **leaves the forecast alone** — and it is the clearest instance of RQ3's "non-forecast remedies" decomposition.
+
+> **OPEN DECISION OD-2 — a censoring cause (C8)? — ✅ RESOLVED AND FROZEN (Revision 2)**
+> **Decision: guard only. No C8 is added.** Censoring is handled by **(i)** the statistical C-guard on the bias / CUSUM / size-error statistics (§6.2, unchanged in intent), and **(ii)** a **specified, identical fitting input for every forecaster in every arm** — default `uncensored` (§14.3, rule 6), with the imputation derived from the SKU's own historical nonzero-size distribution and forbidden from receiving `demand_lost` or `demand_true`.
+> **Ablation A6 is split into A6a** (statistical guard removed) **and A6b** (fitting input set to `observed`) — §21. Revision 1 treated these as one mechanism; they are two.
+> **Why guard, not cause.** (a) C7 already claims the policy root; a separate C8 double-counts the same mechanism and would make C7 and C8 mutually unfalsifiable. (b) Adding an eighth cause changes the macro-F1 denominator, the priority order, the ablation set and the arm count (9 → 10), all of which are already specified. (c) The guard's value is measured by A6, so C8 adds no new measurable claim.
+> **Why the amendment is required.** The C-guard as specified in Revision 1 protects the *statistics* but not the *forecaster's training input*. Freezing OD-2 as "guard only" without part (ii) would freeze a guard that does not cover the loop it was written for — see §6.2 and §14.3.
+
+---
+
+## 6. HOW EACH FAILURE CAUSE IS MATHEMATICALLY DETECTED
+
+### 6.1 Notation
+
+| Symbol | Meaning |
+|---|---|
+| `i` | SKU index; `t` review period (1 … T) |
+| `y_{i,t} ≥ 0` | **observed** demand in period *t* (censored by stock-outs) |
+| `δ_{i,t} = 1[y_{i,t} > 0]` | occurrence indicator |
+| `N_i` | the set of periods with `y_{i,t} > 0` (nonzero periods) |
+| `ẑ_{i,t}` | forecast probability of occurrence, ∈ [0,1] |
+| `μ̂_{i,t}` | point forecast of `y_{i,t}` |
+| `e_{i,t} = y_{i,t} − μ̂_{i,t}` | residual |
+| `μ̂^sz_{i,t}`, `e^sz_{i,t}` | size model forecast and residual, **defined on `N_i` only** |
+| `R = L + 1` | protection interval (lead time + review period) |
+| `A^{agg}_{i,t}` | actual aggregate demand over the next `R` periods |
+| `Q̂_α(i,t)` | predicted α-quantile of `A^{agg}_{i,t}`, **as fitted** |
+| `Q̃_α(i,t)` | the α-quantile **as reported** to the policy (equals `Q̂_α` unless C2's injection is active — §15.2) |
+| `σ_sz` | rolling **robust** sd of `e^sz` over the trailing window of nonzero periods |
+| `fit_on` | the forecaster's fitting input ∈ {`observed`, `uncensored`, `true`} — §14.3 rule 6 |
+
+**Multi-scale monitor horizons (Revision 2 — replaces the single `W = 12`).** Revision 1 fixed one window and five detectors declared evidence requirements longer than it, so C2, C3 and C7 were unreachable by arithmetic before any code existed (audit C-7). Each detector now carries its own horizon:
+
+| Statistic | Trailing horizon | Minimum evidence | Source of the requirement |
+|---|---|---|---|
+| Bias `b^sz`, `z_b` (C1) | `W_short = 24` | ≥ 8 nonzero periods | enough nonzero sizes for a mean |
+| Bias sign stability (C1) | 4 × `W_short` = 96 | — | C1's own `k = 4` consecutive-window rule |
+| Coverage `ĉ` (C2) | `W_cal = 30` | **≥ 30** coverage observations | C2's own requirement |
+| Occurrence AUC (C3) | `W_occ = 60` | ≥ 10 nonzero periods | enough positives for an AUC |
+| Size dispersion `r` (C4) | `W_sz = 24` | ≥ 10 nonzero periods | 2 × 12 |
+| CUSUM (C5) | recursive | — | naturally cumulative |
+| ADI / CV² class (C6) | `W_class = 30` | ≥ 30 periods | bootstrap stability |
+| CSL gap (C7) | `W_svc = 30` | ≥ 30 periods **and** ≥ 2 unmet cycles | C7's own requirement |
+
+**All eight horizons are config parameters** (`monitor.windows.*` in the YAML). `W_occ` is the binding one for the real panels — see §14.1.
+
+### 6.2 C-guard — censoring guard (mandatory pre-step, runs before every detection)
+
+Flag period *t* as **potentially censored** if the inventory position reached zero during *t* (equivalently: a stock-out was recorded). Define the usable set `U_i(t) = {s ≤ t : not censored(s)}`.
+
+**Rule.** All bias, CUSUM and size-error statistics for C1/C4/C5 are computed over `U_i(t)` only. Periods in the *complement* are **not** dropped from the CSL computation — there they are the signal.
+
+**What the guard protects — stated exactly (Revision 2).**
+
+| The guard covers | The guard does **not** cover |
+|---|---|
+| The bias statistics (C1) | The **forecaster's training input** — if the forecaster is fitted on `demand_observed`, it learns a systematically understated level regardless of the guard. This is handled separately by `fit_on` (§14.3, rule 6). |
+| The size CUSUM (C5) | **Structural zeros** — a genuine zero-demand period is not censored, and must not be discarded. (This is why the size CUSUM is restricted to `N_i` and the occurrence CUSUM runs on `δ` separately — §6.3, C5.) |
+| The size-error statistics (C4) | The **achieved CSL and the reward** — censored periods *are* the service signal and are counted there. |
+
+**Rationale.** Without this guard, a single stock-out streak generates a negative residual streak, which CUSUM (C5) and the bias test (C1) will both fire on — and both will be wrong: the root cause is C7. The guard is what makes the C1/C5 vs C7 separation possible at all.
+
+**Consequence to state in the paper:** this is exactly the failure mode ISNCC 2026 diagnoses and stops at. CAFR's guard is the technical response, and its benefit is measurable by ablation (**A6a**, §21).
+
+**The policy→forecaster feedback loop, stated openly (Revision 2).** The guard removes censoring from the *statistics*. It does not remove it from the *forecaster*. The loop — policy sets safety factor → stock-outs → demand censored → forecaster learns a lower level → forecast degrades → monitor sees bias → attribution fires → policy changes — is **realistic** (it is the ISNCC 2026 mechanism) and is **deliberately retained**. It is made explicit and measured by `fit_on` (§14.3 rule 6) and by the censoring-loop sensitivity diagnostic (§29.3). Ablation **A6b** isolates it.
+
+### 6.3 Detection statistics, one per cause
+
+Each cause fires on a **targeted signature**. **Each statistic is computed on the series the cause is defined on** — this is what makes the seven mechanisms separable, and it is the core correction of Revision 2 (audit C-2). Thresholds are proposed defaults to be tuned on the validation split (§14) and then frozen.
+
+**Series assignment (the decomposition this section implements):**
+
+| Cause | Series it is defined on | Targeted statistic | Must NOT move |
+|---|---|---|---|
+| **C1** | nonzero sizes `{z_t : t ∈ N_i}` | **mean** of `e^sz`; `z_b`; sign stability | size **dispersion** (C4); occurrence rate (C3, C6) |
+| **C2** | the forecaster's **reported interval** `Q̃_α` | coverage `ĉ` vs nominal `α` | the size-dispersion statistic `r` (C4) |
+| **C3** | occurrence `δ_t` | AUC-ROC of `ẑ_t`; false-zero rate | base rate / ADI band (C6) |
+| **C4** | nonzero sizes | **dispersion** of `e^sz` at fixed mean | size **mean** (C1); the ABD×CV² cell (C6) |
+| **C5** | nonzero sizes **and** occurrence, **separately** | **two independent CUSUMs** | gradual change (C1, C6) |
+| **C6** | occurrence | ADI **band** change + bootstrap stability | AUC (C3) |
+| **C7** | inventory / service | achieved-CSL gap with an acceptable forecast | every demand-DGP statistic |
+
+---
+
+**C1 — Persistent directional bias**
+
+Statistics (over `W_short = 24`, restricted to `U_i(t)` **and** to nonzero periods `N_i`):
+
+- Size bias: `b^sz = mean(e^sz)` over `s ∈ U_i(t) ∩ N_i`
+- Standardised bias: `z_b = b^sz / (σ_sz / √n)` where `n = |U_i(t) ∩ N_i|` (a one-sample t-style statistic; use the **sign test** as a non-parametric cross-check when `n < 30`)
+- Corroborating (reported, **not** a gate): occurrence bias `b^occ = mean(δ − ẑ)`
+
+Fire when **all** hold:
+
+1. `|z_b| > 1.96`
+2. The sign is stable across the last **k = 4** consecutive windows
+3. **Not** better explained by a step: fit both a *drift* model `e^sz_s = a + c·s` and a *step* model `e^sz_s = a + c·1[s ≥ τ]` over the window; C1 fires only if the drift model wins on BIC (this is the C1/C5 discriminator)
+4. `n ≥ 8` nonzero usable periods (else **abstain, C0**)
+
+> **Why the restriction to nonzero periods, and why the "both sub-processes" gate is gone.** The bias is computed on `e^sz` over nonzero periods only, so a change in the occurrence rate `p` cannot move it — which is what keeps C1 off C6's series. Revision 1 additionally required `sign(b^occ) == sign(b^sz) ≠ 0`. Under the corrected C1 injection (a ramp in `μ_z` at fixed `p`) the occurrence sub-process is untouched and `b^occ ≈ 0`, so that gate would have made **C1 undetectable**. It is removed. `b^occ` is still computed and reported, and a persistent *occurrence* bias is C3's or C6's territory, not C1's.
+
+---
+
+**C2 — Uncertainty mis-calibration**
+
+Statistics (over `W_cal = 30`, requires `n ≥ 30` coverage observations — i.e. C2 cannot fire early in the series):
+
+- Achieved coverage: `ĉ = mean( 1[ A^{agg}_{i,s} ≤ Q̃_α(i,s) ] )` for `s` in the window — **measured against the interval as REPORTED to the policy (`Q̃_α`), not the interval as fitted (`Q̂_α`).** This is the Revision 2 correction: if the reported interval is the mis-calibrated object, measuring coverage against the fitted one leaves C2 undetectable.
+- Binomial test of `ĉ` against the nominal `α`
+
+Fire when `|ĉ − α| > τ_cov` (**default τ_cov = 0.10**) **and** the binomial test rejects at p < 0.05.
+
+- `ĉ < α − τ_cov` → **under-coverage**: intervals too narrow → stock-outs → remedy widens.
+- `ĉ > α + τ_cov` → **over-coverage**: intervals too wide → excess stock → remedy narrows.
+
+**Guard against C1/C4/C5 contamination.** C2 fires only if **both** hold:
+
+- the **mean** is acceptable: `|z_b| ≤ 1.96` on the same window (if the mean is wrong, C1 or C5 takes priority — the interval is wrong *because* the centre is wrong);
+- the **size-dispersion statistic is at control**: `r ≤ 1.5` (C4's threshold). A change in the size distribution necessarily moves coverage, so it would otherwise shadow C4. **C4 is also checked before C2 in the priority order (§6.4)** — this guard is the second line of defence, and both are required.
+
+---
+
+**C3 — Occurrence failure**
+
+Statistics (over `W_occ = 60`, restricted to `U_i(t)`; **requires ≥ 10 nonzero periods in the window** — otherwise insufficient evidence → **abstain, C0**):
+
+- Occurrence AUC-ROC: `AUC = P(ẑ_u > ẑ_v | δ_u = 1, δ_v = 0)` computed on the window
+- False-zero rate: `FZ = mean( ẑ_{i,s} < 0.5 | δ_{i,s} = 1 )` — the fraction of true-demand periods the model called empty
+
+Fire when (`AUC < 0.65` **or** `FZ > 0.30`) **and** the size-dispersion statistic is *not* elevated (the C3/C4 discriminator below).
+
+**Guard against C6 (the guard is enforced at generation time).** A drift in the occurrence *rate* leaves the occurrence process perfectly learnable, so AUC does not collapse. §15.2's C6 generator constraint requires `AUC(C6 series) ≥ AUC(C0 series) − 0.10`, verified as gate 4.8 (§30). **If that constraint held and C3 still fires on a C6 series, the generator constraint failed — the fix is in the injection, not in C3.**
+
+---
+
+**C4 — Size failure**
+
+Statistics (over `W_sz = 24`, restricted to `U_i(t)` ∩ nonzero periods `N_i` where `δ = 1` **and** `ẑ ≥ 0.5`, i.e. occurrence handled correctly):
+
+- Size-error **dispersion**: `sd^sz = sd(e^sz)` over the window (a **robust** sd — MAD-based — is preferred)
+- Baseline ratio: `r = sd^sz_now / sd^sz_baseline`, where the baseline is the SKU's own first-`W_sz` value
+
+Fire when `r > 1.5` **sustained over 2 consecutive windows** **and** `AUC ≥ 0.65` (occurrence is fine).
+
+> **Why dispersion and not RMSSE (Revision 2).** Revision 1 used the RMSSE ratio, `S^sz_now / S^sz_baseline`. RMSSE is `sqrt(mean(e²))`, which contains the **mean** term — so it moves under a pure mean shift, i.e. it would fire on a C1 or C5 series. `sd(e^sz)` is invariant to a mean shift and moves only when the dispersion changes, which is exactly what C4's injection does. **C1 therefore reads the mean of `e^sz` and C4 reads its dispersion: two orthogonal moments of the same series, and neither can trigger the other.**
+
+**C3 / C4 discriminator (the GAP-3 mechanism).** This is the sharpest and most defensible sub-piece of the work (file `08` §B, GAP-3). Compute the error decomposed by sub-process:
+
+```
+total error  =  occurrence error  +  size error  (+ interaction)
+```
+
+Practical decomposition: compare `MAE` on four cells — (δ=1, ẑ≥.5), (δ=1, ẑ<.5), (δ=0, ẑ≥.5), (δ=0, ẑ<.5). If the mass sits in the mis-classified-occurrence cells → **C3**. If it sits in the correctly-classified cells but the sizes are off → **C4**. Report this decomposition explicitly in the paper; it is a contribution in its own right.
+
+---
+
+**C5 — Level / regime shift**
+
+Statistics — **two independent two-sided CUSUMs, one per sub-process.** Revision 1 ran a single CUSUM on the pooled residual `e = y − μ̂`. On an intermittent series roughly nine of every ten residuals are a moderate **negative constant** (a zero period contributes `0 − μ̂ ≈ −p·μ_z`), so the lower arm accumulated steadily through any run of zeros **whether or not a shift occurred**. The false-alarm rate was therefore governed by `p` — the lower the intermittency, the more false C5 alarms — and C5 sits **first** in the priority order, so it pre-empted C1/C4/C6. The correction removes the mechanism rather than compensating for it with a larger threshold.
+
+```
+Occurrence CUSUM  — detects a step in the occurrence rate p
+    e^occ_t  = δ_t − ẑ_t
+    σ_occ    = sqrt( mean_t( ẑ_t · (1 − ẑ_t) ) )        over the window
+    S⁺_t = max(0, S⁺_{t−1} + e^occ_t − k_occ·σ_occ)
+    S⁻_t = max(0, S⁻_{t−1} − e^occ_t − k_occ·σ_occ)
+    alarm if max(S⁺, S⁻) > h_occ · σ_occ
+
+Size CUSUM  — detects a step in μ_z.   RESTRICTED TO NONZERO PERIODS N_i.
+    e^sz_t  = z_t − μ̂^sz_t                               for t ∈ U_i(t) ∩ N_i
+    σ_sz    = robust sd of e^sz over the trailing window of nonzero periods
+    same recursion with k_sz , h_sz
+```
+
+**Parameters (Revision 2 — this closes OD-7).**
+
+```
+k_sz = k_occ = 0.25           (was 0.5)
+h_sz = h_occ = 4.0            (was 5.0)
+```
+
+Fire when either CUSUM alarms **within the last review period**, **and** the step model beats the drift model on BIC (§6.3, C1 condition 3) — i.e. the change is **abrupt**, not gradual.
+
+**Estimating the change point τ.** On a CUSUM alarm, set `τ` to the last index at which that statistic was zero before the alarm. The remedy uses `τ` to decide which data to discard.
+
+**False-alarm control.** The in-control ARL is **measured empirically on the C0 control panel** and must sit inside the ≤ 10 % false-positive budget over the panel length (§30, gate 4.12). **No theoretical ARL value is asserted.**
+
+> **Why the parameters and the injection must be set together (OD-7, closed).** For a standardised step `Δ` with slack `k` and threshold `h`, the delay in nonzero observations is `D_obs ≈ h/(Δ − k)`, hence in calendar periods `D_cal ≈ h / (p·(Δ − k))`. Requiring `D_cal ≤ W_detect` gives the **detectability budget**
+>
+> ```
+> Δ  ≥  k  +  h / ( p · W_detect )
+> ```
+>
+> With Revision 1's parameters (`k = 0.5`, `h = 5`, `p = 0.2`, `W_detect = 30`) this asks for `Δ ≥ 1.33 σ`, while Revision 1's C5 injection produced `Δ = 0.50 σ` — **a required step 2.7× the injected one, i.e. undetectable by arithmetic.** That is why C5's magnitudes were raised and `k`/`h` lowered *together* (§15.2), and why the generator must verify the budget per SKU (§30, gate 4.6) and the recall must be reported both pooled and budget-restricted (§29.3).
+
+---
+
+**C6 — Intermittency change**
+
+Statistics (over `W_class = 30`, restricted to `U_i(t)`):
+
+- `ADI = (number of periods) / (number of nonzero-demand periods)` — over the window
+- `CV² = (sd of nonzero sizes / mean of nonzero sizes)²` — over the window
+- Assign the SKU to an **ADI-band × CV²-band cell** using the reachable bands of §15.1 (**not** the textbook cut-offs — see below)
+
+Fire when the cell at `t` differs from the cell used at initialisation, **sustained for m = 3 consecutive windows**, **and** the change survives a bootstrap check: resample the window 1,000×, recompute (ADI, CV²), and require that the cell label is stable in ≥ 90 % of resamples. (Without the bootstrap, ordinary sampling noise around a boundary will fire C6 constantly.)
+
+**Ordering note.** C6 is checked **after** C3, because a change in ADI is usually *caused* by a change in the occurrence process — C3's territory. C6 fires on the residual case: the occurrence/size split is each individually acceptable, but the **cell** has moved.
+
+> **Why the boundary is not 1.32 (Revision 2).** `ADI = T/(#nonzero)` and under i.i.d. `Bernoulli(p)`, `E[ADI] = 1/p`. The synthetic panel samples `p ∈ [0.05, 0.50]`, so `E[ADI] ∈ [2, 20]` — **every value is already above 1.32, permanently.** ADI cannot cross 1.32 in this domain, so Revision 1's C6 injection was impossible and its four-class requirement unreachable. The corrected boundary is `ADI* = 4.0` (⇔ `p = 0.25`), derived from the panel's own ADI distribution and from the planning significance of the change — see §15.1 and §15.2. **The name and meaning of C6 are unchanged; only the numerical boundary moves, from one that cannot be crossed to one that can.**
+
+---
+
+**C7 — Inventory-policy mis-set**
+
+Fire when **all** hold:
+
+1. **No other cause fired** (C1–C6 all below threshold) — this is C7's definition, not a tie-break
+2. **Forecast-acceptability gate passes**: the SKU's RMSSE is below its own `W_svc`-window baseline, `|z_b| ≤ 1.96`, and coverage is within `τ_cov`
+3. **Service gap**: `ĉ < α_target − δ_svc` (**default δ_svc = 0.10**) — the achieved CSL over `W_svc = 30` is materially below target
+4. **Sufficient exposure**: **≥ 20 usable periods AND ≥ 2 review cycles with unmet demand within `W_svc`** (a single unlucky period is not evidence of policy mis-set)
+5. No other cause fired (same as 1 — retained as a separate line because §6.4's ordering is what enforces it)
+
+**Revision 2 corrections to C7.** Revision 1 required "≥ 20 periods in the window" while the monitor window was `W = 12` — `12 < 20` — and required "at least 2 stock-out periods" without a CSL threshold at all. It was therefore unsatisfiable three times over: (i) by arithmetic; (ii) because the C-guard removed the censored periods from `U` and starved the window further; (iii) because the injection's own consequence — stock-outs censoring the training data — raised the forecaster's error and failed condition 2. All three are now addressed: `W_svc = 30` (§6.1), the exposure condition is stated on `W_svc`, and condition 2 is made satisfiable by the `fit_on` fix (§14.3, rule 6).
+
+**The censoring interaction.** Condition 1 makes C7 and C5 mutually exclusive by construction. This is exactly why the **C-guard must run first**: without it, the stock-outs that C7 is *supposed* to explain will fire C5 instead, and CAFR will "fix" the forecast and never touch the policy — the exact failure this project exists to prevent.
+
+> **This condition set is a genuine gate, not a parameter to relax.** §30 gate 4.9 requires the acceptability gate to pass on ≥ 80 % of post-injection C7 windows before any downstream work proceeds. **If it does not pass, the condition set is revised (§5–§6) as a team decision — it is never relaxed in code, and it is never re-tuned until the experiment passes.**
+
+### 6.4 Conflict resolution and abstention
+
+Detection is **priority-ordered**, because several signatures can be present at once:
+
+```
+C-guard  →  C5 (abrupt shift)  →  C1 (gradual bias)
+         →  C4 (size dispersion)   →  C2 (calibration, mean OK)
+         →  C3 (occurrence)        →  C6 (cell change)
+         →  C7 (policy, all else clear)   →  C0
+```
+
+**The one change from Revision 1 is that C4 now precedes C2.** It is forced, not arbitrary: **a change in the size distribution necessarily moves coverage**, so C4's more specific signature (dispersion at fixed mean) must be tested before C2's (coverage). Revision 1's order let C2 shadow C4 on every C4 series, and its only guard (`|z_b| ≤ 1.96`) is satisfied by construction under a fixed-mean `k` change. C2's dispersion guard (§6.3, C2) is the second line of defence.
+
+**Priority rationale.** C5 before C1: an abrupt shift invalidates the data window, so any bias computed on it is an artefact. C1 before C4: a persistent mean error is the coarser, more robust signal, and it is defined on the same series — checking it first is free. C4 before C2: dispersion changes coverage, never the reverse. C2 before C3: coverage is measured on the aggregate over the protection interval, so it is the most robust of the three. C3 before C6: a cell change is usually downstream of a sub-process change. C7 last: it is defined by exclusion.
+
+> **Priority-order sensitivity is now a mandatory diagnostic (§29.3).** Re-run attribution with a shuffled priority order and report the macro-F1 difference. If it exceeds 0.10, the attribution is measuring the ordering rather than the detectors, and §6.4 must be revised. §30 gate 5.4.
+
+**Confidence score.** Emit `conf ∈ [0,1]` as a normalised margin:
+
+```
+conf = min(1, max_over_fired_causes( |statistic| / threshold )  −  0.5·(number of causes that fired) )
+```
+
+The exact functional form is an implementer choice; **the required properties** are: monotone in the strength of evidence, decreasing when several causes fire together, and calibrated such that `conf < τ_conf` is rare on the no-cause control panel.
+
+**Abstain (C0)** when `conf < τ_conf` (**default τ_conf = 0.35**), or when the evidence is insufficient (`< 8` nonzero periods for C1, `< 10` nonzero periods for C3/C4, `< 30` coverage observations for C2, `< 30` periods or `< 2` unmet cycles for C7).
+
+`τ_conf` must be tuned on the validation split to hit a target false-positive rate on the no-cause panel (recommended target: **≤ 10 % false-positive rate**). Report the whole ROC of abstention vs false-positive rate in the paper.
+
+> **Tuning discipline for `τ_conf` (Revision 2).** The ≤ 10 % FP figure is a **design target that `τ_conf` is tuned to**, so it is reported as a design characteristic, not as an independent result. `τ_conf` is tuned on **train**, its value reported on **validation**, and the test panel is confirmatory only. State this ordering explicitly in the paper.
+
+---
+
+## 7. EXACT CORRECTIVE ACTION FOR EACH CAUSE
+
+One matched action per cause. **Every action is drawn from the same library; the classifier's claim about the cause does not by itself determine which is applied** (that is M4's job — see §9).
+
+| Cause | Remedy ID | Exact action |
+|---|---|---|
+| **C1** persistent bias | R1 | **Damped intercept correction.** Add `λ · b` to the point forecast, where `b` is the recent mean residual (occurrence and size components corrected separately) and `λ ∈ [0,1]` is a damping factor (**default λ = 1.0 for the occurrence component, λ = 0.5 for the size component** — the size correction is damped because size residuals are noisier). Continuous, not a model switch. |
+| **C2** mis-calibration | R2 | **Conformal recalibration.** Recompute the empirical quantiles of `A^{agg} − R·μ̂` over the most recent `W_cal` periods (**default W_cal = 24**), and rebuild `Q̂_α`. Widens or narrows the interval. Non-forecast: the point forecast is untouched. |
+| **C3** occurrence failure | R3 | **Switch the occurrence sub-model to a probability-based architecture** — TSB (which smooths the occurrence probability directly and can decay to zero) or a hurdle classifier. Size model untouched. |
+| **C4** size failure | R4 | **Re-estimate the size model.** Refit on nonzero sizes only, with recency weighting, using a damped-trend or the pooled LightGBM restricted to nonzero sizes. Occurrence model untouched. |
+| **C5** level shift | R5 | **Discard pre-shift data and add a step indicator.** Set the estimation window to `[τ, t]` (the CUSUM change point), re-initialise the method there, and add a step term so the estimator does not smooth across the break. |
+| **C6** intermittency change | R6 | **Re-classify and re-initialise.** Recompute the (ADI, CV²) cell and re-map it to a method family through a **fixed, documented mapping table** (the ablated "fixed table" uses the same map). |
+| **C7** policy mis-set | R7 | **Adjust the safety factor — leave the forecast alone.** See the controller below. |
+| **C0** no actionable signal | R0 | **Do nothing.** Keep the current forecaster and policy unchanged. |
+
+### 7.1 The C7 service-level controller (exact — rewritten in Revision 2)
+
+Let `α_t` be the **current service-probability level** the policy targets, and `ĉ_t` the achieved CSL over `W_svc`. The target is `α*`; the gap is `g_t = α* − ĉ_t`. An **integral controller** updates:
+
+```
+State:   α_t ∈ [ α_min , α_max ]
+         α_min = 0.50
+         α_max = min( 0.999 , 1 − 1/(n_t + 1) )      n_t = nonzero demand cycles available for the quantile
+
+Update:  α_{t+1} = clip( α_t + κ · ( α* − ĉ_t ) , α_min , α_max )        κ = 1.0 default
+
+Order-up-to:   S_{i,t} = Q̂_{α_t}(i, t)
+```
+
+The controller uses the **realised** CSL, which is noisy at small `W_svc` — hence C7's requirement of `W_svc = 30`. Sweep κ in the sensitivity analysis; it is the single most important hyperparameter in the non-forecast remedy set.
+
+> **Why the state is a service probability, not a Gaussian z (Revision 2).** Revision 1 defined the controller in **standard-normal quantile units**, clipping at `z_max = Φ⁻¹(0.999) ≈ 3.09`, while §15.6 required the safety stock to come from the **empirical** error distribution. Those two are incoherent: if the order-up-to level is built from empirical quantiles — the correct construction for skewed intermittent demand, and §15.6 is right to require it — then `z` is not a standard-normal quantile and "κ in standard-normal quantile units per unit of CSL error" is **undefined**. R7 would have been unimplementable as specified.
+>
+> Three deliberate changes, each with a reason:
+> 1. **The state is a service probability `α`.** `κ`'s units become *service-probability per unit CSL gap* — well-defined whether the quantile map is empirical or parametric. This is the fix.
+> 2. **`α_max = min(0.999, 1 − 1/(n_t+1))` replaces `Φ⁻¹(0.999)`.** The normal bound is meaningless for an empirical quantile; the new bound is the *statistical* limit of what the available sample can support (with `n_t = 30` cycles the largest estimable quantile is ≈ 0.968), so the controller can never demand a quantile the data cannot estimate.
+> 3. **The integral structure, the clip and the default `κ = 1.0` are unchanged.** Only the units and the bound change.
+>
+> R7 is now directly interpretable: `α_t` is a number a practitioner can read ("the policy is currently targeting the 94th percentile").
+
+> **Implementer note.** R7 is what makes C7 more than a label. If R7 is implemented as "change the forecast", the paper's central distinction collapses. It must **not** touch `μ̂`.
+
+### 7.2 What is genuinely new in each row
+
+Kept from file `08` §F, because the paper needs it:
+
+| Remedy | Resembles (existing work) | What is new here |
+|---|---|---|
+| R1 | SBA; intercept corrections (Clements–Hendry) | Applied **selectively**, only when attributed — not as a global rule |
+| R2 | Conformal prediction; Sensors 2023 interval widening | Triggered by **diagnosis**, not on a schedule |
+| R3 / R4 | TSB; Rožanec type III; Croston variant space | Attribution **between the two sub-processes** (GAP-3) |
+| R5 | Intercept corrections; EMC drift flag | Coupled to **this specific remedy**, not to a generic "adapt" |
+| R6 | Syntetos–Boylan classification | Classification used as a **diagnosis trigger**, not as initialisation |
+| R7 | Safety-stock theory; LOWDII's calibration | Explicitly a **non-forecast** remedy inside the action space, driven by realised service feedback — **and expressed as a service-probability controller on the empirical aggregate quantile** (Revision 2, §7.1), not as a Gaussian z |
+| R0 | Hysteresis / memory gating; Zenodo `10.5281/zenodo.18364003` (the only prior statement of a no-action option found) | A **learned, first-class action**, not a closing remark |
+
+**It is a strength, not a weakness, that the remedies are not novel.** Interval widening, bias correction and safety-stock adjustment all exist off the shelf. **CAFR need not invent the remedies — only the selection of them.** Say this explicitly in the paper; it moves the novelty claim to where it actually lives.
+
+---
+
+## 8. WHEN CAFR SHOULD TAKE NO ACTION
+
+No-action (R0) is a first-class arm, not a fallback. It must be selected in each of these cases:
+
+| Situation | Detection | Why no action is correct |
+|---|---|---|
+| **Insufficient evidence** | `< 8` nonzero periods (C1), `< 10` nonzero periods (C3/C4), `< 30` coverage observations (C2), `< 30` periods or `< 2` unmet cycles (C7) | Any action taken on this evidence is noise-fitting. This is the dominant reason early in a series or for very slow-moving SKUs. |
+| **Low attribution confidence** | `conf < τ_conf` | The mechanism is not identifiable. Applying an unmatched remedy is at best neutral and at worst harmful. |
+| **Genuine control** | No cause fired, service on target | Nothing is wrong. Any action adds churn with no expected benefit. |
+| **Ambiguous / multi-cause** | Two or more causes fire at comparable strength | The remedy for one may antagonise the other. Abstain and wait for the evidence to resolve. **See the "ambiguous" panel class in §15.** |
+| **Dwell-time active** | A remedy was applied fewer than `d` periods ago | The effect of the previous action has not yet been observed. Acting again makes the reward unattributable. |
+
+**Why this matters for the falsifiable claim.** R0 is the mechanism by which CAFR controls churn *by design* rather than by post-hoc thresholding. It is therefore the target of ablation **A2** (§21): removing R0 must measurably increase churn and measurably worsen the cost–service frontier, or the churn-control argument fails.
+
+**The honest counterpoint to state in the paper.** The only prior statement of a no-action option found anywhere in the search is a closing remark in a non-peer-reviewed notebook (Zenodo `10.5281/zenodo.18364003`): *"some operational processes are not well-suited for automated forecasting and are better managed through expert oversight."* Cite it as the one precedent for the *idea*. Do not claim it as our idea.
+
+---
+
+## 9. HOW THE CORRECTIVE-ACTION SELECTION MECHANISM WORKS
+
+### 9.1 The bandit
+
+**Algorithm.** Thompson sampling with a **linear contextual model** (Gaussian likelihood for continuous rewards, or logistic if the reward is reshaped to a bounded utility). One global policy across all SKUs, generalising through the context vector — with 5,000 SKUs × 60 evaluated periods there are ~300,000 decision points, which is ample. Per-SKU policies are not viable and are not attempted.
+
+**Arms.** The remedy library `A = {R0, R1, …, R7}` (9 arms). **The arms are remedies, not causes.** (No C8 — OD-2 is frozen.)
+
+**Context vector `x_{i,t}`** (all from M1, all observable at decision time):
+
+| Block | Features |
+|---|---|
+| Attribution | attributed cause (one-hot), `conf` |
+| Error | rolling bias (occ + size), `σ_sz`, size-dispersion ratio `r`, occurrence AUC, false-zero rate, interval coverage |
+| Intermittency | ADI, CV², ABD×CV² cell (one-hot), mean nonzero size, fraction of zeros |
+| Inventory | achieved CSL gap `g`, fill rate, avg on-hand, avg backorders, PIS, NOS |
+| Control | periods since last switch, current active remedy (one-hot) |
+| SKU statics | lead time, unit cost, holding rate, demand class |
+
+**Standardise all continuous features** using statistics from the training split only. Report the feature list and the standardisation constants in the paper.
+
+**The full policy context is written `x_{i,t} = [ x^inv_{i,t} , x^det_{i,t} ]`** — inventory/demand features and attribution (detection) features. This split is used throughout §9.2 and §21 to define the A4 arm exactly.
+
+**The forgetting mechanism (Revision 2 — required).** C5 and C6 *are* non-stationarity injections: they are the causes defined by the world changing. A standard Thompson sampler's posterior precision grows with each observation, so its variance collapses and it **stops exploring exactly when the world has changed** — CAFR would systematically under-perform on the causes it exists to handle. The dwell override in §11.2 addresses *switching* (allowing a faster switch), not *posterior staleness*; they are different problems and the second was unaddressed in Revision 1.
+
+```
+DEFAULT (a):  On a C5 CUSUM alarm for SKU i (§6.3, C5), inflate that SKU's posterior variance
+              for the affected arms, or discard the last W_detect observations from its
+              sufficient statistics.
+
+ALTERNATIVE (b):  Per-period discount on the posterior precision, γ ≈ 0.99.
+ALTERNATIVE (c):  Sliding-window likelihood over the last N updates.
+```
+
+**Recommendation: (a) as the default, (b) as the comparison in E6.** Option (a) is preferred because it **ties the adaptation to the diagnosis** — the bandit's non-stationarity handling becomes an *application of* the attribution rather than a separate mechanism, which sharpens the paper's internal logic: knowing the cause does not just select the remedy, it also tells the learner to forget. Sweep γ (or the reset magnitude) in E6. Report the choice in T7.
+
+> **⚠️ HARD REQUIREMENT.** The forgetting mechanism **must be identical on (f), (f′) and A4**. If A4 adapts at a different speed, the H1′ comparison measures adaptation speed rather than attribution. This is a unit-testable condition (§28.6).
+
+### 9.2 The arm-set question — the crux of the design
+
+> **OPEN DECISION OD-4 — free or constrained bandit? — ✅ RESOLVED AND FROZEN (Revision 2)**
+>
+> **Headline:** **(f) = free bandit**, full context `x = [x^inv, x^det]`. Attribution enters as context; the bandit *can* override it, so the learned mapping is genuinely learned — which is what RQ2 asks.
+>
+> **Three required comparators, all pre-registered, all with the same churn machinery, the same action space and the same forgetting mechanism (§9.1):**
+>
+> | Arm | What it is | Role |
+> |---|---|---|
+> | **(f′)** | **Attribution-constrained bandit** — the attributed cause determines the arm set (its matched remedy plus R0); the bandit learns only *whether and when* to act | Bounds the interpretation of (f) either way |
+> | **A4** | **Free bandit with attribution features removed** — acts on `x^inv_{i,t}` only, with **the same action schedule, the same action space R0–R7 and the same reward** as (f) | **Co-primary comparator — hypothesis H1′** |
+> | **(g)** | **Fixed hand-written remedy table** — always apply the attributed cause's remedy, no learning | **RQ2's comparator — hypothesis H1″** |
+>
+> **Report the agreement rate between the learned policy's choice and the fixed table's choice** (§19) for (f), (f′) and A4.
+>
+> **Why A4 is the more important comparator than (f′).** Revision 1 framed OD-4 as a two-way choice. That was incomplete: comparing (f) against arm (c) — which selects by accuracy — asks *"does an agent that optimises the evaluation objective beat one that optimises a different objective?"*, and §1's own cited benchmark predicts the answer (ρ = −0.555). **The scientific claim of this paper is attribution, and A4 is the arm that isolates it.** A4 is therefore specified in full below, and it carries hypothesis **H1′** (§29.1).
+>
+> **Why free, not constrained, for the headline.** A constrained bandit is a *timing* policy, not a *learned mapping*, which makes RQ2 vacuous. Revision 1's reasoning on this point was correct and is retained.
+
+**A4 — the required comparator, specified exactly.**
+
+Let the policy context be
+
+```
+x_{i,t} = [ x^inv_{i,t} , x^det_{i,t} ]
+```
+
+where `x^inv` = the inventory and demand-summary block of §9.1 (stock on hand, outstanding orders, CSL history, ADI, CV², recent demand moments) and `x^det` = the attribution output (which cause fired, its severity, its confidence).
+
+| Arm | Context used |
+|---|---|
+| **(f)** | the full `x_{i,t}` |
+| **A4** | `x^inv_{i,t}` only |
+
+**Four hard constraints on A4. Violating any of them invalidates the H1′ comparison:**
+
+1. **Same action space.** Arms = `{R0, …, R7}`, identical to (f).
+2. **Same reward.** The OD-3 standardised cost reward, identical to (f).
+3. **Same action schedule.** A4 must **not** be reduced to "act less often" or "act only on a fixed timer". It receives the same dwell time, the same hysteresis, the same confidence gate and the same forgetting mechanism as (f). **If A4's action frequency differs from (f)'s, the comparison measures action frequency, not attribution.**
+4. **Realised churn reported alongside (f)'s** for both arms, in T3, so a reader can verify constraint 3 held. This is a reported diagnostic, not a constraint to impose.
+
+> **Why this is the co-primary hypothesis.** If `(f) ≈ A4`, attribution is decorative and the paper's contribution is the reward signal and the action space — a publishable but weaker and different result. §29.4 pre-commits the paper to saying exactly that. **This is the single most important test in the project alongside A5.**
+
+### 9.3 Reward
+
+**Default (OD-3 — ✅ RESOLVED AND FROZEN in Revision 2).** Per-SKU standardised negative cost:
+
+```
+r_{i,t} = − [ ( H · Ī_{i,t+1} + B · B̄_{i,t+1} ) − C̄_i ] / σ_{C,i}
+```
+
+where `H` = holding cost per unit per period, `B` = backorder cost per unit per period, `Ī` = average on-hand inventory across period `t+1`, `B̄` = average backorders, and `C̄_i`, `σ_{C,i}` are the SKU's historical mean and sd of period cost, estimated on a burn-in window.
+
+**Why the standardisation is mandatory.** Raw cost scales with SKU volume by orders of magnitude. An unstandardised reward makes the bandit a policy for the three largest SKUs and noise for the rest.
+
+**Clause 1 — the `σ` floor (Revision 2, required).**
+
+```
+σ_{C,i}  ←  max( σ_{C,i} , 0.05 · C̄_i )
+```
+
+Without this the reward explodes for any SKU with near-constant cost — which will occur on stable, low-variance SKUs — and will dominate the bandit's updates.
+
+**Clause 2 — A5 uses the same standardisation (Revision 2, required).** See §21's A5 row:
+
+```
+A5:   r_t = − | e_t | / σ_{e,i}          with the same floor,  σ_{e,i} ← max(σ_{e,i}, 0.05·ē_i)
+```
+
+Revision 1's A5 used the **raw** `−|e_t|`. Thompson sampling's exploration is scale-sensitive, so an A5-vs-(f) difference would be attributable to the reward's *content* or its *scale*, indistinguishably — and A5 is described in §21 as the paper's cleanest result. With both variants standardised, the reward *content* is the only difference.
+
+> **OPEN DECISION OD-3 — reward formulation — notes**
+> Alternatives to the default above:
+> - **(a) Cost only**, unstandardised — simplest, but volume-dominated. Not recommended.
+> - **(b) Service-gap-closed minus cost penalty**: `r = (ĉ_target − g_{t+1}) − β·C_{t+1}/C̄` — more directly expresses the service objective, needs a `β` sweep.
+> - **(c) Constraint form**: maximise service subject to a cost budget (or vice versa), implemented as a Lagrangian with a tuned multiplier.
+> **Frozen decision:** the default above is the headline; **(b)** is run as a pre-registered **reward-robustness ablation** with a `β` sweep. If the headline claim holds only under one specific reward shape, the paper reports that as a finding.
+> **`C̄_i` and `σ_{C,i}` must be computed on the corrected simulator (§15.6) before any arm is scored** — §30 gate 3.6.
+
+**What the reward is not.** It is **not** forecast error, not MASE, not RMSSE. This is the single clearest line between CAFR and PtC (`r_t = τ(e_ML,t − e_CB,t)`). Ablations **A5 and A4** (§21) are the empirical tests of this distinction, from two different directions — the reward's content and the attribution's value.
+
+### 9.4 Exploration
+
+Thompson sampling explores by construction. Revision 1 forced uniform-random arm selection for the **first `W_burn = 12` periods** of the evaluated window — which, with a 60-period evaluated window, meant **20 % of arm (f)'s scored periods were deliberately random while arm (c) selected normally throughout.** The headline comparison would have run with (f) handicapped by design.
+
+**Corrected scheme (Revision 2) — staggered forced exploration:**
+
+```
+At each evaluated period t, force uniform-random arm selection for the SKUs in
+    { i : hash(i + t) mod 9 == 0 }        ≈ 1/9 of SKUs per period
+
+so that every SKU receives ≈ 60/9 ≈ 6.7 forced decisions spread across the window,
+and NO period is systematically degraded for any arm.
+```
+
+With 5,000 SKUs × 6.7 ≈ 33,000 forced decisions — far more than the posterior needs, and the cost is spread rather than concentrated in (f)'s scored window.
+
+**Alternative, if the staggered scheme complicates the simulator:** add a 12-period policy warm-up **excluded from scoring for all arms**, reducing the evaluated window to 48 and requiring the real panels to supply 24 + 12 + 48 = 84 periods (§14.1 is already exactly 84, so this fits without changing the panel requirements).
+
+**Recommendation: stagger.** It removes the bias without spending the window.
+
+**Reporting.** Log which decisions were exploratory (`actions.parquet`, column `exploratory`) and report the **exploration fraction per arm** (§29.3). **Forced-exploration decisions are excluded from the churn count** — otherwise (f)'s churn is inflated by periods it did not choose (§11.1).
+
+---
+
+## 10. HOW INVENTORY / SERVICE-LEVEL FEEDBACK ENTERS THE LOOP
+
+Three distinct entry points. Keeping them separate matters — conflating them is how the "closed loop" literature (REJ-1) got taken.
+
+1. **As the learning signal (M4).** The realised cost/service of period `t+1` under the action chosen at `t` becomes the reward `r_{i,t}`. This is the *only* thing the bandit optimises. **Forecast accuracy never enters the reward.**
+2. **As a diagnostic input (M1 → M2).** Achieved CSL, fill rate, PIS, NOS and the stock-out flag feed the feature vector. Two roles: C7's trigger (the service gap is C7's whole signature) and the **C-guard** (the stock-out flag determines which residuals are trustworthy).
+3. **As the evaluation objective (M5).** The cost–service frontier — not accuracy — is the outcome on which arms are compared in the paper.
+
+**The loop, closed and timed.** Decision at end of period `t` → action in force for period `t+1` → outcome of `t+1` observed → reward computed → posterior updated → decision at end of `t+1`. **One period of delay is mandatory**: the reward must be the outcome of the action, never of a period the action did not affect.
+
+**No look-ahead (see §14.3).** At the decision point for period `t`, the monitor may read only data up to and including `t`. The simulator's true demand, the ground-truth cause labels, and any statistic computed over the full series are unavailable. Violating this invalidates the entire result, and it is the easiest mistake to make when the simulator and the policy run in the same process.
+
+---
+
+## 11. HOW MODEL / ACTION CHURN IS MEASURED AND CONTROLLED
+
+### 11.1 Definitions (precise — the headline comparison depends on them)
+
+At review period `t` for SKU `i`, the active **configuration** is the tuple
+
+```
+config_{i,t} = ( base_forecaster_family_{i,t} , active_remedy_{i,t} )
+```
+
+Two churn metrics, reported separately because they are not the same phenomenon:
+
+| Metric | Definition |
+|---|---|
+| **Model churn** `χ^model_i` | `(number of periods where base_forecaster_family changed) / T` — the strict one. R1, R2, R7 do **not** cause model churn, because they are parameter adjustments. R3, R4, R5, R6 do. |
+| **Action churn** `χ^action_i` | `(number of periods where active_remedy changed) / T` — includes parameter adjustments. |
+
+**The headline comparison uses `χ^model`**, because that is what "model selection" means in arm (c) and it is the metric on which the equal-churn constraint is imposed. Report both.
+
+> **Revision 2 — forced-exploration decisions are excluded from every churn count.** A decision the policy did not choose (§9.4) is not a switch. Counting it would inflate (f)'s churn relative to (c)'s, which chooses every period, and would corrupt the very quantity the headline comparison matches on. **Count only decisions where `exploratory == False`**, and state this in the methods section.
+
+Also report: **mean periods between switches**, and the **distribution** of inter-switch intervals (a mean alone hides bimodality — some SKUs never switch, others oscillate), **as distributions, not only means**, for every arm.
+
+### 11.2 Control mechanisms (three, in order of strength)
+
+1. **The abstain action R0** — low-confidence cases consume no switch. This is the *design* mechanism.
+2. **Dwell time `d`** — after any action is applied at `t`, no further switch is permitted until `t + d`. **Default d = 3.** Exception: a **high-severity trigger** (a C5 CUSUM alarm, either sub-process) overrides the dwell, because a genuine level shift must be absorbed immediately. Log every override.
+3. **Confidence gate** — no switch unless `conf ≥ τ_conf`.
+
+**Sweep `d ∈ {1, 3, 5, ∞}`** in the sensitivity analysis. `d = 1` is effectively "no dwell constraint"; `d = ∞` means at most one switch per SKU — a useful extreme that shows how much of the benefit comes from *not* switching.
+
+### 11.3 The equal-churn comparison (the headline methodology)
+
+To claim "at equal model churn", arm (c) must be forced to the same churn level as arm (f). **Default method — threshold tuning:**
+
+1. Run arm (f). Record the mean model churn per SKU, `χ̄_f`.
+2. Arm (c) switches when the current best model's MASE improves on the incumbent's by more than a margin `m`. Sweep `m` on the **validation** split only.
+3. Select `m*` such that arm (c)'s **validation** mean model churn equals `χ̄_f` (tolerance ±2 %).
+4. **Freeze `m*`.** Run arm (c) on the **test** split and confirm the realised test churn matches within tolerance; report the realised value, not the target.
+5. Compare (c) and (f) on the test split at the matched churn.
+
+**Robustness check — matched switch counts.** As a second, assumption-free method: for each SKU, take arm (c)'s candidate switch points ranked by MASE improvement and keep only the top `k_i`, where `k_i` = arm (f)'s switch count for that SKU. Report both methods; if the conclusion flips between them, that is a finding.
+
+**The equal-churn machinery now applies to three pairwise comparisons** (Revision 2): **(f)–(c)** (H1), **(f)–A4** (H1′), **(f)–(g)** (H1″). For **(f)–A4** the matching is nearly automatic — same machinery, same schedule — so **report realised churn for both arms** rather than imposing a constraint. For **(f)–(g)** and **(f)–(c)** the threshold-tuning procedure above applies unchanged.
+
+**Why this is not circular.** The churn matching is done on validation, and the comparison on test. The constraint is imposed on the *comparator*, not on CAFR. State this explicitly in the methods section — a reviewer will look for it.
+
+---
+
+## 12. BASELINE METHODS THAT MUST BE IMPLEMENTED
+
+All eight arms from file `08` §H, **plus A4** (Revision 2). **All must be implemented and reported**, including the ones expected to lose — selective reporting of arms is the most likely reviewer objection to an ablation-heavy paper.
+
+| Arm | What it is | Role |
+|---|---|---|
+| **(a)** | Fixed best classical method (Croston / SBA / TSB) per SKU, chosen once on validation | Classical baseline |
+| **(b)** | Syntetos–Boylan rule-based selection (ADI × CV² → method), fixed after initialisation | Current practice |
+| **(c)** | **Accuracy-based adaptive selection** — pick the model with the lowest rolling MASE at each period | ★ **the key comparator for H1** |
+| **(d)** | Drift-triggered full model switching (EMC-style dual thresholds δ, η, with hysteresis) | Adaptation baseline |
+| **(e)** | Global LightGBM (pooled across SKUs) | ML baseline |
+| **(f)** | **CAFR (ours)** — full pipeline | The contribution |
+| **(f′)** | CAFR with the **constrained** arm set (OD-4 option ii) | Bounds the interpretation of (f) either way |
+| **(g)** | CAFR with a **fixed, hand-written** remedy table (no learning; always apply the attributed cause's remedy) | Ablation — isolates RQ2 (**H1″**) |
+| **(h)** | CAFR **without** the no-action arm (R0 removed) | Ablation — isolates churn control |
+| **A4** | **★ REQUIRED ARM (Revision 2).** Free bandit with **attribution features removed from the context** (`x^inv` only); same action space R0–R7, same reward, **same action schedule**, same forgetting mechanism | **Co-primary comparator — hypothesis H1′ (§29.1). This is the arm that isolates attribution from everything else.** |
+
+**A4 is not an optional ablation in this revision.** It carries a co-primary hypothesis and is specified in full in §9.2. Its wiring differs from (f) by exactly one thing: the context block.
+
+**Notes on specific arms.**
+
+- **(c) is the paper.** It must be implemented as faithfully as possible to how practitioners actually do it: rolling-window accuracy evaluation, switch-on-improvement with a margin, no churn constraint. Do **not** handicap it. If (c) is weak, the result is worthless.
+- **(d)** uses EMC's dual thresholds (δ ∈ [0.1, 0.3], η ∈ [0.25, 0.5]) with the graded regime categories Stable → Watch → Transitional → Unstable, and memory-depth lowpass gating. Tune δ, η on validation.
+- **(e)** must be a *fair* ML baseline: pooled training, static SKU features, lagged demand — no SKU-specific training, which would leak.
+- **A4** must respect §9.2's four hard constraints. In particular, its realised action frequency and churn must be reported next to (f)'s so a reader can check constraint 3 (same schedule) actually held.
+
+---
+
+## 13. DATASET(S) TO USE
+
+| Role | Dataset | Access / licence | Why |
+|---|---|---|---|
+| **Primary** | **RUF** — 5,000-material synthetic surrogate of a real industrial spares panel, released with arXiv `2609.13840` | **CC-BY-4.0 — clean licence** | Same size and industrial character as RAF, but licence-clear. This is the primary panel. |
+| **Labelled synthetic (MANDATORY)** | Intermittent-demand generator released with arXiv `2601.21844` | Open source | **Essential.** Only here is the true generating process known, so attribution accuracy (RQ1) can be measured at all. |
+| **Secondary** | M5 (Walmart, Kaggle) subset, or UCI Online Retail aggregated to SKU-week | Free — **requires a Kaggle account** | Second panel, different intermittency profile; tests transfer (experiment E5) |
+| **Reference — conditional** | **RAF** — 5,000 SKUs × 84 months, via CRAN `fable.intermittent` / GitHub `gluon-ts` | **NO STATED LICENCE** | Widely benchmarked, so numbers are comparable — but **do not build the paper on it** until the licence is resolved. See OD-6. |
+
+> **OPEN DECISION OD-6 — RAF.** *(still open — Dr. V. K. Chawla)*
+> RAF has **no stated licence**. It is the panel against which the literature's numbers are comparable, which makes it tempting.
+> **Recommendation:** raise it with Dr. V. K. Chawla. If the licence cannot be confirmed in writing, **drop RAF** and run RUF + M5 + the labelled synthetic panel. Three panels is enough. **Do not publish results computed on an unlicensed dataset.**
+
+**The methodological point the paper must state explicitly:**
+
+> You cannot validate a *failure-attribution* method on RUF or RAF alone, because **neither carries ground-truth cause labels**. The generator panel is not a convenience — it is the only way to measure the new claim. Real panels then test whether the gain transfers.
+
+---
+
+## 14. EXACT TRAIN / VALIDATION / TEST METHODOLOGY
+
+### 14.1 Splits
+
+**Two different splits, for two different purposes. Do not conflate them.**
+
+**(A) SKU-level split — for the attribution classifier (M2) and any learned component.**
+
+| Split | Fraction | Purpose |
+|---|---|---|
+| Train | 60 % | Fit the classifier |
+| Validation | 20 % | Tune thresholds (`τ_cov`, `δ_svc`, `τ_conf`, κ, `d`, `λ`, the CUSUM `k`/`h`, the forgetting parameter), the bandit's hyperparameters, and arm (c)'s margin `m*` |
+| Test | 20 % | **Touched once, at the end** |
+
+Stratify by ground-truth cause so every class is represented in every split. For the labelled panel (1,800 series, §15.4): **1,080 / 360 / 360**.
+
+**Rationale for SKU-level, not time-level.** A time-level split lets the classifier see the same SKU's other periods, so it can learn SKU identity rather than mechanism. That leaks, and it would inflate the attribution results beyond credibility.
+
+**(B) Rolling-origin time split — for the forecasting and inventory evaluation.**
+
+- **Burn-in:** the first **24** periods of each SKU. Used to initialise methods, estimate `C̄_i`, `σ_{C,i}`, compute `adi_init` / `cv2_init` / `sb_cell_init` (§27), and seed the bandit. **Not evaluated.**
+- **Evaluated window:** the remaining **60** periods (RUF has 84, so 24 + 60 = 84 exactly).
+- **Origin advance:** 1 period. At each origin, forecast, decide, apply, advance, score.
+- **Reported:** aggregate over SKUs, and per-SKU distributions.
+
+> **Revision 2 — the horizon requirement (must be checked at step 3).** The multi-scale monitor (§6.1) needs `W_occ = 48–60` for C3 and `W_short = 24` for C1. With 24 burn-in + 60 evaluated, the last 60 periods can host a 60-period occurrence window — but **only the very end of the window can**, so C3's usable evidence is concentrated. And if the excluded-warm-up alternative of §9.4 is taken instead of the stagger, the evaluated window drops to 48 and a 60-period horizon no longer fits at all.
+>
+> **Resolution, in order of preference — §30 gate 3.5:**
+> 1. Check whether RUF (and M5) supply more usable periods per SKU than 84, and extend the evaluated window if so. **Attempt this first.**
+> 2. **Otherwise reduce `W_occ` to 48.** A 48-period window fits the 60-period evaluated span with margin. This is the recommended fallback and it is a one-line config change.
+> 3. **Always** report C3's recall separately for the SKUs where the horizon fits, alongside the pooled figure (§29.3).
+>
+> The same check applies to `W_cal = 30` (C2) and `W_class = 30` (C6), both of which fit comfortably.
+
+### 14.2 Hyperparameter tuning discipline
+
+- All tuning on **validation** SKUs / the validation window.
+- **Freeze every threshold and hyperparameter before the single test-split run.**
+- Report the frozen values in a table (T7).
+- If a threshold is re-tuned after seeing test results, the result must be re-run from scratch on a fresh split, or reported as exploratory. **No exceptions.**
+- **Revision 2 — the CUSUM parameters (`k`, `h`) are not freely tunable.** They are co-designed with the injection magnitudes via the detectability budget (§6.3, C5) and the generator verifies the budget per SKU. Tuning them after generation silently breaks the budget; if they must change, the panel is **regenerated** and gates 4.6 and 4.12 re-checked.
+
+### 14.3 No-look-ahead rules (enforce in code, not by discipline)
+
+Mandatory implementation constraints:
+
+1. At decision time `t`, the monitor reads only `{y_{i,s}, actions, inventory state : s ≤ t}`.
+2. The simulator's **true demand** and **ground-truth cause labels** live in a separate object that the policy code has no reference to. Enforce by passing the policy a narrowed view, not the full dataframe.
+3. All rolling statistics use trailing windows only — no centred windows, no full-series normalisation, no `groupby.transform` over the whole frame.
+4. Standardisation constants for the context vector are computed on **train** only and then frozen.
+5. **No-look-ahead test — exact column whitelist (Revision 2).**
+
+   Revision 1 specified *"a unit test that asserts the policy's inputs contain no column named `*_true*` or `*_cause*`"*. Against the actual schema of §27 that blacklist **misses two of the three ground-truth columns**: `cause_active` (which reveals exactly when the injection is live) and `injection_param` (which reveals the cause and its magnitude), plus the class columns of §27. A name-fragment blacklist can only catch leaks whose authors happened to name them conventionally; it fails open.
+
+   **Replace it with an exact column whitelist:**
+
+   ```python
+   # configs/features.yaml
+   policy_features:
+     - stock_on_hand
+     - on_order
+     - csl_trailing
+     - adi_rolling
+     - cv2_rolling
+     - bias_sz
+     - z_bias_sz
+     - coverage_hat
+     - auc_occ
+     - size_disp_ratio
+     - cusum_occ
+     - cusum_sz
+     - sb_cell_init
+     # … the full declared set
+
+   # tests/test_no_lookahead.py
+   def test_policy_input_columns_are_exactly_the_whitelist():
+       frame = build_policy_input(...)
+       declared = set(cfg["policy_features"])
+       actual   = set(frame.columns)
+       missing, extra = declared - actual, actual - declared
+       assert not extra, f"undeclared columns reachable by the policy: {sorted(extra)}"
+       assert not missing, f"declared features absent: {sorted(missing)}"
+   ```
+
+   **Set equality, not substring absence.** Any extra column fails, whatever it is called. The test now fails closed: a new column added to the schema for any reason — including a future ground-truth field with an innocent name — breaks the test until it is explicitly declared. Keep the `*_true*` / `*_cause*` blacklist **as a redundant second test** (one line, defence in depth).
+
+6. **The forecaster's fitting input must be specified — `fit_on` (Revision 2).**
+
+   Revision 1 governed what the *policy* may see and what the *simulator* logs, but **never said what the forecaster is fitted on**. That left a **policy→forecaster feedback loop** unstated and unmeasured in every arm and every cause:
+
+   ```
+   policy sets safety factor → stock-outs → demand censored → forecaster learns a lower level
+      → forecast degrades → monitor sees bias/error → attribution fires (possibly the wrong cause)
+      → policy changes the safety factor → …
+   ```
+
+   The loop is **realistic** — it is precisely the mechanism ISNCC 2026 documents — but it silently couples the causes (it destroys C7's acceptability gate; it can mimic C1/C4/C5's signatures) and it would have made **A6's** measured effect misattributed.
+
+   **Make it an explicit config switch, fixed identically across all arms and all panels:**
+
+   ```
+   forecast.fit_on  ∈  { observed , uncensored , true }        DEFAULT: uncensored
+
+   observed     fit on demand_observed.
+                Realistic. Destroys C7's acceptability gate → C7 undetectable by construction.
+   uncensored   DEFAULT. Before fitting, impute lost sales on stock-out periods, then fit.
+                The modern inventory-forecasting practice; the realistic middle path.
+   true         fit on demand_true. An idealisation — declare it as such in the paper.
+   ```
+
+   **The imputation must use observables only, or `uncensored` becomes a leak:** impute each stock-out period's lost demand by sampling from that SKU's **own historical nonzero-size empirical distribution** (estimated on pre-censoring periods), scaled to the number of periods the SKU was exposed and unmet. **The imputation function may not receive `demand_lost` or `demand_true`.** Enforce in the unit test (§28.6).
+
+   **Three enforcement requirements:**
+   - **Identical across arms** — a unit test asserts every arm in a run reads the same `fit_on` value.
+   - **Recorded in T7** alongside the other frozen hyperparameters.
+   - **A measured diagnostic** — log, per window, whether the attributed cause would differ between `fit_on = observed` and `uncensored`. Report as one number: *"the censoring loop changed the attributed cause on X % of windows"* (§29.3).
+
+7. **File-level separation (Revision 2).** `load_observed(sku_id)` returns the observed demand frame plus the whitelisted feature frame, and nothing else. `load_ground_truth(panel)` is opened **only** by the evaluation module and is never reachable from the policy or the monitor. The separation is enforced by the loader's signature, not by a runtime check.
+
+### 14.4 Pre-registration
+
+Before the test-split run, write down: the arms (**including A4**), the metrics, the success thresholds (**§29 as revised in this document**), and the statistical tests. Commit the file. This is what makes the falsifiable claim a real claim.
+
+**The pre-registration file must state, in advance:**
+
+- the sign convention for every reported difference (§18), used consistently in §29;
+- H1 as a **precondition** and **H1′ as the co-primary** hypothesis (§29.1);
+- that **C0 and the ambiguous panel are excluded from the headline macro-F1** (§19);
+- that the **C7 pre-flight gate (§30, 4.9) is a gate and will not be relaxed** to make the experiment pass;
+- the §29.4 pre-commitment: if H1′ fails while H1 holds, the paper's contribution is the **reward signal and the action space**, not the attribution, and the paper says so in exactly those words.
+
+---
+
+## 15. SYNTHETIC DATA GENERATION REQUIREMENTS
+
+### 15.1 Baseline process
+
+Simulate intermittent demand per series with a ground-truth mechanism that is known exactly:
+
+```
+occurrence:  δ_t ~ Bernoulli(p)                      p ∈ [0.05, 0.50]
+size:        z_t ~ Gamma(shape = k, scale = μ_z/k)    μ_z ∈ [5, 200]
+demand:      y_t = δ_t · z_t
+```
+
+**Baseline length: `T = 200`** periods, with injection at `τ_inj = 120` (60 %). The real panels are 84 periods; the synthetic panel is deliberately longer so that each injected mechanism has ≥ 40 pre-injection and ≥ 80 post-injection periods. **Note this difference in the paper** — attribution accuracy on the longer synthetic panel is an upper bound for what is achievable on 84-period real series.
+
+**Stratification — the reachable ADI-band × CV²-band 2×2 (Revision 2).**
+
+Revision 1 required "all four Syntetos–Boylan classes … roughly equal counts of smooth / erratic / intermittent / lumpy", using the textbook cut-offs **ADI = 1.32** and **CV² = 0.49**. That requirement is **unreachable** in this domain:
+
+```
+ADI = T / (#nonzero periods)   and under i.i.d. Bernoulli(p),   E[ADI] = 1/p.
+The panel samples p ∈ [0.05, 0.50]   ⇒   E[ADI] ∈ [2, 20].
+The SB cut-off is ADI = 1.32, i.e. p ≤ 0.7576.
+Every value of p in the specified range is already above it, permanently.
+```
+
+**Smooth (ADI < 1.32) and Erratic (ADI < 1.32) are impossible to generate.** Only two of the four SB classes can exist, so §16's rule *"a panel that is > 70 % smooth is the wrong panel"* is vacuous (0 % of any panel can be smooth), and §15.2's C6 injection — "ADI crosses 1.32" — cannot fire.
+
+**Corrected scheme.** Because `CV² = 1/k` exactly for `Gamma(k, θ)`, the CV² cut-off 0.49 corresponds to `k = 1/0.49 ≈ 2.04`. The panel uses the reachable cells:
+
+| | **CV² < 0.49** (low dispersion, `k > 2.04`) | **CV² ≥ 0.49** (high dispersion, `k ≤ 2.04`) |
+|---|---|---|
+| **ADI ∈ [2, 4)**  — `p ∈ (0.25, 0.50]` | *moderate / low-dispersion* | *moderate / high-dispersion* |
+| **ADI ∈ [4, 20]** — `p ∈ [0.05, 0.25]` | *high / low-dispersion* | *high / high-dispersion* |
+
+- **All four cells are reachable and must be populated, each ≥ 20 % of the panel.**
+- **The stored label is the cell** (`sb_cell_init`), not an SB class name.
+- **C6's boundary is the between-band boundary `ADI* = 4.0` ⇔ `p = 0.25`** (config parameter `injection.c6.adi_threshold`). It is chosen because (i) it is reachable with headroom on both sides; (ii) it is material for planning — an ADI of 4 is one nonzero period in four against one in two, and the review policy's exposure and the value of information change qualitatively across it; (iii) it is derived from the panel's own ADI distribution, not from a textbook for a different regime.
+- The SB cut-off values are still used for the **initial** class assignment where the literature's machinery requires them (§12, arm (b)). They are simply not used as injection thresholds.
+- **Recording the true cell is required**, both for C6's ground truth and for stratified reporting.
+
+**The paper must state this in one sentence:** *"The Syntetos–Boylan ADI cut-off of 1.32 separates intermittent from non-intermittent demand; a spare-parts panel lies entirely inside intermittent demand, so ADI can never cross it. We use the intra-intermittent boundary at ADI = 4, which the panel's own ADI distribution supports."* This is a genuine methodological point: the textbook cut-off does not apply to panels that are intermittent by construction. **Table T1 must report the realised ADI distribution** so a reader can see where the boundary falls.
+
+### 15.2 Injected mechanisms (the ground-truth panel)
+
+Each series receives **exactly one** injection, applied to the post-`τ_inj` generating process. Each injection is designed to move **one targeted signature** while deliberately leaving the others alone.
+
+**The three causes C2, C4 and C6 must be injected on three different objects.** In Revision 1 all three changed the Gamma shape `k` at fixed `μ_z` (`Gamma(k, θ)` with `θ = μ_z/k` gives `mean = μ_z`, `var = μ_z²/k`, `CV² = 1/k`), so they were **one intervention under three names**: C2's "multiply the size variance by γ" and C4's "change the shape k" are the same operation with a different multiplier. Under §6.4's priority order C2 sat ahead of C4, so **C4 was never reached**, and C6's only reachable form was the same knob again. The corrected table gives each cause its own object: **C2 manipulates the forecaster's reported interval, C4 the dispersion of nonzero sizes, C6 the occurrence rate.**
+
+| Cause | Injection (post-τ) | Targeted signature | Deliberately does NOT move |
+|---|---|---|---|
+| **C1** persistent bias | Gradual **linear ramp in `μ_z`**: `μ_z(t) = μ_z·(1 + φ·(t−τ)/40)`, `φ ∈ {−0.4, −0.2, +0.2, +0.4}`, over ≥ 20 periods. **`p` is untouched.** | Size-sub-process mean bias `b^sz`, `z_b`, sign stability over 4 windows; BIC prefers **drift** over step | size **dispersion** (C4); occurrence rate (C3, C6); abruptness (CUSUM stays under `h`) |
+| **C2** mis-calibration | **The demand DGP is not touched.** Rescale the **forecaster's reported interval**: `Q̃_α(i,t) = μ̂_{i,t} + γ·( Q̂_α(i,t) − μ̂_{i,t} )`, `γ ∈ {0.5, 2.0}`. `γ < 1` ⇒ under-coverage; `γ > 1` ⇒ over-coverage. **Variant `C2b` is required**: mis-calibration arising from a genuine modelling error with the data untouched — e.g. a Gaussian interval built on skewed sizes, or a half-length calibration window | Interval coverage `ĉ` and its binomial test | the size-dispersion statistic `r` (C4); the size mean (C1); the occurrence rate (C3, C6) |
+| **C3** occurrence failure | Change **`p` only**: `p → clip(p ± 0.15, 0.03, 0.60)`; sizes untouched | Occurrence AUC-ROC; false-zero rate | size dispersion conditional on occurrence (C4); ADI band (C6) |
+| **C4** size failure | Change the **dispersion** of nonzero sizes at **fixed mean**: `k → k·{0.25, 4.0}`, `μ_z` unchanged | Size-error **dispersion** ratio `r = sd(e^sz)_now / sd(e^sz)_baseline` | size **mean** (C1); **the ABD×CV² cell (C6)** |
+| **C5** level shift | **Abrupt step** in `μ_z` **or** `p` at `τ`, in one period: `μ_z → μ_z·{0.5, 2.0}` **or** `p → clip(p ± 0.20, 0.03, 0.60)` | **Two** CUSUM alarms (occurrence and size, §6.3 C5); BIC prefers **step** over drift | gradual change (C1, C6) |
+| **C6** intermittency regime | **Slow drift in `p`**: `p(t) = clip( p·(1 + ψ·(t−τ)/60), 0.03, 0.60 )` for `t ≥ τ`, sustained, so that **ADI crosses `ADI* = 4.0`** (⇔ `p` crosses 0.25). **`μ_z` is untouched.** | **ADI band change** (the 2×2 cell of §15.1) + bootstrap stability; BIC prefers **drift** over step | occurrence **AUC** (C3) — a slow drift stays learnable |
+| **C7** policy mis-set | **No change to the demand DGP at all.** The simulator's safety factor is set to **60 % of the correct value** from `τ` onward. **Plus: the forecaster's fitting input is `uncensored`** (§14.3 rule 6) | Achieved-CSL gap over `W_svc = 30` | every demand-DGP statistic |
+| **C0** none | **No change at all**; policy correct | Nothing | Everything — this is the control. **Also used to measure the CUSUMs' in-control ARL** and to calibrate every "must not move" bar at **AUC ≤ 0.65** |
+
+**Mandatory generator constraints — verified at step 4 (§30), not merely intended.**
+
+| # | Constraint | Why |
+|---|---|---|
+| 1 | **C4 — ABD×CV² cell invariance.** For every injected SKU, `(CV²_before − 0.49)·(CV²_after − 0.49) > 0`. Because `CV² = 1/k`, both `k` and `k·s` must lie in the same CV² band; **if a sampled `k` cannot satisfy this, resample `k` — do not relax the constraint.** | Otherwise C4 also moves C6's statistic and the confound returns |
+| 2 | **C4 — fixed mean.** `μ_z` unchanged, so C1's mean statistic stays at control. | Keeps C1 and C4 orthogonal (mean vs dispersion) |
+| 3 | **C5 — detectability budget.** Per SKU, `Δ_actual ≥ k + h/(p_eff · W_detect)`. If not, **scale the step up until it clears, or flag the SKU as "below detection budget"** in `ground_truth.parquet`. | Revision 1's C5 injected `0.50 σ` against a required `1.33 σ` — undetectable by a factor of 2.7 |
+| 4 | **C6 — learnability guard.** `AUC(C6 series) ≥ AUC(C0 series) − 0.10`. | Guards C6 against being detected as C3 |
+| 5 | **C2 — coverage gap clears the detection threshold.** `γ` chosen per SKU so that the resulting `|ĉ − α|` exceeds `τ_cov` with margin. **Both `C2` and `C2b` panels are generated and the C2 detector is run on both.** | Direct interval injection is detectable by construction; `C2b` answers the objection *"C2 is defined as the thing the C2 detector measures"* |
+| 6 | **C7 — acceptability pre-flight.** The forecast-acceptability gate (§6.3, C7 condition 2) must pass on **≥ 80 %** of post-injection windows. | If it does not, the condition set is self-defeating and must be revised — **not** patched (§30, 4.9) |
+| 7 | **C7 — exposure.** `|U_i(t)| ≥ 20` **and** ≥ 2 unmet cycles on **≥ 80 %** of C7 windows at `W_svc = 30`. | Revision 1 required 20 periods inside a 12-period window |
+| 8 | **C1 — occurrence untouched.** `p` is not modified by C1's injection. | C1's statistic is on nonzero sizes; moving `p` would put C1 onto C6's series |
+
+**Why C4 is a dispersion change at fixed mean.** This is what makes C4 genuinely separable from C1 (mean ramp) and C5 (mean step) — three different moments/behaviours of the same series, read by three statistics that cannot trigger each other: **C1 reads `mean(e^sz)`, C4 reads `sd(e^sz)`, C5 reads the CUSUM of `e^sz`.** A pure mean shift would fail to distinguish them, and the resulting confusion matrix would say more about the injection design than about CAFR.
+
+**Why C7 has no DGP change.** C7's whole claim is that the forecast can be *fine* while service misses. If the injection also perturbed demand, the "forecast is acceptable" gate would fail and C7 could never fire. The injection must be purely in the policy. **Revision 2 adds the second half of that requirement: the *forecaster's fitting input* must also not be corrupted by the injection's own consequence — hence `fit_on = uncensored`.** Without it, C7 remained undetectable even after the window was fixed.
+
+**C6 — the declared consequence, stated not denied.** Revision 1's table claimed C6 preserves the level ("mean demand roughly preserved"). **That claim is false and is removed:** `E[y] = p·μ_z`, so changing `p` changes the mean. It does not matter, because **C1's statistic and C5's size-CUSUM are both restricted to nonzero periods**, which a change in `p` does not move. The mean-demand change is therefore invisible to every level detector — which is precisely why that series restriction is load-bearing rather than cosmetic.
+
+### 15.3 The ambiguous / multi-cause panel
+
+An additional panel where **two** injections are applied at *different* times, close together — e.g. C3 at `τ`, C2 at `τ + gap`. Ground truth is the pair.
+
+**Revision 2 — the gap.** Revision 1 proposed `gap = 6` periods, which is **shorter than every monitor horizon** (`W_short = 24`, `W_cal = 30`, `W_occ = 60`), so the "ambiguous" panel tested **mixture detection**, not ambiguity between distinguishable mechanisms. Two honest resolutions:
+
+- **(a) Restate the panel honestly as a mixture-detection panel** — the case where two mechanisms are active simultaneously and the monitor must not confidently name one. **This is cheaper and arguably the more realistic operational case.** Recommended.
+- **(b) Raise the gap to ≥ 60 periods** so that each mechanism is separately diagnosable, and the panel tests genuine ambiguity about *which* mechanism is responsible.
+
+Whichever is chosen, **name the panel accordingly in the paper** and state the gap in T1. **Do not call it ambiguous if the gap is short.**
+
+Purpose: test that **confidence drops** and **abstention rises** under genuinely ambiguous evidence. Evaluate separately from the single-cause panel; **do not fold it into the macro-F1**, or the headline attribution number becomes uninterpretable. Report: abstention rate on this panel vs on the single-cause panel.
+
+### 15.4 Panel sizes (proposed defaults, tunable)
+
+| Panel | Series | Purpose |
+|---|---|---|
+| Single-cause, per cause | **200 × 7** = 1,400 | Attribution training / validation / test |
+| No-cause control | **200** | False-positive rate; abstention calibration; **CUSUM in-control ARL** |
+| Ambiguous (two-cause) | **200** | Abstention behaviour |
+| **Total** | **1,800** | Split 60/20/20 by series, stratified |
+
+Plus a **separate held-out generation seed** (e.g. seed 42 for train/val/test, seed 43 for the robustness sweep in §22) so that the pipeline is tested on data it has never seen at any stage.
+
+### 15.5 Labelling rules
+
+The label is the injection that was applied. This is unambiguous for the single-cause panel. For C7 it is unambiguous *only because* the DGP is unchanged. **Write the labelling rule down before generating**, and store the injection parameters alongside every series (`ground_truth.parquet`, §27) so labels can be regenerated and audited.
+
+**Revision 2 additions to the label file requirement:**
+
+- Store the **cell label** (`sb_cell_init`) computed on the burn-in window only, not a class derived from the full series (§27).
+- Store the **detection-budget flag** per SKU per cause (constraint 3 above), so that the budget-restricted recall of §29.3 can be computed without re-deriving it.
+- Store the **`C2` / `C2b` marker** so the detector's behaviour on each can be reported separately.
+
+### 15.6 Simulator requirements (M5)
+
+- **Periodic review, order-up-to `(S, S)`.** Lead time `L` (default **L = 2** periods; swept in E6).
+- Protection interval `R = L + 1`. Order placed at the end of `t`, arrives at the start of `t + L`.
+- **Order-up-to level (Revision 2 — corrected):**
+
+  ```
+  S_{i,t}  =  Q̂_α(i, t)
+
+  where Q̂_α(i,t) is the empirical α-quantile of the R-period aggregate demand, R = L + 1.
+  Equivalently, letting F̂ be the empirical CDF of ( A^{agg}_{i,t} − R·μ̂_{i,t} ) over the
+  trailing window:
+
+      S_{i,t}  =  R·μ̂_{i,t}  +  F̂⁻¹(α)
+  ```
+
+  Under the C7 controller (§7.1) the quantile level is the controller's state: `S_{i,t} = Q̂_{α_t}(i,t)`.
+
+  **Why this replaces `S = R·μ̂ + z·σ̂`.** Revision 1 estimated `σ̂` from **per-period** forecast errors but applied it to the **`R`-period** protection interval. Under independence the protection-interval sd is `σ_R ≈ √R · σ_period`, so for the default `R = 3` the safety-stock term was understated by `(√3 − 1)/√3 = 42.3 %`. **Every arm would have achieved a CSL well below target for a reason with nothing to do with any hypothesis** — and the sanity test (§28.6) would have failed on that alone. The spec already defines the correct object and did not use it: §6.1 defines `A^{agg}` and `Q̂_α`, and §6.3's C2 uses `Q̂_α` correctly — §15.6 was the one place that reverted to a per-period sd.
+
+  **The Gaussian `z` is dropped even when `σ̂` is correct**, because intermittent-demand errors are right-skewed. Section 15.6's own insistence on the empirical distribution is honoured by using an empirical quantile — which is also what makes §7.1's controller rewrite necessary rather than cosmetic.
+
+  **The empirical quantile needs a sample.** Floor the available quantile at `α_max = min(0.999, 1 − 1/(n+1))` where `n` is the number of nonzero cycles available — the same bound the controller uses (§7.1).
+
+- Costs: `H` per unit-period held, `B` per unit-period backordered. **Sweep the ratio `B/H ∈ {4, 9, 19, 49}`** (corresponding to target CSLs of roughly 80/90/95/98 % under a newsvendor reading).
+- **Log both censored and true demand** (`demand_observed`, `demand_true`) and a `stockout_flag`. The policy sees only the observed series; the evaluator sees both.
+- **`fit_on` (Revision 2).** The simulator must expose the censoring structure needed by §14.3 rule 6, and the imputation must be derivable from **observables only** — it may not receive `demand_lost` or `demand_true`.
+- **Determinism:** every stochastic element seeded from `(panel_seed, sku_id, period)`. Re-running must reproduce bit-identically.
+
+### 15.7 Oracle replay (for the regret metric)
+
+Because the simulator is deterministic given state, at any decision point we can **fork** it and run every arm from the same state, producing the counterfactual cost of each action. The best of those is the **oracle action**, and `regret = cost(chosen) − cost(oracle)`.
+
+**Cost.** `9 arms × 300,000 decision points` is infeasible. **Compute the oracle on a random sample of 5,000 decision points** (stratified across causes and SKUs). Log the sampled points for reproducibility.
+
+> **OPEN DECISION OD-9 — oracle regret — ✅ RESOLVED AND FROZEN (Revision 2)**
+> **Include oracle regret, at 5,000 points**, subject to four conditions:
+>
+> 1. **Horizon ≥ `R = L + 1` periods, discounted.** **State both in the paper.** A one-period horizon flatters R0 and penalises R7 (a safety-factor change pays off over many periods), biasing the very comparison the metric was added to strengthen.
+> 2. **Identical future demand draws across arms**, asserted as an explicit requirement of the oracle — **not** assumed from the `(panel_seed, sku_id, period)` seeding rule. A naive implementation using a running RNG stream breaks this silently.
+> 3. **Stratify the 5,000 points by cause and by panel**, and log them so the sample is auditable.
+> 4. If compute blocks, **reduce to 1,000 points before dropping the metric.**
+>
+> **Rename it in the paper.** "Regret" against an oracle over a *sampled* set of decision points with a *finite* horizon is a **sampled finite-horizon regret estimate**, not regret in the online-learning sense. Saying so pre-empts an easy reviewer objection.
+
+---
+
+## 16. REAL / PUBLIC DATASET REQUIREMENTS
+
+Requirements any candidate real panel must satisfy:
+
+| Requirement | Why |
+|---|---|
+| **Licence stated and permissive** | RUF: CC-BY-4.0 ✅. RAF: none ❌ (OD-6). |
+| **≥ 1,000 distinct SKUs** | The bandit needs context diversity; the paired statistics need `n` for power. |
+| **≥ 60 periods, ideally 84+** | 24 burn-in + 60 evaluated. **Revision 2: the multi-scale monitor needs `W_occ` up to 60 usable periods — see §14.1 and §30 gate 3.5.** |
+| **Intermittent by construction** | Report the ADI / CV² distribution (table T1) **and the realised ADI range**, so the reader can locate the `ADI* = 4.0` boundary of §15.1 within it. **The Revision 1 rule "a panel that is > 70 % smooth is the wrong panel" is withdrawn** — it is vacuous, because no intermittent panel (`p ≤ 0.50`) can contain a smooth SKU at all. In its place: **a panel is unsuitable if fewer than two of the four §15.1 cells are populated**, because then the intermittency-regime stratification cannot be exercised. |
+| **Genuine zeros** | Structural zeros, not missing data. Verify: zeros should not cluster on specific calendar dates (a sign of missingness, not intermittency). |
+| **Non-negative, integer-valued** | The (S,S) policy and the Gamma size model assume it. |
+| **Documented censoring** | Either a stock-out flag exists, or you must state that censoring is present but unobserved — which materially weakens the C-guard and must be admitted as a limitation. **Revision 2: state which `fit_on` value is defensible on that panel**, since an unobserved stock-out cannot be imputed and forces `fit_on = observed` (§14.3 rule 6). |
+
+**M5 (Walmart, Kaggle).** Free with a Kaggle account. Aggregate to SKU-week. Restrict to the top-N SKUs by coverage. **Report N and why it was chosen.** M5 is *not* intermittent by nature — it must be filtered to a subset with zeros, and the filtering rule must be stated and applied identically across arms.
+
+**UCI Online Retail.** Free, no account. Aggregate transactions to SKU-week; drop cancelled orders. Produces strong intermittency. Cheapest fallback if M5 access is a problem.
+
+**Reporting requirement.** Table **T1** must give, per panel: number of SKUs, number of periods, **the realised ADI distribution and the ADI-band × CV²-band cell counts**, mean demand, zero fraction, and censoring rate (if known). Without T1, no reader can judge whether the panels are suitable.
+
+---
+
+## 17. FORECASTING METRICS
+
+| Metric | Role | Note |
+|---|---|---|
+| **MASEII** | **Primary** accuracy metric | Accounts for occurrence misclassification. Standard MASE explodes on intermittent series because the naive-forecast denominator can approach zero — MASEII is the appropriate variant. |
+| **MASE** | Secondary | Report for comparability, with the denominator caveat stated. |
+| **RMSSE** | Secondary; used by C7's acceptability gate and by arm (c)'s selection margin | Scale-free; better behaved than MASE on sparse series. **No longer C4's statistic** — see §6.3, C4. |
+| **Bias** (mean error, signed) | Diagnostic; drives C1 | Report separately for occurrence and size components. |
+| **Size-error dispersion** `sd(e^sz)` | Diagnostic; drives C4 (Revision 2) | **Mean-invariant**, so it cannot fire on a C1 or C5 series. |
+| **AUC-ROC on occurrence** | Diagnostic; drives C3 | `P(ẑ_u > ẑ_v | δ_u = 1, δ_v = 0)`. |
+| **BDD** (Bias-Direction Diagnostic) | Diagnostic | Distinguishes systematic from random bias. |
+| **Interval coverage** | Diagnostic; drives C2 | Nominal vs empirical, **measured against the reported interval `Q̃_α`** (§6.3, C2). |
+| **Interval width (sharpness)** | Diagnostic | Coverage without width is meaningless — a 0–∞ interval always covers. **Always report the two together.** |
+
+> **OPEN DECISION OD-8 — metric definitions.** *(still open — Himanshi's task)*
+> File `08` §A3 lists MASE, GMAE, MASEII, SPEC, AUC-ROC, PIS, NOS and BDD, but does not pin their formulas.
+> **Recommendation:** adopt the definitions used in **arXiv `2609.13840`** wherever it defines them, so our numbers are directly comparable to the benchmark our related-work section leans on. Where the benchmark is silent, use the original Syntetos–Boylan / Kourentzes definitions and cite them. **Himanshi: obtain the benchmark's metric code or its exact formulas before implementing, and record the source of every formula in a comment.**
+> Do **not** silently use `sklearn.metrics` defaults for any scaled error — the defaults are wrong for intermittent demand.
+> **Revision 2 scope note:** the **macro-F1 denominator is no longer part of OD-8** — it is fixed by §19. OD-8 now covers only the forecast-error metrics listed above.
+
+**Metric discipline.** Forecast metrics are **diagnostics, not the objective**. The paper's claim is about inventory cost and service. Forecast metrics appear in tables T2 and in the attribution diagnostics; they never decide which arm "wins".
+
+---
+
+## 18. INVENTORY METRICS
+
+| Metric | Definition |
+|---|---|
+| **Achieved CSL** (α-service level) | Fraction of review cycles with no stock-out. **The primary service metric.** |
+| **Fill rate β** | Fraction of demand units met from stock. Distinct from CSL and often diverges under intermittency — report both. |
+| **Average on-hand inventory** | Units, and value (units × unit cost). |
+| **Average backorders** | Units per period. |
+| **Total cost** | `H · avg on-hand + B · avg backorders` (+ ordering cost if the model includes one — state whether it does). **The primary cost metric.** |
+| **PIS** (Periods In Stock) | Orthogonal to MAD/MSE (file `08` §A3) — carries service information that accuracy metrics do not. |
+| **NOS** (Number Of Shortages) | Count of shortage periods. |
+| **Stock-out periods** | Count, and the censoring rate it implies. |
+
+**Sign convention (Revision 2 — state once, use everywhere).** For any two arms `X` and `Y`, the reported difference is **`cost(X) − cost(Y)`**: *positive means X is worse*. So **`(c) − (f) > 0` means (f) is better**, and **`(f) − A4 > 0` means (f) is better.** Write this convention once in the methods section and apply it without exception in §19, §29, T3 and T5. Revision 1 stated the (c)−(f) difference but not the convention, leaving the direction of every H1′ number ambiguous.
+
+**Reporting convention.** Report the frontier, not a single point: for each arm, the (cost, achieved CSL) locus traced out by sweeping the target α and the cost ratio `B/H`. A single (cost, CSL) pair per arm is not interpretable, because arms can be compared at different operating points and the comparison is then meaningless.
+
+---
+
+## 19. CAFR-SPECIFIC METRICS
+
+These are the metrics that only this design produces. They are what makes the paper a contribution rather than a benchmark.
+
+| Metric | Definition | Target |
+|---|---|---|
+| **Attribution macro-F1** | Per-cause precision / recall / F1 on the labelled panel, macro-averaged **over the seven real causes C1–C7 ONLY** | ≥ 0.70 (pre-registered, §29) |
+| **Minimum per-class F1** | The worst of the seven per-cause F1 values | **≥ 0.40**, and always reported next to the macro average |
+| **Attribution confusion matrix** | **7×7** for the headline (C1–C7). The **C0** column/row and the **ambiguous** panel are reported **separately** | Report in full, including the expected C1/C4/C5 block |
+| **Abstention rate** | Fraction of decision points choosing R0 | Report; **no target** — it is a design outcome |
+| **Abstention precision** | Of the abstentions, the fraction on genuinely no-cause / ambiguous series | The metric that shows abstention is *earned*, not blanket |
+| **False-positive rate** | On the C0 control panel, the fraction of periods where a cause fires | ≤ 10 % — a **design target `τ_conf` is tuned to** (§6.4), reported as such |
+| **Ambiguous-panel abstention rate** | Abstention rate on the ambiguous panel | Report; compare against the single-cause panel (§15.3) |
+| **Remedy-hit rate** | Fraction of decisions where the chosen remedy was the ground-truth-matched one | Report |
+| **Policy–table agreement** | Agreement between the learned policy's choice and the fixed table's choice | Report for **(f), (f′) and A4** — this one number characterises the whole RQ2 result |
+| **Non-forecast action share** | Fraction of applied actions that were R2, R7 or R0 | Directly answers RQ3 |
+| **Model churn** `χ^model` | §11.1, **excluding forced-exploration decisions** | The equal-churn constraint applies here |
+| **Action churn** `χ^action` | §11.1, same exclusion | Report for **(f), (f′) and A4** so a reader can verify A4's schedule matched (f)'s |
+| **Mean periods between switches** | Plus the full inter-switch **distribution** | Report |
+| **Oracle regret** | `cost(chosen) − cost(oracle)` at sampled decision points (OD-9) | Report distribution + mean |
+
+> **Headline denominator (Revision 2 — the correction).** **C0 and the ambiguous panel are excluded from the macro-F1.** Revision 1 described the metric as computed over a *"9×9 (7 causes + C0 + ambiguous)"* matrix and set *"macro-F1 ≥ 0.70"* with no stated denominator. That has a perverse incentive: a detector that abstains on **everything** scores a perfect C0 F1, and macro-averaging weights C0 equally with each real cause — so the headline metric would reward the exact failure §8's abstention machinery exists to prevent. Macro-F1 also lets one collapsed class hide behind a good average.
+>
+> **Corrected:**
+> ```
+> HEADLINE:   macro-F1 over the SEVEN REAL CAUSES ONLY (C1…C7).   C0 and ambiguous are EXCLUDED.
+> REPORTED ALONGSIDE, never folded in:
+>     • C0 control panel   →  false-positive rate  and  abstention precision
+>     • ambiguous panel    →  abstention rate (§15.3)
+>     • min per-class F1   →  a headline companion number
+> ```
+> The headline number now measures exactly what RQ1 asks — can the seven mechanisms be told apart — with no reward for abstention and no hiding place for a collapsed class.
+
+**The RQ3 decomposition, made explicit.** Attribute each period's cost difference (CAFR vs arm (c)) to the action type that was active. The result is a stacked decomposition: how much of the gain came from forecast-model remedies (R3, R4, R5, R6) versus non-forecast remedies (R2, R7, R0). **This is the paper's most quotable result** and it is where the "non-forecast actions in the action space" claim earns its place.
+
+---
+
+## 20. EXACT EXPERIMENTS
+
+| ID | Experiment | Data | Arms | Output |
+|---|---|---|---|---|
+| **E1** | **Attribution validity.** Does CAFR identify the injected cause? | Labelled panel (test split) | M2 alone | Confusion matrix, per-cause P/R/F1, abstention behaviour (P3, P4, T4) |
+| **E2** | **Forecast quality.** All arms, forecast metrics | RUF + M5 | (a)–(h), (f′), **A4** | T2 forecast block |
+| **E3** | **Operational performance.** All arms, cost–service frontier | RUF + M5 | (a)–(h), (f′), **A4** | **P1** (headline), T2 inventory block |
+| **E4** | **★ THE HEADLINE.** (f) vs (c) at matched churn — **H1**, and **(f) vs A4** at matched churn — **H1′** | RUF + M5 (test split) | (c), (f), **A4** | T3, P1, P2 — paired stats + bootstrap CI, **three pairwise comparisons** |
+| **E5** | **Cross-panel transfer.** Fit the policy on RUF, evaluate on M5, and vice versa | RUF ↔ M5 | (f) | Transfer table; tests whether the learned mapping is panel-specific |
+| **E6** | **Sensitivity.** One-factor-at-a-time sweeps over `B/H`, target α, lead time `L`, dwell time `d`, confidence threshold `τ_conf`, controller gain κ, **forgetting parameter γ**, **CUSUM `k`/`h`** | RUF | (a), (c), (f), (g), **A4** | P8 heatmaps |
+| **E7** | **Oracle regret.** Sampled counterfactual replay | RUF | (a), (c), (e), (f), (g), (h) | P6 |
+
+**E4 is the paper.** If time is short, everything else can be reduced — E4 must be run in full, on both panels, with both churn-matching methods, **and with A4 included**.
+
+**E6 sweep ranges (defaults).** `B/H ∈ {4, 9, 19, 49}`; `α ∈ {0.80, 0.90, 0.95}`; `L ∈ {1, 2, 4}`; `d ∈ {1, 3, 5, ∞}`; `τ_conf ∈ {0.2, 0.35, 0.5}`; `κ ∈ {0.25, 0.5, 1.0, 2.0}`; `γ ∈ {0.95, 0.99, 1.0}` (forgetting); `k ∈ {0.15, 0.25, 0.35}`, `h ∈ {3, 4, 5}` (CUSUM — perturbed only, and a perturbation that breaks the detectability budget invalidates the panel, §14.2).
+
+> **Revision 2 — E6 is one-factor-at-a-time, not a full factorial.** Seven factors at these levels give **1,728 cells** — 3,456 runs at two panels, which is not a sweep, it is a compute plan that will not be executed. Sweep **one factor at a time** with the others at their frozen defaults, and say so explicitly in the methods section. If a specific interaction is of interest, run that pair as a named two-factor study.
+
+---
+
+## 21. EXACT ABLATION STUDIES
+
+**Revision 2 reorders this table: A4 comes first.** It is no longer an ablation in the ordinary sense — it is the **co-primary comparator for hypothesis H1′** (§29.1) and a **required arm** in §12. It is retained in this table because its wiring is the same as an ablation's.
+
+| ID | Ablation / comparator | Removes | Isolates | Expected reading (a hypothesis, not a result) |
+|---|---|---|---|---|
+| **A4** | **★ REQUIRED COMPARATOR — bandit with attribution features removed from the context** (§9.2). Same action space R0–R7, same reward, **same action schedule**, same forgetting mechanism; context is `x^inv` only | The attribution's information | **The value of attribution given a bandit — hypothesis H1′** | **If (f) ≈ A4, attribution is decorative** and the contribution is the reward signal and the action space. **§29.4 pre-commits the paper to saying exactly that.** Run this and A5 before anything else in this table. |
+| **A5** | **★ Same action space, accuracy reward**: bandit over R0–R7, but **`r_t = −|e_t| / σ_{e,i}`** with the OD-3 σ-floor (`σ_{e,i} ← max(σ_{e,i}, 0.05·ē_i)`) instead of cost/service | The **reward signal** | **§9.3 — the reward is the contribution** | **The direct empirical comparison against PtC's design philosophy, inside our own action space.** If A5 ≈ (f), the reward claim fails. If A5 < (f), the paper has its cleanest result. |
+| **A1** | Arm **(g)** — fixed hand-written remedy table | The learned mapping (M4 becomes deterministic) | **RQ2 — hypothesis H1″** | If (g) ≈ (f), the learning adds nothing and the contribution is the attribution table alone. **Still publishable** (file `10` §6). |
+| **A2** | Arm **(h)** — no no-action option | R0 | **Churn control by design** | Churn must rise and the frontier must worsen. If it does not, R0 is not doing work and the churn-control claim is unsupported. |
+| **A3** | Attribution only, no bandit | M4 entirely — always apply the attributed cause's remedy | The value of *selection* over *attribution* | |
+| **A6a** | **Censoring guard removed — statistical half.** Censored periods are left in the bias / CUSUM / size-error statistics | The C-guard's protection of the *statistics* | The censoring handling in the monitor | Expect C1/C5 false positives to rise and C7 to be systematically missed. |
+| **A6b** | **Censoring guard removed — fitting-input half.** `forecast.fit_on = observed` (§14.3 rule 6) | The guard's protection of the *forecaster's training input* | The policy→forecaster feedback loop (§6.2) | Expect the loop to degrade the forecast, raise false-positive attribution across causes, and destroy C7's acceptability gate. **Report side by side with A6a and with the censoring-loop sensitivity diagnostic (§29.3).** |
+| **A7** | Dwell time `d ∈ {1, 3, 5, ∞}` | The dwell constraint | The *threshold* form of churn control (vs A2's *design* form) | |
+
+> **A5 and A4 are the two most important rows in this table.** A5 converts the project's central contrast — operational reward vs accuracy reward — from an argument into a measurement, using the same action space and the same data. A4 does the same for the attribution itself. **Build both early**; both are cheap once the bandit exists.
+
+**Why A6 is split (Revision 2).** Revision 1's A6 removed "the C-guard" as one thing. The guard has **two independent halves** with different mechanisms and different expected effects: the statistical half (which keeps censored periods out of the bias/CUSUM/size statistics) and the fitting-input half (which keeps the censored demand out of the forecaster's training data). Conflating them would attribute the whole feedback loop's effect to the statistical guard, which covers only part of it. **A6a and A6b must be reported separately.**
+
+**Report all ablations, including null results.** An ablation table where nothing differs is a finding about the design, and hiding it is the fastest route to a rejection.
+
+---
+
+## 22. STATISTICAL SIGNIFICANCE / ROBUSTNESS TESTING
+
+### 22.1 Primary tests
+
+| Comparison | Test | Notes |
+|---|---|---|
+| **(f) vs (c)** at matched churn, per SKU | **Wilcoxon signed-rank** on paired cost differences | Non-parametric; cost distributions are heavily skewed and non-normal |
+| **(f) vs A4** at matched churn, per SKU | Same | **H1′ — the co-primary comparison** |
+| **(f) vs (g)** at matched churn, per SKU | Same | H1″ |
+| Any of the above | **Paired t-test** | Report as a cross-check; if the two disagree, trust Wilcoxon and say so |
+| Frontier dominance | Bootstrap over SKUs (10,000 resamples), CI on the cost difference at each α | Cluster the bootstrap by SKU — resampling periods within a SKU would understate the variance |
+| E1 attribution | Per-cause precision/recall with **Wilson** intervals | Wilson, not normal-approximation, for proportions near 0 or 1 |
+
+> **Revision 2 — cluster the bootstrap by generator parameter cell as well as by SKU.** On the synthetic panel, SKUs sharing a `(p, μ_z, k)` draw are not independent: they were generated from the same parameter cell. Clustering by SKU alone would understate the variance across the panel. **Report the bootstrap clustered by SKU, and repeat it clustered by parameter cell, and state both.** If the two disagree, the parameter-cell clustering is the conservative one and is the one to report.
+
+### 22.2 Multiplicity
+
+Many arm-pairs × many metrics are compared. **Apply Holm–Bonferroni** across the primary arm-pair family — the (f)-vs-everything comparisons, **which now includes (f)–A4 and (f)–(g) as primary and not merely ablative** — at family-wise α = 0.05. Ablations A1, A2, A3, A6a, A6b, A7 are a separate family. State the family definition explicitly — an undefined family is a p-hacking vector.
+
+### 22.3 The power problem — state it openly
+
+With 5,000 SKUs, **statistical significance is nearly free**: a 0.1 % cost difference will be "significant". Therefore:
+
+- **Effect size and CI are the primary report.** `p`-values are secondary.
+- Report the **paired mean and median difference with a 95 % bootstrap CI**, in cost units and in percent.
+- Report the **fraction of SKUs on which (f) beats (c)** (and (f) beats A4) — a distributional, interpretable statistic.
+- **Region of practical equivalence (ROPE): differences below 2 % are treated as "no practical difference" regardless of `p`.** **Revision 2 unifies the threshold on 2 %** — Revision 1 used 1 % in §22.3 and 2 % in §29.1 criterion 2, which is an internal contradiction. **2 % everywhere.**
+
+### 22.4 Robustness
+
+1. **Seed sweep.** Regenerate the synthetic panel and the simulator under **5 seeds**; report the headline result as mean ± sd across seeds. A conclusion that holds under one seed only is not a conclusion.
+2. **Panel leave-one-out.** Re-run E4 dropping each panel in turn (RUF-only, M5-only) — is the conclusion panel-specific?
+3. **Cause leave-one-out.** Re-run E4 with each cause's series removed in turn. If the whole result rests on C7 alone, the paper must say so (it may still be a good finding — "the gain is mostly from non-forecast remedies" is RQ3's answer).
+4. **Threshold perturbation.** Perturb every frozen threshold by ±20 % and re-run E4. Report the sensitivity. A result that requires a precisely tuned threshold is fragile and must be described as such. **Exception: the CUSUM `k`/`h` perturbation is bounded by the detectability budget (§14.2)** — a perturbation that breaks the budget invalidates the panel, so re-verify gate 4.6 or regenerate.
+5. **Held-out generation seed.** Test on panels from seed 43, never seen during development.
+6. **Negative control.** Arm (c) vs arm (c) with different random seeds should show a null difference. If it does not, the harness has a bug. **Run this before trusting any positive result.**
+
+**Mandatory diagnostics to report (Revision 2 — added to the reporting list).** Each of these is a number the paper reports. Each was added because the audit found the corresponding quantity was unmeasured and load-bearing:
+
+| Diagnostic | What it answers |
+|---|---|
+| **Censoring-loop sensitivity** — % of windows where the attributed cause differs between `fit_on = observed` and `uncensored` | How much does the policy→forecaster loop change the diagnosis? (§14.3 rule 6) |
+| **Detection-delay budget** — per cause, the calendar delay `D_cal` as a function of `p` | Which causes are detectable at which intermittency levels? (§6.3 C5) |
+| **Priority-order sensitivity** — macro-F1 under a shuffled priority order | Is attribution measuring the detectors, or the ordering? (§6.4) |
+| **In-control ARL of each CUSUM**, measured on C0 | Is the false-alarm rate acceptable? (§6.3 C5) |
+| **Exploration fraction per arm** | Is any arm's scored window disproportionately exploratory? (§9.4) |
+| **Policy–table agreement** for (f), (f′) and A4 | Does the learned policy respect the attribution? (§9.2) |
+| **Realised churn distributions** (not just means) for **(f), (f′) and A4** | Did A4's action schedule match (f)'s? (§9.2 constraint 3) |
+
+---
+
+## 23. REQUIRED PLOTS
+
+Every plot needs error bars or a CI band where a mean is shown. Every figure must be reproducible from a single config.
+
+| ID | Plot | Type | Why it is required |
+|---|---|---|---|
+| **P1** | **Cost–service frontier**, (c) and (f) at matched churn, **A4 as a third line**, other arms as context | Line/scatter, cost on x, achieved CSL on y | **The headline figure.** If it does not show (f) weakly dominating (c), the claim fails. **The (f)-vs-A4 gap is the paper's scientific claim** |
+| **P2** | **Churn vs performance** — x = mean model switches/SKU, y = total cost, one line per arm | Line | Makes the equal-churn comparison visible rather than asserted |
+| **P3** | **Attribution confusion matrix** | Heatmap, **7×7** for the headline, row-normalised; C0 and ambiguous reported separately | E1; must show the C1/C4/C5 block honestly |
+| **P4** | Per-cause precision / recall / F1 with Wilson intervals, **plus the min per-class F1 marked** | Grouped bar | E1 |
+| **P5** | **Action usage over time** — CAFR vs the fixed table, stacked area | Stacked area | Shows whether the learned policy actually deviates from the table (RQ2) |
+| **P6** | **Oracle regret** distribution per arm | ECDF or violin | E7; the strongest credibility figure |
+| **P7** | Ablation deltas — Δcost vs full CAFR for **A4**, A5, A1–A3, A6a, A6b, A7, with CIs | Horizontal bar | §21; include the nulls. **A4 and A5 first** |
+| **P8** | Sensitivity heatmaps: `B/H × α`, and `L × d` | Two heatmaps | E6 |
+| **P9** | **Calibration plot**: nominal vs achieved coverage, per arm | Scatter with diagonal | §17; coverage and width together |
+| **P10** | **Example SKU traces** — small multiples: demand, forecast, true cause timeline, chosen action timeline, inventory level | Small multiples, 6–8 SKUs chosen to cover the causes | **Essential for reader trust.** This is the figure that convinces a reader the loop actually works; the aggregate plots never do. |
+
+**Revision 2 addition — P11 is required:**
+
+| ID | Plot | Type | Why it is required |
+|---|---|---|---|
+| **P11** | **Detection delay vs intermittency** — x = occurrence rate `p`, y = median calendar periods to detect, one line per cause, with the `W_detect` budget line drawn | Line with band | Makes §6.3's detectability budget visible and pre-empts a reviewer reading a low C5 recall as a method failure. Report it as a **descriptive property of intermittent demand**, not as a defect |
+
+---
+
+## 24. REQUIRED RESULT TABLES
+
+| ID | Table | Contents |
+|---|---|---|
+| **T1** | Dataset summary | Per panel: n SKUs, n periods, **realised ADI distribution and ADI-band × CV²-band cell counts**, mean demand, zero %, censoring rate, **the ambiguous-panel gap (§15.3)** |
+| **T2** | **Main results** | Rows = arms (a)–(h), (f′), **A4**; columns = every metric in §17–§18; cells = mean [95 % CI]. Split into a forecast block and an inventory block |
+| **T3** | **★ Equal-churn head-to-head** | **Three pairwise blocks: (c) vs (f) [H1], (f) vs A4 [H1′], (f) vs (g) [H1″]**. For each: realised churn per arm, paired mean/median cost difference (**sign convention per §18**), bootstrap CI, Wilcoxon p, Holm-adjusted p, % SKUs where the first arm wins. One set of rows per panel |
+| **T4** | Attribution performance | Per cause: precision, recall, F1, support, with Wilson intervals; plus **macro-F1 over C1–C7, the min per-class F1**, and the abstention statistics (**C0 and ambiguous reported separately**) |
+| **T5** | Ablations | **A4, A5**, A1–A3, **A6a, A6b**, A7: Δcost, ΔCSL, Δchurn, CI, verdict |
+| **T6** | Related-work distinction | The table from §3.1, expanded to a full page in Related Work |
+| **T7** | Hyperparameters | Every frozen value, its tuning range, and the split on which it was tuned. **Must include `fit_on`, the forgetting mechanism and its parameter, `k`/`h` per CUSUM, and all eight monitor horizons** |
+| **T8** | Reproducibility / runtime | Per experiment: wall-clock, hardware, seed, config hash |
+
+**T3 is the paper's result.** T2 supports it; T5 qualifies it. **T3 now carries three comparisons: (c)–(f) is the precondition (H1), (f)–A4 is the scientific claim (H1′), (f)–(g) is RQ2 (H1″).**
+
+---
+
+## 25. PYTHON IMPLEMENTATION ARCHITECTURE
+
+```
+cafr/
+├── configs/                 YAML config per experiment; every run is config-driven
+│   ├── base.yaml
+│   ├── features.yaml        ★ the policy_features WHITELIST (§14.3 rule 5)
+│   ├── e4_headline.yaml
+│   └── panels/{ruf,m5,synth}.yaml
+├── data/
+│   ├── loaders/             ruf.py, m5.py, uci.py — each returns the standard long frame
+│   │                        ★ load_observed() and load_ground_truth() are SEPARATE (§14.3 rule 7)
+│   ├── synth/
+│   │   ├── generator.py     baseline process (§15.1) + the reachable 2×2 stratification
+│   │   ├── injections.py    the seven mechanisms + C0 + ambiguous (§15.2–15.3)
+│   │   ├── budget.py        ★ detectability-budget verification (§15.2 constraint 3)
+│   │   ├── impute.py        ★ lost-sales imputation for fit_on=uncensored (§14.3 rule 6)
+│   │   └── labels.py        ground-truth label emission (§15.5)
+│   └── schema.py            the I/O contracts in §27, enforced with pandera or asserts
+├── forecasters/             M0 — one class per method, common interface
+│   ├── base.py              fit(y, fit_on) -> μ̂, ẑ, σ̂ ;  predict(h) -> point, quantiles
+│   ├── croston.py, sba.py, tsb.py, msba.py, mtsb.py, ses.py
+│   └── lightgbm_global.py
+├── monitor/                 M1
+│   ├── features.py          residuals, bias, coverage, ADI, CV², TWO CUSUMs
+│   ├── inventory_obs.py     CSL, fill rate, PIS, NOS
+│   └── censoring.py         the C-guard
+├── attribution/             M2
+│   ├── rules.py             the §6 detector, one function per cause — AUDITABLE
+│   ├── priority.py          the ordering + conflict resolution + confidence
+│   └── classifier.py        optional ML refinement over the same features
+├── remedies/                M3
+│   ├── library.py           R0–R7, one class each, common interface
+│   └── policy_control.py    the C7 service-probability controller (§7.1)
+├── policy/                  M4
+│   ├── bandit.py            Thompson sampling, linear contextual, ★ with forgetting (§9.1)
+│   ├── context.py           feature assembly + train-split standardisation + ★ A4's x^inv-only view
+│   └── churn.py             dwell time, switch counting, ★ forced-exploration exclusion (§11.1)
+├── sim/                     M5
+│   ├── inventory.py         (S,S) periodic review, ★ S = Q̂_α (§15.6)
+│   ├── loop.py              the rolling-origin driver
+│   └── oracle.py            counterfactual fork for regret (§15.7)
+├── eval/
+│   ├── metrics_forecast.py  MASEII, MASE, RMSSE, bias, size dispersion, AUC, BDD
+│   ├── metrics_inventory.py CSL, fill rate, cost, PIS, NOS
+│   ├── metrics_cafr.py      §19, ★ macro-F1 over C1–C7 only
+│   ├── stats.py             Wilcoxon, bootstrap (by SKU and by parameter cell), Holm, Wilson, ROPE
+│   └── figures.py           P1–P11
+├── arms/                    one module per experiment arm (a)–(h), (f′), ★ A4
+└── cli.py                   `python -m cafr.cli run --config <yaml>`
+
+tests/                       pytest; see §28 for the mandatory ones
+notebooks/                   exploration ONLY — never a source of reported numbers
+```
+
+**Design rules.**
+
+1. **One interface per module.** `Forecaster.fit(y, fit_on)/predict`, `Remedy.apply`, `Bandit.select/update`. Every arm is a composition, not a copy-paste.
+2. **Rules before classifier.** `attribution/rules.py` is the paper's method and must be readable by a reviewer. The classifier is an optional layer on top, evaluated against the rules.
+3. **No global state.** The simulator owns the state; the policy receives a read-only view (§14.3).
+4. **Everything config-driven.** No magic numbers in code. Every threshold appears in a YAML file and in table T7.
+5. **Notebooks compute nothing reported.** Any number in the paper must come from `cafr/cli.py` with a config and a seed.
+6. **★ One feature list, one place.** Every arm builds its context from `configs/features.yaml`. No arm constructs its own feature frame — that is what makes the §14.3 rule-5 whitelist test meaningful.
+
+---
+
+## 26. REQUIRED PYTHON LIBRARIES (FREE / OPEN-SOURCE ONLY)
+
+| Library | Use | Licence |
+|---|---|---|
+| `numpy`, `pandas` | Core | BSD |
+| `scipy` | Stats, distributions, bootstrap | BSD |
+| `statsmodels` | CUSUM, BIC model comparison, tests | BSD |
+| `scikit-learn` | Classifier, AUC-ROC, calibration | BSD |
+| `lightgbm` | Global ML baseline (arm e) | MIT |
+| `statsforecast` | Croston / SBA / TSB reference implementations to validate ours | Apache-2.0 |
+| `sktime` or `neuralforecast` | Cross-checking metrics | BSD / Apache-2.0 |
+| `matplotlib`, `seaborn` | Figures P1–P11 | PSF / BSD |
+| `pyyaml` | Configs | MIT |
+| `joblib` | Parallelism over SKUs | BSD |
+| `tqdm` | Progress | MIT |
+| `pyarrow` | Parquet I/O | Apache-2.0 |
+| `pandera` *(optional)* | Enforce the §27 schemas | MIT |
+| `river` *(optional)* | Online-learning / bandit cross-checks | BSD |
+| `pytest` | Tests | MIT |
+
+**Explicitly excluded:** anything requiring a paid licence, GPU, or a cloud account. **No GPU anywhere in this project.** All compute is CPU and available on a laptop — the panels are 5,000 SKUs × 84 periods, which is small.
+
+**Note on our own implementations.** Write Croston/SBA/TSB ourselves (we must modify them for remedies R3/R4), but **validate each against `statsforecast`** on a fixed series. A silently wrong Croston implementation invalidates every downstream result and is very easy to ship unnoticed.
+
+---
+
+## 27. EXPECTED INPUT / OUTPUT FILES (THE INTERFACES FOR HIMANSHI)
+
+These are contracts. All long-format, all Parquet, all with an explicit schema checked on load.
+
+### Inputs
+
+| File | Columns | Notes |
+|---|---|---|
+| `demand_panel.parquet` | `sku_id` (str), `period` (int), `demand_observed` (float), `demand_true` (float), `stockout_flag` (bool), `panel` (str) | **`demand_true` and `stockout_flag` must never reach the policy** (§14.3, rule 2) |
+| `sku_meta.parquet` | `sku_id`, `lead_time` (int), `unit_cost` (float), `holding_rate` (float), **`adi_init` (float), `cv2_init` (float), `sb_cell_init` (str)** — see below | Static per-SKU attributes |
+| `ground_truth.parquet` | `sku_id`, `period`, `true_cause` (C0–C7/AMB), `cause_active` (bool), `injection_param` (JSON), **`detection_budget_flag` (bool)**, **`c2_variant` (str: `direct`/`C2b`/—)**, **`panel_gap` (int)** | **Synthetic panels only.** Absent for RUF/M5. **⚠️ Every column here except none — all of them — is ground truth and is never reachable by the policy.** `cause_active` and `injection_param` are exactly the two columns that Revision 1's name blacklist missed |
+| `config.yaml` | — | All thresholds, sweeps, seeds |
+| **`configs/features.yaml`** | the `policy_features` **whitelist** | **Revision 2.** The declared feature set. The no-look-ahead test asserts set equality against it (§14.3 rule 5) |
+
+> **`sku_meta.parquet` schema change (Revision 2).** Revision 1 stored `class_adi` (str) and `class_cv2` (str) as static per-SKU attributes and **never stated the window over which they were computed.** Computed over the full series, they leak the future into every decision — and on the synthetic panel, which is the panel carrying ground-truth labels, a class computed over the full series reflects the **post-injection** regime. That is a **direct ground-truth leak into the feature vector**, worse than a look-ahead because it hands the detector the answer.
+>
+> **Replaced by:**
+> ```
+> adi_init   (float)  — ADI computed on the BURN-IN window only:  t ∈ [0, W_burn)
+> cv2_init   (float)  — CV² computed on the BURN-IN window only
+> sb_cell_init (str)  — the ADI-band × CV²-band cell of (adi_init, cv2_init), using the
+>                       reachable bands of §15.1
+> ```
+> **Mandatory assertion (unit test):** recompute `adi_init` / `cv2_init` from the burn-in window and assert equality with the stored values (exact for the string; within 1e-9 relative for the floats). The cell is a *joint* function of ADI and CV², which two independent string columns could not represent consistently — one cell field plus the two numeric inputs removes that whole class of error.
+
+### Outputs
+
+| File | Columns | Consumed by |
+|---|---|---|
+| `forecasts.parquet` | `sku_id`, `period`, `arm`, `method`, `point`, `q_lo`, `q_hi`, `alpha`, **`fit_on`** | E2, P9 |
+| `actions.parquet` | `sku_id`, `period`, `arm`, `attributed_cause`, `confidence`, `remedy`, `chosen_by` (`rule`/`bandit`/`forced`), `exploratory` (bool), `switched` (bool), `dwell_override` (bool), **`context_block` (`full`/`inv_only`)** | E1, E3, P5, §11 |
+| `inventory_log.parquet` | `sku_id`, `period`, `arm`, `on_hand`, `backorders`, `order_qty`, `demand_met`, `demand_lost`, `csl_period`, `fill_rate_period`, `cost_period`, `pis`, `nos`, **`s_level`**, **`alpha_t`** | E3, E4 |
+| `run_metrics.json` | Per (arm, panel, seed): every metric in §17–§19, with CIs | All tables |
+| `attribution_report.json` | Confusion matrix (**7×7 headline**), per-cause P/R/F1, min per-class F1, abstention stats, FP rate, **C0 and ambiguous reported separately**, **priority-order sensitivity** | T4, P3, P4 |
+| `churn_report.json` | Per (arm, SKU): `χ^model`, `χ^action`, switches, inter-switch intervals, **exploration fraction**, **forced decisions excluded** | §11, T3 |
+| `diagnostics.json` | **Revision 2.** The seven mandatory diagnostics of §22.4 | §22.4, §29.3 |
+| `oracle_regret.parquet` | `sku_id`, `period`, `arm`, `cost`, `oracle_cost`, `oracle_arm`, `regret`, **`horizon`**, **`discount`** | P6 |
+| `figures/` | P1–**P11** as PDF + PNG at 300 dpi | The paper |
+| `tables/` | T1–T8 as CSV + LaTeX | The paper |
+
+**Schema enforcement.** `cafr/data/schema.py` validates every file on read and write; a run that produces a frame violating the contract **must fail loudly**, not silently produce a wrong number.
+
+---
+
+## 28. REPRODUCIBILITY REQUIREMENTS
+
+1. **Single entry point.** `python -m cafr.cli run --config configs/<exp>.yaml --seed <n>` reproduces every reported number.
+2. **Pinned dependencies.** `requirements.txt` with exact versions, plus a committed `pip freeze` from the machine that produced the results.
+3. **Seeded everywhere.** Numpy, Python `random`, LightGBM, the simulator, the bandit, the bootstrap. All seeds derived from one root seed so a single change propagates.
+4. **Determinism test.** Running the same config twice must produce byte-identical `run_metrics.json`. **Make this a pytest test.**
+5. **Config + results travel together.** Every results directory contains the exact YAML and the git commit hash that produced it.
+6. **Mandatory tests (Revision 2 — the list is updated; the numbers below are the §30 gate numbers):**
+   - **No-look-ahead test** — **the policy's input frame's column set is EXACTLY EQUAL to the declared `policy_features` whitelist: no extra columns, no missing ones** (§14.3, rule 5). The `*_true*` / `*_cause*` blacklist is retained as a **redundant second test**; it is no longer the primary one, because it missed `cause_active` and `injection_param`.
+   - **Determinism test** — same config twice, identical output.
+   - **Forecaster validation test** — our Croston/SBA/TSB match `statsforecast` within tolerance on a fixed series.
+   - **Simulator sanity test — three parts (§28.6 below).** **This test must pass before any arm result is believed.**
+   - **`fit_on` consistency test** — every arm in a run reads the same `fit_on` value; the imputation function's signature does not accept `demand_lost` or `demand_true`.
+   - **Forgetting-mechanism consistency test** — (f), (f′) and A4 use the same forgetting mechanism and parameter value.
+   - **A5 reward-scale test** — A5's reward is `−|e_t|/σ_{e,i}` with the OD-3 σ-floor, i.e. the same standardisation as (f)'s.
+   - **Negative control** (§22.4, item 6) — arm (c) vs itself, different seeds → null difference.
+   - **Schema test** — every I/O frame conforms to §27.
+7. **Environment record.** Python version, OS, CPU, package versions, wall-clock per experiment (table T8).
+8. **Data provenance.** The exact download URL and SHA-256 of every dataset, recorded in `DATA.md`. **Verify the licence text is present before use.**
+9. **No notebook-sourced numbers** (§25, rule 5).
+
+### 28.6 The simulator sanity test (rewritten in Revision 2)
+
+**Revision 1 specified:** *"with a **known-perfect forecaster** and a correctly-set policy, achieved CSL matches the target within Monte-Carlo error."*
+
+**Why that cannot pass.** A **zero-error** forecaster has `σ̂ = 0`, hence safety stock `= 0`, hence `S = R·μ̂`. Demand exceeds the mean in roughly half of all cycles, so achieved CSL ≈ **0.50** against a target of 0.80–0.95. **The test fails by construction**, and because §30 makes it blocking, the project would stop at step 1 for a reason that is not real. The error is in the **idealisation**: "perfect" was read as "zero error", when the property the test needs is **"knows the true predictive distribution"**.
+
+**Corrected — a three-part test:**
+
+```
+(i)  POSITIVE — DGP-aware oracle forecaster
+     A forecaster that supplies the TRUE predictive distribution of R-period aggregate demand
+     (NOT a zero-error point forecaster). Policy correctly set to target α.
+     ⇒ achieved CSL within ±0.02 of target, for each α ∈ {0.80, 0.90, 0.95},
+       over ≥ 500 SKUs × 200 periods.
+
+(ii) NEGATIVE — the same simulator with the safety stock set to zero (S = R·μ̂)
+     ⇒ achieved CSL ≈ 0.50 ± 0.03.
+     This half is what proves the test CAN fail. Without it the positive half is unfalsifiable.
+
+(iii) MONOTONICITY — achieved CSL is non-decreasing in α across {0.80, 0.90, 0.95}.
+```
+
+A simulator that ignored `α` entirely could pass a positive-only test at one `α` by accident; it cannot pass (ii).
+
+---
+
+## 29. WHAT CONSTITUTES SUCCESS / FAILURE OF THE RESEARCH HYPOTHESIS
+
+**Pre-register this section before running the test split** (§14.4). Write it to disk, commit it, and do not edit it afterwards.
+
+> **Sign convention (§18), used without exception below:** the reported difference between arms X and Y is **`cost(X) − cost(Y)`** — *positive means X is worse*. So `(c) − (f) > 0` means (f) is better, and `(f) − A4 > 0` means (f) is better.
+
+### 29.1 Primary hypotheses
+
+| ID | Role | Statement |
+|---|---|---|
+| **H1** | **Precondition** (necessary, not sufficient) | At matched model churn, CAFR (f) achieves a better inventory cost–service trade-off than accuracy-based adaptive selection (c). **Reported as confirmation of §1's cited benchmark (ρ = −0.555), not as the scientific claim.** |
+| **H1′** | **★ CO-PRIMARY — the scientific claim** | At matched churn, (f) — the bandit **with attribution in its context** — beats **A4** — the same bandit, the same action space R0–R7, the same reward, **the same action schedule**, with the attribution features removed from the context |
+| **H1″** | Secondary (RQ2) | At matched churn, (f) ≥ (g) — the learned mapping beats the fixed hand-written table |
+
+**H1 — SUPPORTED if all hold on the test split:**
+
+1. The paired mean total-cost difference **(c) − (f) is positive** with a **95 % bootstrap CI excluding zero** (clustered by SKU, and repeated clustered by generator parameter cell — §22.1);
+2. The **effect size is ≥ 2 %** of arm (c)'s mean cost — a difference below 2 % is reported as **"no practical difference"** (§22.3's ROPE), regardless of `p`;
+3. At **≥ 2 of the 3** swept target α ∈ {0.80, 0.90, 0.95}, (f) is better than (c); **and at no α is (c) significantly better after Holm correction**;
+4. The result survives the **seed sweep** (≥ 4 of 5 seeds in the same direction) and the **±20 % threshold perturbation** (§22.4).
+
+> **Why criterion 3 changed.** Revision 1 required (f) to be **weakly better at every** α, ANDed with four other conditions. That makes SUPPORTED very hard to reach, so a substantively real effect could be reported as FAILED — and it contradicted criterion 2, since "weakly better" admits +0.01 % while criterion 2 declares anything under 2 % no practical difference. The corrected test is **majority-of-α with no significant reversal**.
+
+**H1′ — SUPPORTED if all hold on the test split:**
+
+1. The paired mean total-cost difference **(f) − A4 is positive** with a **95 % bootstrap CI excluding zero** (clustered by SKU, and repeated clustered by generator parameter cell);
+2. The effect size is **≥ 2 %** of A4's mean cost;
+3. **(f) is better than A4 at ≥ 2 of the 3** swept target α ∈ {0.80, 0.90, 0.95}, and at **no** α is A4 significantly better after Holm correction;
+4. The result survives the **seed sweep** (≥ 4 of 5 seeds in the same direction) and the **±20 % threshold perturbation**;
+5. **Per-cause recall is reported twice** — pooled, and restricted to SKUs where `Δ_actual ≥ Δ_min` (the detectability budget of §6.3). **The budget-restricted numbers are the methodologically meaningful ones**; the pooled numbers are reported for completeness;
+6. **(f) − A4 is computed with the same forgetting mechanism on both arms** (§9.1). A difference in adaptation speed is not a difference in attribution.
+
+**FAILED** if the difference is not positive, or the CI includes zero, or the frontier reverses. **Report the failure.** A clearly-stated negative result on a well-posed question is a legitimate paper, and it is the honest outcome of a falsifiable claim.
+
+### 29.2 Secondary hypotheses
+
+| ID | Hypothesis | Supported if |
+|---|---|---|
+| **H2** (RQ1) | Mechanisms are separable from observable signals | Attribution **macro-F1 ≥ 0.70 over the seven real causes C1–C7 only** (§19), **and** the **minimum per-class F1 ≥ 0.40**, **and** false-positive rate ≤ 10 % on the C0 control panel (reported as a design target `τ_conf` is tuned to — §6.4) |
+| **H3** (RQ2) | The learned mapping beats the fixed table | (f) beats arm (g) with a positive bootstrap CI; **or**, if not, the policy–table agreement rate is reported and the result is written up as "the attribution alone carries the gain" |
+| **H4** (RQ3) | Non-forecast remedies carry a material share of the gain | The §19 decomposition attributes a share of the cost improvement to R2/R7/R0 with a bootstrap CI excluding zero. **Reported as a descriptive result** — see below |
+| **H5** | The reward signal matters | Ablation **A5** (accuracy reward, same action space, **same standardisation — §9.3 clause 2**) is **worse** than (f) with a CI excluding zero |
+
+> **H4 revised (the "≥ 25 %" target is withdrawn).** Revision 1 required "the §19 decomposition attributes **≥ 25 %** of the cost improvement to R2/R7/R0". That turns an **outcome of the data** into a **design target**: a panel that genuinely needs forecast-side repairs would "fail" H4 for a reason that is not a design failure, and there is nothing in the theory that picks 25 % over 20 % or 30 %. **H4 is now descriptive:** report the non-forecast share with a bootstrap CI and state whether the CI excludes zero. The number is a finding, not a pass/fail line.
+
+**H5 and H1′ are the two sharpest tests in the project.** H5 is the only experiment that directly measures the project's central claim about the *reward*, and it is the cleanest empirical answer to PtC's design. H1′ is the only one that directly measures the claim about the *attribution*. **Both must be run.**
+
+### 29.3 Explicitly not required for success
+
+- CAFR does not need to win on **forecast accuracy**. If it does, good; if it does not, that is *expected* and is consistent with the "accuracy ≠ service" literature. **It must not be used as evidence for H1 or H1′.**
+- CAFR does not need to win on every panel. Panel-specific results are informative (E5) and should be reported as such.
+- Attribution does not need to be perfect. ≥ 0.70 macro-F1 is the bar; the confusion structure is itself a finding.
+
+### 29.4 What would falsify the whole approach
+
+If attribution macro-F1 (over C1–C7) is **below 0.50** (worse than chance across classes), the premise fails: the mechanisms are not separable from observable signals, and **RQ1's answer is no**. That is a publishable negative finding about the limits of forecast-failure diagnosis, but it is a different paper from the one planned — say so plainly rather than reporting a degraded version of the original claim.
+
+> **★ THE PRE-COMMITMENT (Revision 2 — the single most important sentence in this section).**
+>
+> **If H1′ fails while H1 holds, the paper's contribution is the reward signal and the action space, not the attribution.** That is a publishable but different and weaker result, and **the paper must say so in exactly those words.**
+>
+> This is stated in advance, before the test split is touched, because it is the most likely negative outcome of the project and the one most tempting to explain away after the fact. Committing to it now is what distinguishes the work from a demo.
+
+---
+
+## 30. STEP-BY-STEP IMPLEMENTATION ORDER FOR HIMANSHI
+
+Each step has a **done-when** criterion. **Do not start a step before the previous one's criterion is met.**
+
+**The ordered step list runs 0 → 14** (below), with the **full gates for Steps 1–5** given in §30.1.
+
+> **★ ONE SAFE STOPPING POINT — the fixed hand-written remedy table (Step 8).**
+> File `10` §6 names **arm (g)** as the point at which a complete, honest, publishable paper exists: the attribution table + the fixed remedy table + the baselines. **That is the one safe stopping point.**
+> Revision 1 named three different stopping points (Step 3, Step 4, and Step 8), which is not a plan — it is three plans. The other two are now **degradation points**, ranked:
+> - **Degradation 1 — Step 8** (arm (g)). **The safe stopping point.** Full paper.
+> - **Degradation 2 — Step 5.** Attribution validated on the injected panel; baselines running. A **shorter methods-and-diagnosis paper** — honest, but it does not test the falsifiable claim.
+> - **Degradation 3 — Step 3.** Baselines only on real panels. **A benchmark note, not this paper.** Report it as such.
+>
+> If time runs short, **stop at Step 8 and say so.**
+
+> **★ STEP DEPENDENCY NOTE.** Steps 1 (simulator) and 2 (forecaster pool) are **independent workstreams** and can run in parallel, as can Step 4's generator (which is ours and needs no dataset). The **only** hard serialisation is: **Step 4 must complete before Step 5; Step 5 must complete before Step 6; and Step 4 must complete before Step 10** (the headline needs ground truth). Do not sit idle waiting for RUF.
+
+| # | Step | Deliverable | Done when |
+|---|---|---|---|
+| **0** | **Set up** | Repo skeleton (§25), configs (incl. `features.yaml`), pinned `requirements.txt`, local pytest | `pytest` runs; the schema module loads; the whitelist test exists and fails on an undeclared column |
+| **1** | **Inventory simulator (M5)** | Periodic-review (S,S) with lead time, costs, censoring, the corrected order-up-to, and the `fit_on` switch | **§30.1 Step 1 gates 1.1–1.7 — all pass.** |
+| **2** | **Forecaster pool (M0)** | Croston, SBA, TSB, mSBA, mTSB, SES, global LightGBM; common interface; point + quantiles; `fit_on` respected | **§30.1 Step 2 gates 2.1–2.5 — all pass.** |
+| **3** | **Baseline arms (a), (b), (c), (e)** | Runs end-to-end on RUF through the rolling-origin harness | **§30.1 Step 3 gates 3.1–3.6 — all pass.** |
+| **4** | **Labelled synthetic panel** | Generator, seven injections, C2/C2b, C0 control, ambiguous panel; `ground_truth.parquet` with budget flags | **§30.1 Step 4 gates 4.1–4.12 — all pass.** **This is the gate the Revision 1 design fails.** |
+| **5** | **Monitor (M1) + C-guard** | Multi-scale features, two CUSUMs, coverage, ADI/CV² cells, censoring guard | **§30.1 Step 5 gates 5.1–5.6 — all pass.** |
+| **6** | **Attribution (M2), rules only** | `rules.py` + priority + confidence | Confusion matrix (P3) on validation; **macro-F1 over C1–C7** and min per-class F1 reported |
+| **7** | **Remedy library (M3)** | R0–R7, incl. the service-probability controller | Each remedy measurably changes what it claims to change on a unit test (R2 moves coverage, R7 moves CSL, R1 moves bias) |
+| **8** | **Arm (g)** — fixed table, no learning | CAFR with a deterministic mapping | **★ THE SAFE STOPPING POINT. A COMPLETE, PUBLISHABLE PAPER EXISTS HERE.** Attribution table + arm (g) + baselines |
+| **9** | **Bandit (M4) + churn control** | Thompson sampling, the forgetting mechanism, dwell time, reward, staggered exploration, **and A4's `x^inv`-only context** | Arm (f) and arm A4 both run end-to-end; churn logged; the forgetting-consistency test passes |
+| **10** | **★ E4 — the headline** | (c) vs (f) [H1], **(f) vs A4 [H1′]**, (f) vs (g) [H1″], both matching methods, both panels | T3 and P1 produced; the pre-registered criteria (§29) applied |
+| **11** | **Ablations** | **A4, A5** first, then A1–A3, **A6a, A6b**, A7 | T5 produced, nulls included |
+| **12** | **E1, E5, E6, E7** | Attribution, transfer, sensitivity (one-factor-at-a-time), oracle regret | T4, P3–P8, P6, **P11** |
+| **13** | **Robustness** | Seed sweep, leave-one-out, threshold perturbation, negative control, **the seven mandatory diagnostics** | T8; the headline result restated as mean ± sd across seeds |
+| **14** | **Freeze and write** | Frozen configs, DATA.md, T1–T8, P1–P11, the pre-registration file | Every number in the paper traces to a config + seed |
+
+**Checkpoints that must not be skipped.**
+
+- **After Step 1:** if the three-part simulator sanity test does not pass, **stop and fix it.** Every subsequent number inherits its bugs — and Revision 2 showed those bugs are **silent**: a 42 % safety-stock shortfall produces plausible-looking results at the wrong service level.
+- **After Step 4:** if gates 4.3–4.12 do not pass, **STOP and revise §15.2's injection table.** Do **not** proceed to M2 and do **not** compensate by tuning detectors — that is fitting code to a broken ground truth, and it produces a confusion matrix that measures the injection design rather than CAFR.
+- **After Step 5:** the separation is now measured by gates 5.1–5.4, not by eye. If they fail, **revise §15.2 — not `attribution/rules.py`.**
+
+### 30.1 Revised gates for Steps 1–5
+
+**A step is not done until every box in its row passes.**
+
+#### Step 1 — Inventory simulator (M5)
+
+| # | Criterion | Threshold |
+|---|---|---|
+| 1.1 | Determinism: same config + seed twice | **byte-identical** `inventory_log.parquet` |
+| 1.2 | **Positive half** — DGP-aware oracle forecaster supplying the **true predictive distribution** of `R`-period aggregate demand, correctly-set policy | achieved CSL within **±0.02** of target for each `α ∈ {0.80, 0.90, 0.95}`, over ≥ 500 SKUs × 200 periods |
+| 1.3 | **Negative half** — same simulator, safety stock set to zero (`S = R·μ̂`) | achieved CSL ≈ **0.50 ± 0.03**. *This proves the test can fail.* |
+| 1.4 | **Monotonicity** — achieved CSL non-decreasing in `α` | no violations across the sweep |
+| 1.5 | Order-up-to uses the **`R`-period aggregate** quantile | `S` at `α = 0.90` exceeds `R·μ̂` by the empirical 90th percentile of `A^agg − R·μ̂` within **±2 %** |
+| 1.6 | Censoring behaves | with a deliberately under-set policy, `demand_lost > 0` and `demand_observed < demand_true` on ≥ 95 % of stock-out periods |
+| 1.7 | `fit_on` switch exists, is logged, and its imputation refuses `demand_lost` / `demand_true` | config row present; unit test on the imputation signature passes |
+
+**Do not start Step 2 on a partial pass.** Everything downstream inherits Step 1's bugs, and Revision 2's R-8 showed those bugs are **silent** — a ~42 % safety-stock shortfall produces plausible-looking results at the wrong service level.
+
+#### Step 2 — Forecaster pool (M0)
+
+| # | Criterion | Threshold |
+|---|---|---|
+| 2.1 | Croston / SBA / TSB / mSBA / mTSB / SES-on-sizes vs `statsforecast`, fixed 200-period series, fixed seed | relative error **≤ 1e-6** |
+| 2.2 | Point forecasts non-negative; quantiles monotone in `α` | no violations over the suite |
+| 2.3 | TSB's occurrence probability decays toward zero on an all-zero series | final `ẑ < 0.01` after 200 zero periods |
+| 2.4 | LightGBM deterministic | fixed seed + `n_jobs=1` (or a documented deterministic reduction); two runs byte-identical |
+| 2.5 | Every model respects `fit_on` | unit test: all arms in a run read the same value |
+
+#### Step 3 — Baselines (a), (b), (c), (e) on RUF
+
+| # | Criterion | Threshold |
+|---|---|---|
+| 3.1 | All four arms run end-to-end through the rolling-origin harness | T2's forecast block produced, no NaNs |
+| 3.2 | Arm (c) is genuinely adaptive — guards against silent degeneration to arm (a) | at margin `m = 0`, **≥ 30 % of SKUs switch at least once** |
+| 3.3 | Arm (b)'s class mapping is not degenerate | no single ADI×CV² cell contains **> 90 %** of RUF SKUs; the mapping table is printed into T7 |
+| 3.4 | **Negative control** (§22.4 item 6) | arm (c) vs itself, seeds A ≠ B → cost difference **95 % CI includes zero** |
+| 3.5 | **Panel-length check** — RUF/M5 supply the multi-scale horizons (§14.1) | `W_occ = 48` (or `60`) reachable within each panel's usable length; if not, **report C3's recall on the SKUs that fit** and record it in T1 |
+| 3.6 | `C̄_i` and `σ_{C,i}` recomputed on the corrected simulator | saved to the reward config; **before any arm is scored** (OD-3) |
+
+#### Step 4 — Labelled synthetic panel
+
+**This is the gate the Revision 1 design fails.** It is stated most fully for that reason.
+
+| # | Criterion | Threshold |
+|---|---|---|
+| 4.1 | Deterministic regeneration from seed | byte-identical `ground_truth.parquet` |
+| 4.2 | Class counts on the **reachable** scheme (§15.1) | all four **ADI-band × CV²-band** cells populated, each **≥ 20 %**; the exact split printed. *The "four SB classes" requirement is dropped — it is unreachable at `p ≤ 0.5`.* |
+| 4.3 | **Targeted separation** — for every cause C, C's targeted statistic separates C's series from C0 | **AUC ≥ 0.80** |
+| 4.4 | **Confound test — the criterion the Revision 1 design fails.** For every cause C and every statistic in its "Must NOT move" column, that statistic must **not** separate C's series from C0 | **AUC ≤ 0.65** |
+| 4.5 | Cross-cause separation: each cause's targeted statistic must not separate **other** causes' series from C0 above the same bar | **AUC ≤ 0.65** for all C′ ≠ C |
+| 4.6 | **C5 detectability budget** satisfied per SKU (§6.3 C5) | `Δ_actual ≥ k + h/(p_eff·W_detect)`; failures flagged in `ground_truth.parquet` and reported |
+| 4.7 | **C4 SB-cell invariance** (§15.2 constraint 1) | `(CV²_before − 0.49)·(CV²_after − 0.49) > 0` for every injected SKU |
+| 4.8 | **C6 learnability guard** (§15.2 constraint 4) | `AUC(C6 series) ≥ AUC(C0 series) − 0.10` |
+| 4.9 | **C7 acceptability pre-flight** (§15.2 constraint 6) | the forecast-acceptability gate passes on **≥ 80 %** of post-injection windows |
+| 4.10 | **C7 exposure** (§15.2 constraint 7) | `|U_i(t)| ≥ 20` and ≥ 2 unmet cycles on **≥ 80 %** of C7 windows at `W_svc = 30` |
+| 4.11 | **C2 coverage gap** clears the detection threshold; **C2b** variant generated (§15.2 constraint 5) | both panels present; the detector is run on both |
+| 4.12 | CUSUMs' in-control ARL measured on C0 | within the ≤ 10 % FP budget over the panel length |
+
+> **If 4.3–4.12 do not pass, STOP. Revise §15.2's injection table.** Do **not** proceed to M2 and do **not** compensate by tuning detectors — that is fitting code to a broken ground truth.
+>
+> **Gate 4.9 is a genuine gate and will not be relaxed.** It is not a tuning target and it is not something to iterate on until the experiment passes. If the C7 acceptability gate cannot pass on ≥ 80 % of post-injection windows, the **condition set in §6.3 (C7) is wrong** and is revised as a **team decision** — the honest alternative being a six-cause taxonomy with C7 reported as **not separately identifiable in this simulator**. That is a real, publishable negative finding about the limits of policy-side diagnosis, and it is a better outcome than a C7 recall number produced by a relaxed gate.
+
+#### Step 5 — M1 feature separation
+
+| # | Criterion | Threshold |
+|---|---|---|
+| 5.1 | Priority-ordered detector, per-cause **recall** on the labelled panel | **≥ 0.60** for every cause C1–C7 |
+| 5.2 | False-positive rate on the C0 control panel | **≤ 10 %** |
+| 5.3 | No cause absorbs another: no off-diagonal cell in the row-normalised confusion matrix | **≤ 40 %** |
+| 5.4 | **Priority-order sensitivity**: re-run with a shuffled priority order, report the macro-F1 difference | if **> 0.10**, attribution is measuring the ordering, not the detectors → revise §6.4 |
+| 5.5 | Output: confusion matrix (P3) and per-cause statistic distributions | produced. **"Visibly separates" is replaced by 5.1–5.4.** |
+| 5.6 | Report per-cause recall **pooled and budget-restricted** | both numbers in T3 |
+
+**Note deliberately:** 0.60 per-cause recall is *below* H2's 0.70 macro-F1 bar. That is intentional — Step 5 is a go/no-go on the **injection and the monitor**, not the final result. **Do not raise it.**
+
+**If Step 5 does not pass, STOP and revise §15.2 — not `attribution/rules.py`.**
+
+---
+
+## HANDOFF PACKAGE FOR HIMANSHI
+
+A concise checklist of exactly what to send. **Updated for Revision 2.**
+
+### A. Files to send
+
+| # | File | Why she needs it |
+|---|---|---|
+| 1 | **`11_technical_specification_rev2.md`** (this file) | **The implementation contract.** Everything below is a summary of it. **This revision supersedes `11_technical_specification.md`** |
+| 2 | **`12_methodology_audit.md`** | **The review that produced the corrections** — so she can see *why* each rule exists, and does not "simplify" one back |
+| 3 | **`13_methodology_revision_proposal.md`** | **The corrections in full**, with the mathematical derivations (the detectability budget, the √R scaling, the ADI arithmetic). Sections B, C and D are reproduced inside this file |
+| 4 | `08_final_novelty_search.md` | The analysis; §F (attribution table) and §H (arms) are load-bearing |
+| 5 | `09_round3_confirmation_search.md` | Evidence log — so she can defend the novelty claim and cite correctly |
+| 6 | `10_paper_plan_and_handoff.md` | The paper plan, citation list with DOIs, the three-student work split |
+| 7 | `DATA.md` *(to be created)* | Download URLs + SHA-256 + licence text for every dataset |
+
+**Read order: `08` → `09` → `10` → `12` → `13` → this file.** Files `12` and `13` are what make this revision make sense; a reader who skips them will find several rules arbitrary.
+
+### B. Datasets to obtain (with the licence check first)
+
+| Dataset | Action | Blocking issue |
+|---|---|---|
+| **RUF** (5,000 materials, seed 42) | Download from the arXiv `2609.13840` release | **Confirm the exact URL** — do not guess it. Also **check the usable series length** against §14.1's horizon requirement (gate 3.5) |
+| **Labelled synthetic** | Build it (Step 4). **Do not wait for RUF** — the generator is ours and Step 4 can start in parallel with Step 1 | Verify what the `2601.21844` generator actually emits (see D below). **The corrected injections (§15.2) change what must be derived** |
+| **M5 (Kaggle)** | Needs a Kaggle account | Confirm access early; UCI Online Retail is the free fallback |
+| **RAF** | **Do NOT download yet** | No stated licence. Escalate to Dr. Chawla (OD-6) |
+
+### C. Methodology specification
+
+Send **§§1–30 in full**. The parts she must read before writing any code:
+
+- **§5–§7** — taxonomy, detection maths, remedies. **This is the technical core.** *Revision 2 rewrote §6.3 (all seven detectors), §6.4 (the priority order) and §7.1 (the controller). Read the Revision 2 versions, not a remembered Revision 1.*
+- **§14** — splits, tuning discipline, **no-look-ahead rules** (§14.3). Read twice. **Rules 5, 6 and 7 are new in Revision 2.**
+- **§15** — synthetic panel design. The injection table is the ground truth. **Revision 2 rewrote §15.1, §15.2, §15.3 and §15.6 in full.**
+- **§29** — the pre-registered success criteria. **Read before Step 10, not after.** *Revision 2 rewrote §29 in full.*
+- **§30.1** — the Step 1–5 gates with numbers. **Read before writing any code at all.**
+
+### D. Open decisions she must escalate, not decide alone
+
+| ID | Question | Status | Who decides |
+|---|---|---|---|
+| **OD-1** | Six causes or seven in the contribution sentence? | **OPEN** — does not block coding (build seven) | The team / guide |
+| **OD-2** | Censoring as a cause, or guard only? | **✅ RESOLVED — guard only, plus the `fit_on` rule.** Two amendments: the guard covers the *statistics*, `fit_on = uncensored` covers the *training input*; **A6 splits into A6a / A6b** | Closed |
+| **OD-3** | Reward formulation | **✅ RESOLVED — standardised cost, with the `σ` floor** `σ_{C,i} ← max(σ_{C,i}, 0.05·C̄_i)`. Option (b) runs as a reward-robustness ablation. **A5 uses the same standardisation.** `C̄_i`, `σ_{C,i}` recomputed on the corrected simulator **before any arm is scored** | Closed |
+| **OD-4** | Free vs attribution-constrained bandit | **✅ RESOLVED — free bandit (f) as headline**, with **(f′)**, **A4** and **(g)** as required comparators. **A4 is the co-primary (H1′) and is fully specified in §9.2** — same action space, same reward, **same action schedule**, context `x^inv` only | Closed |
+| **OD-5** | What the `2601.21844` generator actually emits. If it does not emit cause labels, we derive them from the injected parameters ourselves | **OPEN — blocks Step 4, not Step 1.** **The corrected injections (§15.2) change what must be derived** | Her, and report back |
+| **OD-6** | RAF licence — use or drop | **OPEN** — does not block coding (three panels suffice) | Dr. V. K. Chawla |
+| **OD-7** | CUSUM parameters | **✅ RESOLVED — `k = 0.25`, `h = 4.0`, per sub-process.** These were **co-designed with the injection magnitudes** via the detectability budget `Δ ≥ k + h/(p_eff·W_detect)` (§6.3 C5). **They are not freely tunable** — changing them after generation requires regenerating the panel and re-checking gates 4.6 and 4.12 (§14.2) | Closed |
+| **OD-8** | Metric formula sources — align with `2609.13840` | **OPEN — blocks Step 6+, not Steps 1–5.** **Scope narrowed:** the macro-F1 denominator is now fixed by §19, so OD-8 covers only the forecast-error metrics | Her, and record the source in code comments |
+| **OD-9** | Oracle regret | **✅ RESOLVED — include, at 5,000 points**, with horizon ≥ `R` (discounted), identical future demand draws across arms, stratified sampling, and the rename to a **sampled finite-horizon regret estimate**. Reduce to 1,000 points before dropping | Closed |
+
+**There is no OD-10.** Earlier drafts promised IDs "OD-1 … OD-10"; the promise was an error. The set is OD-1 … OD-9, all defined above. **Every open ID in this table is a task, not a methodology gap — none of them blocks Step 1.**
+
+### E. Coding tasks (in order — see §30 for done-when criteria)
+
+1. Repo skeleton + schema + configs + **the `policy_features` whitelist**
+2. **Inventory simulator** (M5) — *the three-part sanity test must pass first*
+3. **Forecaster pool** (M0) — validated against `statsforecast`, `fit_on` respected
+4. Baseline arms (a), (b), (c), (e) end-to-end on RUF — *including the panel-length check*
+5. **Labelled synthetic panel** (generator + the corrected 7 injections + C2b + C0 + ambiguous) — *all twelve gates*
+6. **Monitor** (M1) + C-guard — *the separation gates, not the eye test*
+7. **Attribution** (M2) rules
+8. **Remedy library** (M3)
+9. **Arm (g)** — fixed table → **★ the safe stopping point; a publishable paper exists here**
+10. **Bandit** (M4) + churn control + forgetting + **A4's `x^inv`-only context**
+11. E4 headline [H1, H1′, H1″] + ablations **A4, A5** first, then A1–A3, A6a, A6b, A7 + E1/E5/E6/E7
+12. Robustness suite + the seven mandatory diagnostics
+13. Freeze + figures + tables
+
+### F. Expected outputs (exact files — §27)
+
+Inputs: `demand_panel.parquet`, `sku_meta.parquet` (**with `adi_init`, `cv2_init`, `sb_cell_init`**), `ground_truth.parquet`, `config.yaml`, **`configs/features.yaml`**
+
+Outputs: `forecasts.parquet`, `actions.parquet`, `inventory_log.parquet`, `run_metrics.json`, `attribution_report.json`, `churn_report.json`, **`diagnostics.json`**, `oracle_regret.parquet`, `figures/P1–P11`, `tables/T1–T8`
+
+### G. Experiment checklist
+
+- [ ] Simulator **three-part** sanity test passes (positive ±0.02, negative ≈ 0.50, monotonic in α)
+- [ ] Forecasters validated against `statsforecast`
+- [ ] Negative control: arm (c) vs itself, different seeds → null
+- [ ] **No-look-ahead test passes — exact column whitelist, not a name blacklist**
+- [ ] Determinism test passes
+- [ ] **`fit_on` consistency test passes** (all arms identical; imputation sees no ground truth)
+- [ ] **Forgetting-mechanism consistency test passes** ((f), (f′), A4 identical)
+- [ ] **A5 reward-scale test passes** (`−|e_t|/σ_{e,i}`, same σ-floor)
+- [ ] **All twelve Step-4 gates pass** — including 4.4 (confound), 4.6 (detectability budget), 4.9 (C7 pre-flight), 4.12 (CUSUM ARL)
+- [ ] M1 feature separation gates pass (5.1–5.4), including **priority-order sensitivity**
+- [ ] Attribution confusion matrix produced (E1) — **7×7 headline; C0 and ambiguous separate**
+- [ ] All 8 arms + (f′) + **A4** run on RUF and M5 (E2, E3)
+- [ ] **E4 headline run with BOTH churn-matching methods, on BOTH panels, for all THREE comparisons (c)–(f), (f)–A4, (f)–(g)**
+- [ ] **A5 (accuracy reward, same action space, same standardisation) run — the sharpest reward test**
+- [ ] **A4 (attribution removed, same schedule) run — the sharpest attribution test**
+- [ ] Ablations run, **nulls included**
+- [ ] Oracle regret computed (E7) — **with horizon ≥ R and identical draws across arms**
+- [ ] Seed sweep (5 seeds) + leave-one-out + ±20 % threshold perturbation
+- [ ] **The seven mandatory diagnostics reported** (`diagnostics.json`)
+- [ ] Pre-registration file written **before** the test-split run — **including the §29.4 pre-commitment**
+- [ ] Every DOI in `10` §2 verified against the publisher before submission
+
+### H. Three things to say to her explicitly
+
+1. **Arm (g) is the one safe stopping point** — Step 8. If time runs short, the attribution table plus the fixed remedy table plus the baselines is still a publishable, honest contribution. The learned mapping is the increment, not the whole. **Not Step 3 and not Step 4 — Step 8.**
+2. **Do not handicap arm (c).** It is the paper's comparator. If it is implemented weakly, every result is worthless.
+3. **Never report a number that came from a notebook.** Everything reported comes from `cafr/cli.py` with a config and a seed.
+
+**And one more, new in Revision 2:**
+
+4. **Do not relax the gates to make an experiment pass.** Four of them exist precisely because the Revision 1 design would have failed silently: 4.4 (the confound test), 4.6 (the detectability budget), 4.9 (the C7 pre-flight) and the three-part simulator sanity test. **If a gate fails, the specification is wrong, not the gate.** Escalate it as a team decision.
+
+---
+
+# REVISION 2 CHANGELOG
+
+Every section modified, with the change and its source in `13_methodology_revision_proposal.md`. **No results, performance numbers or validation outcomes were added anywhere in this revision.** Sections absent from this list are reproduced from Revision 1 unchanged.
+
+| § | Change | Source |
+|---|---|---|
+| **Header** | "Revision 2" status; supersedes line; read-order extended to include `12` and `13`; a REVISION 2 note stating what is unchanged (research question, taxonomy, architecture, novelty framing) and what changed | §E §0 |
+| **§0 (the "How to read" note)** | **Dangling OD IDs resolved.** The promise of "OD-1 … OD-10" is withdrawn — **there is no OD-10.** The set is stated as **OD-1 … OD-9**, all defined and all listed in Handoff §D. A note records the fix | §E §0; user requirement 8 |
+| **§1** | **Unchanged** | — |
+| **§2** | **Unchanged** | — |
+| **§3 / OD-1** | **Unchanged** — still OPEN, still a team decision; explicitly marked "unchanged in Revision 2" | §E §3 |
+| **§3.1** | **Unchanged** | — |
+| **§4** | M0 gains the `fit_on` note; M1 "CUSUM" → "two CUSUMs"; M4 gains the forgetting mechanism | §E §25, §6.3, §9.1 |
+| **§5** | **C1's definition amended** — the "present in both sub-processes" requirement removed (it would make C1 undetectable under the corrected injection); **C4's definition amended** to "dispersion … at an unchanged mean"; **C6's definition amended** to drop the 1.32 cut-off. Both amendments carry an inline † marker explaining why. **The seven cause names and their meanings are unchanged.** | Necessary consequence of R-2; flagged in the section itself |
+| **§5 / OD-2** | **Marked RESOLVED AND FROZEN** — guard only, no C8; the two-part guard (statistics + `fit_on`); **A6 splits into A6a / A6b** | §E §A (OD-2); R-10 |
+| **§6.1** | **Single `W = 12` replaced by the multi-scale horizon table** (eight named horizons with minimum-evidence rules); `N_i`, `σ_sz`, `Q̃_α`, `fit_on` added to notation | §E §6.1; R-5 |
+| **§6.2** | **"What the guard protects / does not protect" table added**; the policy→forecaster feedback loop stated openly and cross-referenced to `fit_on` and A6b | §E §6.2; R-10 |
+| **§6.3 C1** | Bias restricted to **nonzero periods**; the "both sub-processes" gate **removed** (it would make C1 undetectable); occurrence bias retained as a reported corroborating statistic; `n ≥ 8` evidence floor added | Necessary consequence of R-2 |
+| **§6.3 C2** | Coverage measured against the **reported** interval `Q̃_α`, not the fitted one; **dispersion guard (`r ≤ 1.5`) added** alongside the mean guard | §E §6.3 C2; R-2 |
+| **§6.3 C3** | Window `W_occ = 60`; guard-against-C6 stated as a generation-time constraint; "if C3 fires on C6, the generator constraint failed" | §E §6.3 C6; R-2 |
+| **§6.3 C4** | Statistic changed from the **RMSSE ratio** to the **dispersion ratio `sd(e^sz)`** — RMSSE contains the mean term and would fire on C1/C5; window `W_sz = 24` | §E §6.3 C4; R-2 |
+| **§6.3 C5** | **Single pooled CUSUM replaced by two CUSUMs** (occurrence; size on nonzero periods only), each standardised; **`k = 0.5 → 0.25`, `h = 5 → 4.0`**; the detectability budget derived and stated; empirical ARL measurement required | §E §6.3 C5; R-6, R-7 |
+| **§6.3 C6** | Boundary changed from **ADI 1.32 to `ADI* = 4.0`**, with the `E[ADI] = 1/p` derivation showing 1.32 is unreachable; window `W_class = 30` | §E §6.3 C6; R-3 |
+| **§6.3 C7** | Window `W_svc = 30`; condition 3 restated with a concrete `δ_svc = 0.10`; condition 4 restated as **≥ 20 usable periods AND ≥ 2 unmet cycles within `W_svc`**; the three Revision-1 failures documented; the section marked as a **genuine gate that will not be relaxed** | §E §6.3 C7; R-4; user requirement 13 |
+| **§6.4** | **Priority order changed: C4 now precedes C2**, with the reason (dispersion changes coverage, never the reverse) and the C2 dispersion guard as the second line of defence; priority-order sensitivity made a mandatory diagnostic | §E §6.4; R-2 |
+| **§6.4** | Abstention evidence floors updated to match the new horizons (`< 8` nonzero for C1, `< 30` periods / `< 2` unmet cycles for C7); `τ_conf` tuning discipline stated (tuned on train, reported on validation) | §E §6.4; R-5 |
+| **§7.1** | **Controller rewritten in service-probability units**: `α_t` state, `α_max = min(0.999, 1 − 1/(n_t+1))`, update `α_{t+1} = clip(α_t + κ(α* − ĉ_t), α_min, α_max)`, order-up-to `S = Q̂_{α_t}`. The Gaussian-`z` incoherence documented | §E §7.1; R-4 |
+| **§7.2** | R7's "what is new" row updated to the service-probability controller | §E §7.2 |
+| **§8** | Evidence floors updated for the new horizons (C1 `< 8`, C2 `< 30`, C3/C4 `< 10`, C7 `< 30` and `< 2` unmet cycles) | Consistency with §6.1/§6.4 |
+| **§9.1** | **Forgetting mechanism added** (three options; recommended: posterior reset on a C5 alarm), with the **hard requirement that (f), (f′) and A4 use it identically**; context vector notation `x = [x^inv, x^det]` introduced; feature names updated (`σ_sz`, dispersion ratio `r`, ABD×CV² cell) | §E §9.1; R-14; user requirement 10 |
+| **§9.2 / OD-4** | **Marked RESOLVED AND FROZEN.** Headline = free bandit (f); **three required comparators (f′), A4, (g)**; **A4 specified in full with four hard constraints**, including **same action schedule** and realised-churn reporting | §E §9.2; OD-4; user requirement 9 |
+| **§9.3 / OD-3** | **Marked RESOLVED AND FROZEN.** **Clause 1: the `σ` floor** `σ_{C,i} ← max(σ_{C,i}, 0.05·C̄_i)`. **Clause 2: A5 uses the same standardisation** `−|e_t|/σ_{e,i}` with the same floor. `C̄_i`/`σ_{C,i}` must be recomputed on the corrected simulator before scoring | §E §9.3; OD-3; R-15; user requirement 11 |
+| **§9.4** | **Burn-in replaced by staggered forced exploration** (1/9 of SKUs per period), with the alternative warm-up stated; **forced decisions excluded from churn**; per-arm exploration fraction reported | §E §9.4; R-13 |
+| **§10** | **Unchanged** | — |
+| **§11.1** | **Forced-exploration decisions excluded from every churn count**; realised churn now reported for **(f), (f′) and A4**; distributions required, not only means | §E §11; R-13 |
+| **§11.2** | Dwell override restated on "a C5 CUSUM alarm, either sub-process" | Consistency with §6.3 C5 |
+| **§11.3** | **Equal-churn machinery extended to three pairwise comparisons** (f–c, f–A4, f–g), with the (f)-vs-A4 case handled by reporting realised churn rather than imposing a constraint | §E §11; OD-4 |
+| **§12** | **A4 added as a REQUIRED arm** with its role as the co-primary comparator; arm table reordered; the four hard constraints referenced; A4's realised action frequency must be reported next to (f)'s | §E §12; R-1; user requirement 9 |
+| **§13** | **Unchanged** (OD-6 still OPEN) | — |
+| **§14.1** | Validation-tune list extended (κ, CUSUM `k`/`h`, forgetting parameter, `δ_svc`); burn-in now also computes `adi_init`/`cv2_init`/`sb_cell_init`; **the panel-length requirement and its three-step resolution added** | §E §14.1; R-5 |
+| **§14.2** | **The CUSUM parameters are not freely tunable** — the detectability budget binds them; changing them requires regenerating the panel and re-checking gates 4.6/4.12 | §E §14.2; R-7 |
+| **§14.3** | **Rule 5 replaced by an exact column whitelist** (with code), retaining the blacklist as a redundant second test; **rule 6 added (`fit_on`)** with the imputation rule and its three enforcement requirements; **rule 7 added (file-level loader separation)**. The two missed ground-truth columns named | §E §14.3; R-10, R-11, R-12; user requirement 12 (context) |
+| **§14.4** | Pre-registration content extended: the sign convention, H1/H1′/H1″, the C0-and-ambiguous exclusion, the C7-gate non-relaxation, and **the §29.4 pre-commitment** | §E §14.4; R-1 |
+| **§15.1** | **The four SB classes replaced by the reachable ADI-band × CV²-band 2×2**, with the `E[ADI] = 1/p` arithmetic showing 1.32 is unreachable; `ADI* = 4.0` justified and made a config parameter; the paper sentence drafted | §E §15.1; R-2, R-3 |
+| **§15.2** | **Injection table replaced in full** (the §B table of file `13`); **eight mandatory generator constraints** added with the numbers; C6's false "level preserved" claim removed and the reason it does not matter stated; the C1/C4/C5 orthogonality explained via mean / dispersion / CUSUM | §E §15.2 (exact §B); R-2, R-3, R-7; user requirement 2 |
+| **§15.3** | **The ambiguous-panel gap problem stated**; two honest resolutions (restate as a mixture-detection panel — recommended — or raise the gap to ≥ 60 periods); "do not call it ambiguous if the gap is short" | §E §15.3 |
+| **§15.4** | C0 panel's role extended to **CUSUM in-control ARL** | Consistency with §6.3 C5 |
+| **§15.5** | Label-file additions: the burn-in cell label, the per-SKU detection-budget flag, the C2/C2b marker | §E §15.5; R-7, R-2 |
+| **§15.6** | **Order-up-to replaced** with `S = Q̂_α` (equivalently `R·μ̂ + F̂⁻¹(α)`), with the √R ≈ 42.3 % shortfall documented; the empirical-quantile floor stated; **`fit_on` added** as a simulator requirement | §E §15.6; R-8, R-10 |
+| **§15.7 / OD-9** | **Marked RESOLVED AND FROZEN** — include at 5,000 points, with **horizon ≥ R (discounted)**, **identical future demand draws across arms**, stratified sampling, and the **rename** to a sampled finite-horizon regret estimate | §E §15.7; OD-9 |
+| **§16** | **The "> 70 % smooth" rule withdrawn as vacuous** and replaced with a cell-population rule; the ADI-range reporting requirement added; `fit_on`-defensibility requirement added | §E §16; R-3, R-10 |
+| **§17** | **Size-error dispersion added** as C4's statistic; RMSSE re-scoped to C7's gate and arm (c)'s margin; coverage now measured against the reported interval; **OD-8's scope narrowed** (the macro-F1 denominator moved to §19) | §E §17 |
+| **§18** | **The sign convention stated once and made binding** on §19, §29, T3 and T5 | §E §18; R-1 |
+| **§19** | **Macro-F1 over C1–C7 only; C0 and ambiguous excluded and reported separately; min per-class F1 ≥ 0.40 added**; the perverse-incentive argument documented; confusion matrix now 7×7 for the headline; churn and churn-related rows note the exploration exclusion; A4 added to the agreement-rate row | §E §19; R-16; user requirement 12 |
+| **§20** | A4 added to the arms of E2, E3, E4, E6; E4 restated as three comparisons (H1, H1′, H1″); **E6 declared one-factor-at-a-time** with the 1,728-cell arithmetic; forgetting and CUSUM sweep ranges added | §E §20; R-14, R-7 |
+| **§21** | **A4 moved to the top as a required comparator carrying H1′**; **A5's reward corrected to `−|e_t|/σ_{e,i}` with the σ-floor**; **A6 split into A6a and A6b** with the reason; A1 now labelled H1″ | §E §21; R-1, R-15, R-10; user requirements 9, 11 |
+| **§22.1** | **Bootstrap clustered by generator parameter cell as well as by SKU**; the (f)–A4 and (f)–(g) comparisons added as primary | §E §22.1; audit I-12 |
+| **§22.2** | The primary family now includes (f)–A4 and (f)–(g); the ablation family renumbered for A6a/A6b | §E §22.2; R-1 |
+| **§22.3** | **ROPE unified on 2 %** (Revision 1 used 1 % here and 2 % in §29 — an internal contradiction) | §E §22.3; R-1 |
+| **§22.4** | The CUSUM-perturbation exception added (the detectability budget bounds it); **the seven mandatory diagnostics table added** | §E §22.4; R-7 |
+| **§23** | **P11 added (detection delay vs intermittency)**; P1 gains the A4 line; P3 becomes 7×7 with C0/ambiguous separate; P4 gains the min per-class F1 marker; P7 reordered with A4 and A5 first | §E §23; R-7, R-16 |
+| **§24** | T1 gains the realised ADI distribution, the cell counts and the ambiguous-panel gap; T2/T3 gain A4; **T3 restructured into three pairwise blocks (H1, H1′, H1″)**; T4 restated; T5 renumbered for A6a/A6b; **T7 must record `fit_on`, the forgetting mechanism, `k`/`h`, and all eight horizons** | §E §24; R-1 |
+| **§25** | `features.yaml` added; `load_observed` / `load_ground_truth` separation marked; `budget.py` and `impute.py` added to `data/synth/`; `Forecaster.fit(y, fit_on)`; `bandit.py` gains forgetting; `context.py` gains A4's `x^inv`-only view; `churn.py` gains the exploration exclusion; `inventory.py` gains `S = Q̂_α`; `metrics_cafr.py` notes the C1–C7 denominator; `stats.py` gains parameter-cell clustering; `figures.py` → P1–P11; `arms/` gains A4; **design rule 6 added (one feature list, one place)** | §E §25 |
+| **§26** | Figures relabelled P1–P11 | Consistency with §23 |
+| **§27** | **`sku_meta` schema changed** to `adi_init` / `cv2_init` / `sb_cell_init` computed on the **burn-in window only**, with the mandatory assertion and the reason (full-series classes leaked the post-injection regime); **`ground_truth.parquet` gains `detection_budget_flag`, `c2_variant`, `panel_gap`**; **`configs/features.yaml` added as a required input**; outputs gain `fit_on`, `context_block`, `s_level`, `alpha_t`, `horizon`/`discount`, and the new **`diagnostics.json`**; figures → P1–P11 | §E §27; R-11, R-7, R-2 |
+| **§28.6** | **The simulator sanity test rewritten as a three-part test** (DGP-aware oracle positive half, zero-safety-stock negative half, monotonicity in α), with the zero-error idealisation error documented | §E §28.6; R-9 |
+| **§28.6 (mandatory tests list)** | The no-look-ahead test restated as a whitelist; **three new tests added**: `fit_on` consistency, forgetting-mechanism consistency, A5 reward scale | §E §28; R-12, R-14, R-15; user requirements 10, 11 |
+| **§29** | **Replaced in full** (the §C of file `13`): H1 demoted to a precondition, **H1′ promoted to co-primary**, H1″ added; H1 criteria 3 corrected (majority-of-α, no reversal); **H1′ criteria 1–6 written out**; H2 restated with the C1–C7 denominator and the per-class floor; **H4's "≥ 25 %" target withdrawn** and made descriptive; **§29.3 diagnostics table added**; **the §29.4 pre-commitment added** | §E §29 (exact §C); R-1, R-16; user requirements 12, 13 |
+| **§30 (intro + step table)** | **One safe stopping point named (Step 8)**, with the other two demoted to ranked degradation points; **the step-dependency note added** (Steps 1 and 2 parallel; Step 4 parallel; only 4→5→6 and 4→10 are serial); checkpoints rewritten with the gate numbers | §E §30; R-9 |
+| **§30.1 (new)** | **The full revised Step 1–5 gates** (the §D of file `13`): Step 1 gates 1.1–1.7, Step 2 gates 2.1–2.5, Step 3 gates 3.1–3.6, **Step 4 gates 4.1–4.12**, Step 5 gates 5.1–5.6; the **gate 4.9 non-relaxation clause**; "if 4.3–4.12 do not pass, STOP" | §E §30 (exact §D); user requirement 13 |
+| **Handoff A** | Read order now `08` → `09` → `10` → **`12`** → **`13`** → this file; files added | §E Handoff A |
+| **Handoff B** | RUF note gains the panel-length check | §E §14.1 |
+| **Handoff C** | The reading list now names the sections Revision 2 rewrote, so she does not rely on a remembered Revision 1 | Consistency |
+| **Handoff D** | **The dangling-ID problem fixed**; **OD-2, OD-3, OD-4, OD-7, OD-9 marked RESOLVED** with their decisions stated in one line each; **OD-7's missing row added**; every row now carries an explicit status and a "blocks what" note | §E Handoff D; OD-7; user requirement 8 |
+| **Handoff E** | Step list updated (whitelist, `fit_on`, A4's context, A4/A5 first, diagnostics) | §E Handoff E |
+| **Handoff F** | `configs/features.yaml` and `diagnostics.json` added; `sku_meta` schema note | §E Handoff F |
+| **Handoff G** | Checklist extended with all Revision 2 gates and the three new consistency tests | §E Handoff G |
+| **Handoff H** | Points 1–3 updated; **point 4 added: do not relax the gates** | §E Handoff H |
+
+**Not changed anywhere in this revision:** the one-sentence contribution, the falsifiable claim, the four-part novelty seam, the scope wording ("No directly matching work was found in the searched databases (OpenAlex, IEEE Xplore, Crossref, web search); Scopus and Web of Science were not searched."), the seven cause names, the R0–R7 remedy library, the three research questions, the paper structure, the citation list, the dataset choices, and the M0–M5 module decomposition.
+
+---
+
+*Prepared 2026-09-23 as **Revision 2**. **No experiments have been run; no results appear in this document.** Every number is a proposed default, a threshold to tune, or an acceptance criterion. The corrections applied here are specified in `13_methodology_revision_proposal.md`; the problems they resolve are recorded in `12_methodology_audit.md`. Revision 1 (`11_technical_specification.md`) is retained unmodified on disk.*
+
+*Novelty claim scope: "No directly matching work was found in the searched databases (OpenAlex, IEEE Xplore, Crossref, web search); Scopus and Web of Science were not searched." See `08` §0 for the full scope statement and `10` §2 for the citation list with DOIs.*

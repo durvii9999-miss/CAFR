@@ -1,0 +1,91 @@
+{
+  "panel": "ruf",
+  "source": "RUF_synthetic_benchmark_5000_v2.zip (CC-BY-4.0)",
+  "source_sha256": "d6f441077d922ee986a2b41a9a6ff500b0f9a0154f529ff5786bc334fb21dc61",
+  "generator_seed": 42,
+  "n_skus": 5000,
+  "n_periods": 60,
+  "period_labels": [
+    "2018-09-01",
+    "2023-08-01"
+  ],
+  "burn_in_periods": 24,
+  "evaluated_periods": 36,
+  "rev2_assumed_periods": 84,
+  "panel_length_shortfall": 24,
+  "total_demand_units": 619941.0,
+  "mean_demand_per_sku_period": 2.06647,
+  "zero_fraction": 0.70079,
+  "all_values_non_negative": true,
+  "all_values_integer_valued": true,
+  "any_nan_in_demand": false,
+  "nonzero_periods_per_sku": {
+    "min": 1,
+    "p10": 4.0,
+    "p25": 7.0,
+    "median": 12.0,
+    "p75": 26.0,
+    "p90": 44.0,
+    "max": 60
+  },
+  "adi_full_series": {
+    "min": 1.0,
+    "p25": 2.3077,
+    "median": 5.0,
+    "p75": 8.5714,
+    "max": 60.0
+  },
+  "cv_squared_full_series": {
+    "min": 0.0,
+    "p25": 0.16,
+    "median": 0.316633,
+    "p75": 0.54594,
+    "max": 6.310764,
+    "n_undefined": 39
+  },
+  "syntetos_boylan_full_series": {
+    "intermittent": 3222,
+    "lumpy": 1289,
+    "smooth": 303,
+    "erratic": 147,
+    "dead": 39
+  },
+  "dead_skus_full_series": 39,
+  "dead_skus_in_burn_in": 1304,
+  "cells_adi_star_4_cv2_star_0p49_full_series": {
+    "high_lowdisp": 2304,
+    "moderate_lowdisp": 1221,
+    "moderate_highdisp": 764,
+    "high_highdisp": 672,
+    "dead": 39
+  },
+  "cells_from_burn_in_adi_init_cv2_init": {
+    "moderate_lowdisp": 1389,
+    "dead": 1304,
+    "high_lowdisp": 1267,
+    "moderate_highdisp": 731,
+    "high_highdisp": 309
+  },
+  "cells_all_four_populated_full": true,
+  "cells_min_share_full": 0.1344,
+  "detector_evidence_support_fraction": {
+    "C1": {
+      "W=24": 0.5366
+    },
+    "C3": {
+      "W=60": 0.6074,
+      "W=48": 0.573,
+      "W=36": 0.5158
+    },
+    "C4": {
+      "W=24": 0.4228
+    }
+  },
+  "detector_support_note": "Fraction of SKUs for which at least one trailing window of the given horizon ever contains the required number of NONZERO periods. C2, C6 and C7 are not sparsity-limited (they count all periods) and are omitted. C1 needs >=8 nonzero in 24; C3 needs >=10 in W_occ; C4 needs >=10 in 24. Below these floors the monitor ABSTAINS BY DESIGN (Rev2 \u00a78, insufficient evidence) \u2014 a low number here is a property of the panel's sparsity, not a defect, and must be reported in T1.",
+  "censoring_observed": false,
+  "censoring_note": "RUF is a demand panel with no stock-out record. Censoring is present but UNOBSERVED (Rev2 \u00a716). Consequences: (i) the C-guard has no stock-out flag to read on this panel; (ii) an unobserved stock-out cannot be imputed, which forces fit_on = observed on RUF (\u00a714.3 rule 6) unless the operator's own stock-out record is obtained. Record this as a stated limitation. UCI Online Retail has the same problem.",
+  "ground_truth_present": false,
+  "ground_truth_note": "RUF carries no cause labels. Attribution accuracy (RQ1) is measured on the labelled synthetic panel only (Rev2 \u00a713). This is expected, not a defect \u2014 see Rev2 \u00a713's methodological note.",
+  "generator_rerunnable_publicly": false,
+  "generator_note": "The v2 archive ships generate_synthetic_replicable_dataset_v2.py, but it is NOT runnable from the public release: it reads the confidential real panel (results/material_characterization/demand_matrix.csv and material_features_full.csv) and a private _real_param_catalogue.csv at module level and exits with FileNotFoundError. VERIFIED by execution 2026-09-23. The published 5,000 x 60 panel is therefore the ONLY publicly obtainable RUF artefact, and the panel cannot be regenerated longer or with a different seed."
+}

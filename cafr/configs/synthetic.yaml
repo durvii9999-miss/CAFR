@@ -1,0 +1,31 @@
+# Synthetic panel config -- the labelled panel. **RQ1 is measured here and only here.**
+
+inherits: base.yaml
+
+# Our own generator, so it is unaffected by H-1: T = 200 periods, injection at t = 120.
+#
+# Why this panel is not optional: neither RUF nor M5 carries cause labels, so
+# attribution accuracy (RQ1) cannot be measured on either. That is a property of the
+# public datasets, not a defect in the design -- but it means the synthetic panel is
+# the ONLY place H2 and the per-cause recall numbers exist.
+synthetic:
+  T: 200
+  tau_inj: 120              # 60 % of T
+  p_range: [0.05, 0.50]     # ADI in [2, 20]; ADI* = 4.0 is reachable inside this range
+  mu_z_range: [5, 200]
+  n_per_cause: 200          # 7 causes x 200 = 1,400
+  n_control: 200            # the C0 control panel; gate 5.2 measures FP on this
+  n_ambiguous: 200          # the mixture panel (Rev 2 §15.3)
+  seeds:
+    main: 42
+    heldout: 43             # never touched until the test run
+
+panels:
+  synth:
+    path: data/synth/demand_panel.parquet
+    ground_truth: data/synth/ground_truth.parquet
+    enabled: true
+
+splits:
+  burn_in: 24
+  evaluated: 60             # 60 % of T, mirroring the RUF split's proportion

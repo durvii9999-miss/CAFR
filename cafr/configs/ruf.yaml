@@ -1,0 +1,44 @@
+# RUF panel config -- the real-data arm of the three-panel structure.
+#
+#   python -m cafr.cli run --config ruf.yaml --seed 42
+#
+# What is FIXED here and why:
+
+inherits: base.yaml
+
+panels:
+  ruf:
+    path: data/ruf/demand_panel.parquet
+    meta: data/ruf/sku_meta.parquet
+    attributes: data/ruf/sku_attributes.parquet   # EVALUATION ONLY
+    profile: data/ruf/panel_profile.json
+    n_periods: 60
+    # H-3: FORCED. RUF has no stock-out record, so `uncensored` is unavailable --
+    # an imputation needs a censoring mask and RUF's is all-False. Not a preference.
+    fit_on: observed
+
+forecast:
+  # Overridden to match panels.ruf.fit_on. If these two ever disagree, the run is
+  # fitting on one series and reporting another -- tests/test_fit_on.py gate 2.5
+  # asserts they agree.
+  fit_on: observed
+
+# ---------------------------------------------------------------------------
+# H-1 -- the panel-length decision, which is ESCALATED, not resolved here.
+#
+# Rev 2 §14.1 assumed 84 periods (24 burn-in + 60 evaluated). RUF v2 ships 60.
+# Splits below are the HANDOFF'S RECOMMENDATION and need the team's sign-off.
+#
+# A second consequence: gate 3.5's W_occ = 60 (or the 48 fallback) cannot fit inside
+# a 60-period panel once burn-in is reserved. The gate's own escape clause applies --
+# report C3's recall on the SKUs that fit and record it in T1 -- and it must be used
+# EXPLICITLY rather than silently.
+# ---------------------------------------------------------------------------
+splits:
+  burn_in: 24
+  evaluated: 36
+
+sweeps:
+  B_over_H: [4, 9, 19, 49]
+  L: [1, 2, 4]
+  alpha: [0.80, 0.90, 0.95]

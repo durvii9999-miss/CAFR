@@ -1,0 +1,165 @@
+# THE policy_features WHITELIST -- Rev 2 §27, handoff §5.6 rule 5.
+#
+# This file is the policy's feature contract.
+# tests/test_no_lookahead.py asserts SET EQUALITY between the columns of the frame
+# that build_policy_input() returns and the list below. An extra column fails the
+# test, WHATEVER IT IS CALLED.
+#
+# Why set equality and not a name blacklist (Rev 2 §14.3 rule 5):
+#   Rev 1 used a `*_true*` / `*_cause*` blacklist. It missed `cause_active` and
+#   `injection_param` -- the two columns that give the answer away -- and it fails
+#   OPEN: a future ground-truth field with an innocent name sails through.
+#
+# RULE: no arm constructs its own feature frame (handoff §12, design rule 6).
+# Every arm builds its context from this file, which is what makes the test meaningful.
+
+# Identifiers carried on the frame but NOT model inputs.
+policy_input_keys:
+  - sku_id
+  - period
+
+# The context vector x_{i,t} = [ x_inv , x_det ], split by block.
+# This split is what defines arm A4 exactly (handoff §2.7).
+context_blocks:
+
+  # --- SKU statics: static, non-leaking (Rev 2 §27). adi/cv2/cell come from the
+  #     BURN-IN WINDOW ONLY. Full-series values live in sku_attributes.parquet and
+  #     are evaluation-only -- reaching them from here is a direct ground-truth leak.
+  statics:
+    - lead_time
+    - unit_cost
+    - holding_rate
+    - demand_class
+
+  # --- Error block: computed from trailing windows of the observed series only.
+  error:
+    - bias_occ
+    - bias_sz
+    - sigma_sz
+    - size_dispersion_r
+    - occ_auc
+    - false_zero_rate
+    - interval_coverage
+
+  # --- Intermittency block: burn-in cell one-hot + trailing summaries.
+  intermittency:
+    - adi
+    - cv2
+    - mean_nonzero_size
+    - frac_zeros
+    - cell_moderate_lowdisp
+    - cell_moderate_highdisp
+    - cell_high_lowdisp
+    - cell_high_highdisp
+    - cell_dead
+
+  # --- x_det: THE ATTRIBUTION OUTPUT. This is the block A4 does not receive.
+  #     Removing it is the only wiring difference between (f) and A4.
+  det:
+    - cause_C0
+    - cause_C1
+    - cause_C2
+    - cause_C3
+    - cause_C4
+    - cause_C5
+    - cause_C6
+    - cause_C7
+    - conf
+
+  # --- x_inv: inventory state, observable at decision time.
+  inventory:
+    - csl_gap
+    - fill_rate
+    - avg_on_hand
+    - avg_backorders
+    - pis
+    - nos
+
+  # --- Control block: where the policy currently is.
+  control:
+    - periods_since_switch
+    - active_remedy_R0
+    - active_remedy_R1
+    - active_remedy_R2
+    - active_remedy_R3
+    - active_remedy_R4
+    - active_remedy_R5
+    - active_remedy_R6
+    - active_remedy_R7
+
+# Arm A4's view: everything EXCEPT the det block.
+#
+# INTERPRETATION NOTE THAT NEEDS THE TEAM'S CONFIRMATION (handoff §2.7).
+# Rev 2 §9.2 defines A4's context as x_inv = "inventory and demand-summary". §9.1's
+# feature list has a separate "Error" block that §9.2 does not explicitly assign.
+# The safe reading -- adopted here -- is: A4 receives everything except the explicit
+# attribution output. That makes A4 as STRONG AS POSSIBLE, so an (f) > A4 result
+# cannot be dismissed as an unfair comparison.
+# The stricter reading (x_inv = inventory only) is a one-line change to
+# a4_excluded_blocks below. DECIDE BEFORE THE TEST RUN and record it in T7.
+a4_excluded_blocks:
+  - det
+
+# The flat whitelist. DERIVED from context_blocks by load_features(); the explicit
+# list is kept so the contract is readable in one place and diffable in review.
+policy_features:
+  - lead_time
+  - unit_cost
+  - holding_rate
+  - demand_class
+  - bias_occ
+  - bias_sz
+  - sigma_sz
+  - size_dispersion_r
+  - occ_auc
+  - false_zero_rate
+  - interval_coverage
+  - adi
+  - cv2
+  - mean_nonzero_size
+  - frac_zeros
+  - cell_moderate_lowdisp
+  - cell_moderate_highdisp
+  - cell_high_lowdisp
+  - cell_high_highdisp
+  - cell_dead
+  - cause_C0
+  - cause_C1
+  - cause_C2
+  - cause_C3
+  - cause_C4
+  - cause_C5
+  - cause_C6
+  - cause_C7
+  - conf
+  - csl_gap
+  - fill_rate
+  - avg_on_hand
+  - avg_backorders
+  - pis
+  - nos
+  - periods_since_switch
+  - active_remedy_R0
+  - active_remedy_R1
+  - active_remedy_R2
+  - active_remedy_R3
+  - active_remedy_R4
+  - active_remedy_R5
+  - active_remedy_R6
+  - active_remedy_R7
+
+# Redundant second line of defence (Rev 2 §28.6): the primary test is set equality
+# against policy_features; this blacklist is retained as a cheap second check.
+forbidden_substrings:
+  - "_true"
+  - "cause_active"
+  - "injection_param"
+  - "ground_truth"
+  - "demand_lost"
+  - "true_cause"
+  - "stockout"
+  - "adi_full"
+  - "cv_squared_full"
+  - "detection_budget_flag"
+  - "c2_variant"
+  - "panel_gap"

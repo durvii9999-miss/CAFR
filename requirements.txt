@@ -1,0 +1,22 @@
+# CAFR — pinned dependencies.
+#
+# Everything here is free and open-source. No paid API, no GPU, no cloud account
+# (handoff §12, design rule 3). CPU-only.
+#
+# Reproducibility rule: pin EXACT versions. T8 certifies the run, and a floating
+# LightGBM or NumPy version makes that certificate worthless.
+#
+# These pins are the versions the Step 0-2 test suite was actually run against and
+# passed on (Windows 11, CPython 3.13.5). `pip install -r requirements.txt` on a
+# different platform may need `--only-binary`; nothing here compiles from source.
+
+numpy==2.5.3
+pandas==2.3.3
+scipy==1.18.1
+pyarrow==25.0.1
+PyYAML==6.0.3
+statsforecast==2.1.1
+lightgbm==4.7.0
+
+# --- development / verification only. Never imported by cafr/*. ---
+pytest==9.1.1

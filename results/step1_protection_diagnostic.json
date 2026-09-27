@@ -1,0 +1,48 @@
+{
+  "spec_protection_convention": "L+1",
+  "spec_R": 3,
+  "lead_time_L": 2,
+  "gate_tolerance": 0.02,
+  "n_skus": 500,
+  "n_periods": 200,
+  "measured": {
+    "K=2": {
+      "alpha_0.80": {
+        "cycle_csl": 0.69633,
+        "abs_error": 0.10367,
+        "within_tol": false
+      },
+      "alpha_0.90": {
+        "cycle_csl": 0.82433,
+        "abs_error": 0.07567,
+        "within_tol": false
+      },
+      "alpha_0.95": {
+        "cycle_csl": 0.90494,
+        "abs_error": 0.04506,
+        "within_tol": false
+      }
+    },
+    "K=3": {
+      "alpha_0.80": {
+        "cycle_csl": 0.80024,
+        "abs_error": 0.00024,
+        "within_tol": true
+      },
+      "alpha_0.90": {
+        "cycle_csl": 0.90279,
+        "abs_error": 0.00279,
+        "within_tol": true
+      },
+      "alpha_0.95": {
+        "cycle_csl": 0.95494,
+        "abs_error": 0.00494,
+        "within_tol": true
+      }
+    }
+  },
+  "intervals_hitting_the_target": [
+    3
+  ],
+  "verdict": "the simulator's timing is consistent with K=3"
+}

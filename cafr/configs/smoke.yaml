@@ -1,0 +1,32 @@
+# Smoke config -- the fastest thing that exercises the whole pipeline.
+#
+# NOT a results config. Nothing measured on this may be reported: the SKU count and
+# the panel length are far below gate 1.2's >= 500 x 200 and gate 1.2's tolerance is
+# a statement about a mean over that population.
+#
+# Use it to check a code change does not crash, in seconds rather than minutes:
+#   python -m cafr.cli run --config smoke.yaml --seed 42
+#
+# `inherits` deep-merges this file on top of base.yaml, so only what CHANGES appears
+# here. A parameter absent from this file keeps its base value.
+
+inherits: base.yaml
+
+project: cafr
+version: "0.1.0"
+
+sim:
+  L: 2
+  R: 3
+  protection_convention: "L+1"
+
+synthetic:
+  T: 60
+  tau_inj: 36
+  n_per_cause: 5
+  n_control: 5
+  n_ambiguous: 5
+
+splits:
+  burn_in: 12
+  evaluated: 24

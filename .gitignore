@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Test / tooling
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Data ------------------------------------------------------------------
+# The RUF v2 release archive is 3 MB of CC-BY-4.0 data and IS committed (the repo
+# must run on a fresh clone with no download step). The extracted CSVs are not:
+# they are a pure function of the archive, and `build_ruf_panel.py` regenerates
+# them. Keeping them out avoids a 100 MB working tree for no benefit.
+data/raw/v2/
+data/m5/
+data/synth/
+
+# --- Results ---------------------------------------------------------------
+# Keep results/ tracked but ignore the bulky per-SKU logs. The paper's reported
+# numbers come from the summary JSONs; the raw logs are regenerable from a config
+# + a seed, which is the whole point of the CLI.
+results/**/*_log.parquet
+results/**/*.csv
+
+# --- Editors / OS ----------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
