@@ -12,7 +12,7 @@ def arm_f_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=0.0):
     """Arm (f) free bandit with full context x = [x^inv, x^det]."""
     
     # Initialize the base forecaster
-    base_level_fn = arm_c_factory(pool, cfg, sku_id, alpha_target, fit_on, margin)
+    base_level_fn = arm_c_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=margin)
     
     # The global bandit is passed in via cfg or instantiated here for simulation.
     # In full rollout, the bandit is shared across SKUs. Here we assume it's attached to cfg.
@@ -21,19 +21,19 @@ def arm_f_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=0.0):
     state_alpha = alpha_target
     active_remedy = "R0"
     
-    def level_fn(y_hist: np.ndarray, alpha_override: float | None = None) -> tuple[float, float]:
+    def level_fn(t: int, y_observed: np.ndarray, censored: np.ndarray, inventory: dict) -> tuple[float, float]:
         nonlocal state_alpha, active_remedy
         
-        target_alpha = alpha_override if alpha_override is not None else state_alpha
+        target_alpha = state_alpha # could be overridden by bandit later
         
         # 1. Base forecast
-        S_base, mu_hat = base_level_fn(y_hist, alpha_override=target_alpha)
+        S_base, mu_hat = base_level_fn(t, y_observed, censored, inventory)
         state: ForecastState = base_level_fn.last_state
         
         S_final = S_base
         mu_final = mu_hat
         
-        if len(y_hist) >= 60 and bandit is not None:
+        if len(y_observed) >= 60 and bandit is not None:
             # Build context (dummy features for this skeleton)
             inv_features = {"on_hand": 0.0, "csl_gap": 0.0}
             det_features = {"cause": "C0", "conf": 0.0}
@@ -50,7 +50,7 @@ def arm_f_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=0.0):
         return S_final, mu_final
 
     level_fn.last_state = ForecastState(
-        mu=0.0, z_hat=0.0, mu_z=0.0, method="arm_f_init"
+        mu=0.0, z=0.0, sigma=0.0, method="arm_f_init"
     )
     
     return level_fn

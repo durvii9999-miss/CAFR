@@ -21,18 +21,18 @@ def arm_g_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=0.0):
     """Arm (g) baseline with the fixed attribution->remedy pipeline."""
     
     # Arm (g) starts with Arm (c) as the baseline forecaster.
-    base_level_fn = arm_c_factory(pool, cfg, sku_id, alpha_target, fit_on, margin)
+    base_level_fn = arm_c_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=margin)
     
     # Controller state
     state_alpha = alpha_target
     
-    def level_fn(y_hist: np.ndarray, alpha_override: float | None = None) -> tuple[float, float]:
+    def level_fn(t: int, y_observed: np.ndarray, censored: np.ndarray, inventory: dict) -> tuple[float, float]:
         nonlocal state_alpha
         
-        target_alpha = alpha_override if alpha_override is not None else state_alpha
+        target_alpha = state_alpha
         
         # 1. Run the baseline forecaster
-        S_base, mu_hat = base_level_fn(y_hist, alpha_override=target_alpha)
+        S_base, mu_hat = base_level_fn(t, y_observed, censored, inventory)
         
         # Pull state for monitoring
         state: ForecastState = base_level_fn.last_state
@@ -42,22 +42,15 @@ def arm_g_factory(pool, cfg, sku_id, alpha_target, fit_on, margin=0.0):
         mu_final = mu_hat
         
         # If we have enough history to evaluate monitor rules
-        if len(y_hist) >= 60:
-            # We don't have the full residual history explicitly tracked inside the loop 
-            # for the entire sequence since the states are generated step by step.
-            # In a full simulation, `loop.py` logs these, but the arm needs them internally!
-            # For the Safe Stop (Step 8), we assume we can just do a simple pass-through 
-            # if we can't extract the residuals directly inside the arm without a major refactor.
+        if len(y_observed) >= 60:
             pass
             
-        # For now, level_fn just acts as a transparent wrapper 
-        # until the residual internal buffer is wired.
         level_fn.last_state = state
         return S_final, mu_final
 
     # Initialize last_state
     level_fn.last_state = ForecastState(
-        mu=0.0, z_hat=0.0, mu_z=0.0, method="arm_g_init"
+        mu=0.0, z=0.0, sigma=0.0, method="arm_g_init"
     )
     
     return level_fn
