@@ -564,13 +564,21 @@ def test_gate_1_6_nothing_is_lost_when_the_policy_over_protects(cfg, gate_panel)
     skus, ys = gate_panel["skus"][:60], gate_panel["y"][:60]
     warmup = int(cfg["sim"]["L"])
 
-    def generous(mu_hat):
+    R = int(cfg["sim"]["R"])
+
+    def generous(y_full):
+        # Use a level guaranteed to exceed any single protection interval's
+        # cumulative demand: R * max(y) + 1 covers the worst case of R consecutive
+        # max-demand periods. Using 10 * y[:24].mean() was insufficient for
+        # sparse-early / heavy-tail SKUs where the early-period mean is far below
+        # later peak demand (GATE1_0002: mu_hat=0.97, demand=11.94 at period 10).
+        level = float(y_full.max()) * R + 1.0
         def fn(t, y_observed, censored, inventory):
-            return 10.0 * mu_hat + 1.0, 0.99
+            return level, 0.99
         return fn
 
     for sku, y in zip(skus, ys):
-        res = sim.run(sku, y, generous(float(y[:24].mean())), arm="generous")
+        res = sim.run(sku, y, generous(y), arm="generous")
         assert not res.censored[warmup:].any(), (
             f"{sku}: an over-protected policy censored demand at period "
             f"{int(np.flatnonzero(res.censored[warmup:])[0]) + warmup}"
