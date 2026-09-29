@@ -1,0 +1,14 @@
+{
+  "config_hash": "97c7467765011ef8",
+  "seed_root": 42,
+  "steps": [
+    "0",
+    "1",
+    "2"
+  ],
+  "python": "3.13.2",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "produced_by": "python -m cafr.cli",
+  "note": "Every number reported in the paper must be traceable to one of these manifests. A number with no manifest is a number with no provenance.",
+  "runtime_seconds": 1.71
+}

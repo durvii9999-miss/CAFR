@@ -17,6 +17,7 @@ pyarrow==25.0.1
 PyYAML==6.0.3
 statsforecast==2.1.1
 lightgbm==4.7.0
+scikit-learn==1.7.1
 
 # --- development / verification only. Never imported by cafr/*. ---
 pytest==9.1.1
