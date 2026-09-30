@@ -229,6 +229,7 @@ def rollout_sku(
     # The inventory simulator owns the inner period loop. We pass it a
     # wrapped level function that also records our rolling forecast.
     _period_mu: list[float] = []
+    _period_mu_nonzero: list[float] = []
     _period_z: list[float] = []
     _period_method: list[str] = []
     _period_s: list[float] = []
@@ -241,10 +242,12 @@ def rollout_sku(
         st = level_fn.last_state  # type: ignore[union-attr]
         if st is not None:
             _period_mu.append(float(st.mu))
+            _period_mu_nonzero.append(float(st.mu_nonzero))
             _period_z.append(float(st.z))
             _period_method.append(st.method)
         else:
             _period_mu.append(float("nan"))
+            _period_mu_nonzero.append(float("nan"))
             _period_z.append(float("nan"))
             _period_method.append("")
         return s, a_t
@@ -256,6 +259,7 @@ def rollout_sku(
     # Slice off the evaluated window                                      #
     # ------------------------------------------------------------------ #
     all_mu = np.array(_period_mu, dtype="float64")
+    all_mu_nonzero = np.array(_period_mu_nonzero, dtype="float64")
     all_z = np.array(_period_z, dtype="float64")
     all_s = np.array(_period_s, dtype="float64")
     all_alpha = np.array(_period_alpha, dtype="float64")
@@ -272,6 +276,15 @@ def rollout_sku(
     s_out = all_s[sl]
     alpha_out = all_alpha[sl]
     method_out = all_method[burn_in:T]
+
+    # The SIZE-subprocess forecast, recorded because the spec's size statistics cannot
+    # be recovered without it. §6.3's C1 statistic is the bias of the SIZE error,
+    # ``e^sz_t = z_t - mu_nonzero_t``, on the nonzero periods; the per-period residual
+    # ``y_t - mu_hat_t`` is a different quantity -- on a nonzero period it is
+    # ``z_t - p*z_bar``, whose mean is ``mu_z(1-p)``, i.e. large and positive by
+    # construction for any intermittent series. Using it for ``z_b`` makes the statistic
+    # reject every SKU whose mean size exceeds its mean rate.
+    mu_nonzero_out = all_mu_nonzero[sl]
 
     # Cost stats over evaluated window.
     eval_log = sim_result.log.iloc[burn_in:T]
@@ -293,4 +306,5 @@ def rollout_sku(
         sim=sim_result,
         cost_mean=cost_mean,
         cost_std=cost_std,
+        extra={"mu_nonzero": mu_nonzero_out},
     )

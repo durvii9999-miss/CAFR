@@ -1,0 +1,98 @@
+{
+  "seed": 42,
+  "config_hash": "098eb299d49dc81e",
+  "n_series": 2000,
+  "n_periods": 200,
+  "panel_sizes": {
+    "single": 1400,
+    "control": 200,
+    "mixture": 200,
+    "c2b": 200
+  },
+  "cause_sizes": {
+    "C0": 200,
+    "C1": 200,
+    "C2": 200,
+    "C3": 200,
+    "C4": 200,
+    "C5": 200,
+    "C6": 200,
+    "C7": 200,
+    "ambiguous": 200,
+    "C2b": 200
+  },
+  "sb_cell_init_shares": {
+    "high_lowdisp": 0.3355,
+    "moderate_lowdisp": 0.275,
+    "moderate_highdisp": 0.162,
+    "high_highdisp": 0.146,
+    "dead": 0.0815
+  },
+  "constraints": {
+    "1_c4_band_invariance": {
+      "checked": 200,
+      "pass": 200,
+      "share": 1.0,
+      "status": "enforced",
+      "note": "C4 resamples k until the post-injection CV^2 stays in the same SB band. This constraint is NEVER relaxed: violating it would let the C4 detector separate on the band rather than on dispersion.",
+      "n_k_resampled": null
+    },
+    "3_c5_detectability_budget": {
+      "checked": 200,
+      "pass": 200,
+      "share": 1.0,
+      "status": "scaled-then-flagged",
+      "note": "The injector scales the step up until it clears; SKUs that still fail are FLAGGED in ground_truth, never dropped. The occurrence branch is arithmetically infeasible for small p (the achievable step in sd units is bounded by the range of p, while the required step grows as 1/p), so those SKUs take the SIZE branch instead of relaxing the budget.",
+      "n_occurrence": 160,
+      "n_occurrence_infeasible": 0
+    },
+    "5_c2_coverage_gap": {
+      "checked": 400,
+      "pass": 381,
+      "share": 0.9525,
+      "status": "enforced",
+      "note": "The coverage gap must clear tau_cov + margin on BOTH panels: C2 (a direct interval injection, demand untouched) and C2b (a genuine modelling error -- a per-period sigma applied to the R-period protection interval, the documented 42.3 % understatement).",
+      "both_variants": [
+        "C2",
+        "C2b"
+      ]
+    },
+    "9_c4_detectability_budget": {
+      "checked": 200,
+      "pass": 72,
+      "share": 0.36,
+      "status": "flagged-not-dropped",
+      "note": "C4's log-dispersion statistic needs >= 8 nonzero sizes in W_sz = 24, which requires p >= 0.333, so high-ADI SKUs cannot clear it from a 24-period window. Reported as not evaluable at W_sz, and flagged in ground_truth (Rev 2 \u00a715.2, constraint 9)."
+    },
+    "8_c1_occurrence_untouched": {
+      "checked": 200,
+      "pass": 200,
+      "share": 1.0,
+      "status": "enforced",
+      "note": "inject_C1 records p_shift = k_shift = 0.0: the occurrence rate and the shape are untouched, so only the size distribution can carry the change. A nonzero p_shift would move C1 onto C6's statistic."
+    },
+    "6_7_c7_simulator_pre_flight": {
+      "checked": 0,
+      "pass": null,
+      "share": null,
+      "status": "see c7_constraints.json",
+      "note": "Constraints 6 and 7 are NOT generator-side: they require the real simulator, so they are verified by the pre-flight below and recorded in results/synth/c7_constraints.json."
+    }
+  },
+  "c7_parameters": {
+    "n": 200,
+    "safety_scale": [
+      0.6
+    ],
+    "fit_on": [
+      "uncensored"
+    ],
+    "demand_touched": false
+  },
+  "c2_gamma_range": [
+    0.02,
+    0.560486
+  ],
+  "dead_share": 0.0815,
+  "n_c4_below_budget": 128
+}

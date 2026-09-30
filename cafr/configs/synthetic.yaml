@@ -15,7 +15,12 @@ synthetic:
   mu_z_range: [5, 200]
   n_per_cause: 200          # 7 causes x 200 = 1,400
   n_control: 200            # the C0 control panel; gate 5.2 measures FP on this
-  n_ambiguous: 200          # the mixture panel (Rev 2 §15.3)
+  n_mixture: 200            # the MIXTURE panel (Rev 2 §15.3, resolution (a): gap = 0)
+  # C2b is generated as its own panel because §15.2 constraint 5 requires the C2
+  # detector to be run on BOTH a direct interval injection and a genuine modelling
+  # error. §15.4's table (1,800) predates that constraint, so the panel total is
+  # 2,000. Recorded here rather than absorbed silently.
+  n_c2b: 200
   seeds:
     main: 42
     heldout: 43             # never touched until the test run
@@ -24,8 +29,29 @@ panels:
   synth:
     path: data/synth/demand_panel.parquet
     ground_truth: data/synth/ground_truth.parquet
+    generator_params: data/synth/generator_params.parquet
     enabled: true
+
+# ---------------------------------------------------------------------------
+# The observation convention for the synthetic panel -- the same one RUF uses, for
+# the same reason, and it was MISSING until the C7 pre-flight exposed it.
+#
+# The synthetic panel is generated as a DEMAND panel: ``demand_observed`` is the DGP's
+# own series and ``stockout_flag`` is False everywhere, because §15.6 puts stock-outs
+# in the simulator's counterfactual cost layer rather than in the policy's information
+# set. Under base.yaml's default (``censored_sales``) the policy instead sees only what
+# it sold, which is 0 from t=0 because it starts with no stock and no history: the
+# forecaster correctly predicts 0 forever, ``alpha_eff = 1 - 1/(n_cycles+1) = 0`` for
+# ever, and the order-up-to level stays at 0.
+#
+# That collapse is silent -- no error, no NaN, just a run in which every arm produces
+# identical zeros. It was found by reading ``alpha_t`` in the C7 pre-flight log, which
+# was 0.0 in every window while the spec's gate compared it against alpha = 0.95.
+# ---------------------------------------------------------------------------
+sim:
+  observation_model: demand
 
 splits:
   burn_in: 24
-  evaluated: 60             # 60 % of T, mirroring the RUF split's proportion
+  evaluated: 176            # the whole panel after burn-in: tau_inj = 120 is INSIDE the
+                            # evaluated window, so the injection is actually observed

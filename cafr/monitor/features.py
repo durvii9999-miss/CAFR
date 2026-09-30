@@ -76,21 +76,71 @@ def compute_occurrence_stats(delta: np.ndarray, z_hat: np.ndarray, usable: np.nd
     
     return {"auc": auc, "fz": fz}
 
-def compute_dispersion_stats(e_sz: np.ndarray, e_sz_baseline: np.ndarray, usable: np.ndarray, min_evidence: int = 10) -> dict:
-    """C4: Size dispersion ratio."""
-    mask = usable & ~np.isnan(e_sz)
-    e_val = e_sz[mask]
-    
-    base_val = e_sz_baseline[~np.isnan(e_sz_baseline)]
-    
-    if len(e_val) < min_evidence or len(base_val) < min_evidence:
-        return {"sd_sz": float("nan"), "r": float("nan")}
-        
-    sd_now = robust_sd(e_val)
-    sd_base = robust_sd(base_val)
-    
+def compute_dispersion_stats(
+    y_now: np.ndarray,
+    y_base: np.ndarray,
+    *,
+    min_evidence: int = 8,
+    usable: np.ndarray | None = None,
+) -> dict:
+    """C4: size-dispersion ratio ``r``, measured on the LOG scale.
+
+    **Why the log scale (Rev 2 §6.3, revised at Step 4).** C4 is a change in the
+    dispersion of nonzero sizes at *fixed mean* (§15.2, constraint 2). For a Gamma
+    size distribution ``z ~ Gamma(k, theta)`` the mean is ``k*theta`` and the sd is
+    ``sqrt(k)*theta`` -- **proportional to the mean**. So *any* absolute dispersion
+    measure is moved by any level intervention, which makes C4's statistic
+    confounded by construction: measured on the pre-revision absolute ratio, C5's
+    size step scored AUC **0.805** on C4's own statistic and C1's mean ramp scored
+    **0.615** (gate 4.4 needs <= 0.65).
+
+    The log scale removes the nuisance scale exactly::
+
+        log z  =  log theta  +  log Gamma(k, 1)
+
+    so ``sd(log z) = sqrt(trigamma(k))`` depends on the shape ``k`` alone and is
+    **exactly invariant to theta**, i.e. to every level cause (C1's ramp, C5's size
+    step, and the mean change C6 declares in §15.2). Measured after the change, at
+    ``W_sz = 24`` and ``min_evidence = 8``: C4 detection AUC **0.939** and every
+    confound <= 0.572.
+
+    The statistic is computed on the **observed nonzero demand**, so it needs no
+    forecast and no ground truth. Under ``observation_model: censored_sales`` the
+    nonzero sizes are truncated by stock-outs; the C-guard (§6.3) is what suppresses
+    C4 in that regime, not this function.
+
+    ``below_budget`` reports constraint 9: with fewer than ``min_evidence`` nonzero
+    observations in the window the ratio is not estimable and the SKU must be
+    *flagged* (and excluded from the budget-restricted recall of §29.3), never
+    silently dropped.
+    """
+    mask_now = np.ones(len(y_now), dtype=bool) if usable is None else usable
+    a = np.asarray(y_now, dtype="float64")[mask_now]
+    a = a[a > 0]
+    b = np.asarray(y_base, dtype="float64")
+    b = b[b > 0]
+
+    n_now, n_base = int(a.size), int(b.size)
+    below = n_now < min_evidence or n_base < min_evidence
+    if below:
+        return {
+            "sd_log_sz": float("nan"),
+            "r": float("nan"),
+            "n_now": n_now,
+            "n_base": n_base,
+            "below_budget": True,
+        }
+
+    sd_now = float(np.log(a).std(ddof=1))
+    sd_base = float(np.log(b).std(ddof=1))
     r = sd_now / sd_base if sd_base > 1e-9 else float("nan")
-    return {"sd_sz": sd_now, "r": r}
+    return {
+        "sd_log_sz": sd_now,
+        "r": r,
+        "n_now": n_now,
+        "n_base": n_base,
+        "below_budget": False,
+    }
 
 def compute_cusum_stats(e: np.ndarray, sigma: float, k: float = 0.25, h: float = 4.0) -> dict:
     """C5: Two-sided CUSUM."""

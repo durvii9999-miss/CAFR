@@ -1,0 +1,17 @@
+[
+  {
+    "scale": 0.6,
+    "fit_on": "uncensored",
+    "n_windows": 2040,
+    "n_skus": 40,
+    "acceptability_pass_rate": 0.19607843137254902,
+    "exposure_pass_rate": 0.6225490196078431,
+    "service_gap_rate": 0.6225490196078431,
+    "c7_fireable_rate": 0.09901960784313725,
+    "mean_achieved_csl": 0.8012745098039218,
+    "mean_coverage": 0.7737254901960785,
+    "constraint_6_pass": false,
+    "constraint_7_pass": false,
+    "gate_4_9_pass": false
+  }
+]

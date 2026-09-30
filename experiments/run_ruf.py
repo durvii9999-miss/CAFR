@@ -45,45 +45,11 @@ from cafr.arms.arm_b import arm_b_factory
 from cafr.arms.arm_c import arm_c_factory
 from cafr.arms.arm_e import arm_e_factory
 from cafr.data.loaders.ruf import load_observed
-from cafr.forecasters.base import FittingInput, Forecaster
 from cafr.forecasters.lightgbm_global import STATIC_COLUMNS, GlobalLightGBM
 from cafr.forecasters.registry import build_pool
+from cafr.forecasters.pooled import PooledLightGBM
 from cafr.sim.loop import rollout_sku
 from cafr.utils.config import REPO_ROOT, config_hash, load_config
-
-
-class PooledLightGBM(Forecaster):
-    """A globally-trained ``GlobalLightGBM`` exposed through the pool interface.
-
-    The pool contract is ``fit(FittingInput) -> ForecastState``; the global model's
-    contract is ``fit_series_with_statics(y, statics)``. This bridges the two, reading
-    the SKU id the arms attach to the ``FittingInput``.
-    """
-
-    name = "lightgbm_global"
-
-    def __init__(self, model: GlobalLightGBM, statics_by_sku: dict[str, dict]) -> None:
-        super().__init__()
-        self._model = model
-        self._statics = statics_by_sku
-
-    def _fit_series(self, y: np.ndarray):  # pragma: no cover - never used
-        raise NotImplementedError("PooledLightGBM fits through fit(), not _fit_series()")
-
-    def fit(self, y, fit_on: str | None = None):  # type: ignore[override]
-        if isinstance(y, FittingInput):
-            series = y.resolve()
-            resolved_on = y.fit_on
-        else:
-            series = np.asarray(y, dtype="float64")
-            resolved_on = fit_on or "observed"
-
-        sku = getattr(y, "sku_id", None)
-        statics = self._statics.get(sku, {})
-        state = self._model.fit_series_with_statics(series, statics, fit_on=resolved_on)
-        state.diag["fit_on"] = resolved_on
-        self._state = state
-        return state
 
 
 def _factories(sb_cell: str, margin: float = 0.0):

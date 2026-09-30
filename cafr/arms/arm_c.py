@@ -126,6 +126,10 @@ class _ArmCLevelFn:
             window=int(self.cfg["sim"].get("quantile_window", 24)),
             min_aggregates=int(self.cfg["sim"].get("min_aggregates", 4)),
             method=self.cfg["sim"].get("quantile_method", "linear"),
+            # C7's injection scales the SAFETY FACTOR only, never the forecast (§15.2).
+            # Read from config so the knob is live: nothing passed it before, which left
+            # `sim.c7_safety_factor_scale` dead and made C7 undetectable by construction.
+            safety_factor_scale=float(self.cfg["sim"].get("c7_safety_factor_scale", 1.0)),
         )
         return float(S), float(alpha_eff)
 
