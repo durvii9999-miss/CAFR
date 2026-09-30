@@ -32,6 +32,18 @@ sim:
   protection_convention: "L+1"
   unmet_model: lost_sales    # lost_sales | backorder. See sim/inventory.py docstring.
 
+  # What the policy observes as its history, and therefore what it forecasts from.
+  #   censored_sales  the policy sees what it SOLD; a stock-out hides unmet demand.
+  #                   The convention the Step 1 gates were written against.
+  #   demand          the policy sees the DEMAND series. Correct for a demand panel
+  #                   with unobserved stock-outs (RUF, handoff H-3), where `fit_on:
+  #                   observed` means "fit on demand_observed".
+  # Under `censored_sales` a run can COLLAPSE to a permanently zero order-up-to level:
+  # no history and no stock means `met` is 0 from t=0, the forecaster predicts 0, and
+  # the system never bootstraps. `ruf.yaml` therefore sets `demand`, and the paper must
+  # declare which convention produced its numbers.
+  observation_model: censored_sales
+
   # Order-up-to level S = Q_alpha, the R-period AGGREGATE quantile. Rev 2 §15.6.
   # NOT R*mu + z*sigma -- that form understates safety stock by 42.3 % at R = 3.
   quantile_window: 24       # trailing window of R-period aggregates used for F_hat

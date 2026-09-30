@@ -63,20 +63,36 @@ def build_design_matrix(
     if missing:
         raise ValueError(f"panel missing columns for the design matrix: {sorted(missing)}")
 
-    df = panel.sort_values(["sku_id", "period"]).copy()
+    # Index-safe: the caller may hand us a filtered panel whose index still carries
+    # the original row numbers. Rolling on a Series aligns by LABEL, so without this
+    # reset every feature column would silently become all-NaN.
+    df = panel.sort_values(["sku_id", "period"]).reset_index(drop=True)
+    skus = df["sku_id"]
     grouped = df.groupby("sku_id", sort=False)[demand_col]
 
     for k in LAGS:
         df[f"lag_{k}"] = grouped.shift(k)
 
+    # The rolling statistics must be computed WITHIN each SKU. A plain
+    # ``past.rolling(w)`` walks the concatenated frame and lets the previous SKU's
+    # tail leak into the current SKU's features. Group first, then roll.
+    past = grouped.shift(1)
     for w in ROLL_WINDOWS:
-        past = grouped.shift(1)
-        df[f"rollmean_{w}"] = past.rolling(w, min_periods=1).mean().reset_index(level=0, drop=True)
+        df[f"rollmean_{w}"] = (
+            past.groupby(skus).rolling(w, min_periods=1).mean().reset_index(level=0, drop=True)
+        )
         df[f"rollzerofrac_{w}"] = (
-            (past == 0).astype("float64").rolling(w, min_periods=1).mean().reset_index(level=0, drop=True)
+            (past == 0)
+            .astype("float64")
+            .groupby(skus)
+            .rolling(w, min_periods=1)
+            .mean()
+            .reset_index(level=0, drop=True)
         )
         nz = past.where(past > 0)
-        df[f"rollmeannonzero_{w}"] = nz.rolling(w, min_periods=1).mean().reset_index(level=0, drop=True)
+        df[f"rollmeannonzero_{w}"] = (
+            nz.groupby(skus).rolling(w, min_periods=1).mean().reset_index(level=0, drop=True)
+        )
 
     for c in ("adi_init", "cv2_init"):
         df[c] = df[c].fillna(0.0)          # `dead` SKUs: NaN -> explicit 0, cell carries the flag

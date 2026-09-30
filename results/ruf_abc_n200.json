@@ -1,0 +1,2471 @@
+{
+  "config": "ruf.yaml",
+  "config_hash": "3a012e44b1ab9eb1",
+  "seed": 42,
+  "alpha": 0.95,
+  "margin": 0.0,
+  "n_skus": 200,
+  "n_train_skus": 120,
+  "n_test_skus": 80,
+  "arms": [
+    "a",
+    "b",
+    "c"
+  ],
+  "runtime_seconds": 17.0,
+  "summary": {
+    "a": {
+      "('mean_cost', 'mean')": 14.144319,
+      "('mean_cost', 'std')": 26.892733,
+      "('mean_cost', 'count')": 80,
+      "('cycle_csl', 'mean')": 0.842105,
+      "('cycle_csl', 'std')": 0.072523,
+      "('cycle_csl', 'count')": 80,
+      "('fill_rate', 'mean')": 0.563753,
+      "('fill_rate', 'std')": 0.342298,
+      "('fill_rate', 'count')": 80,
+      "('n_stockout', 'mean')": 3.7875,
+      "('n_stockout', 'std')": 1.853452,
+      "('n_stockout', 'count')": 80,
+      "('mean_S', 'mean')": 12.45816,
+      "('mean_S', 'std')": 26.403719,
+      "('mean_S', 'count')": 80
+    },
+    "b": {
+      "('mean_cost', 'mean')": 14.144319,
+      "('mean_cost', 'std')": 26.892733,
+      "('mean_cost', 'count')": 80,
+      "('cycle_csl', 'mean')": 0.842105,
+      "('cycle_csl', 'std')": 0.072523,
+      "('cycle_csl', 'count')": 80,
+      "('fill_rate', 'mean')": 0.563753,
+      "('fill_rate', 'std')": 0.342298,
+      "('fill_rate', 'count')": 80,
+      "('n_stockout', 'mean')": 3.7875,
+      "('n_stockout', 'std')": 1.853452,
+      "('n_stockout', 'count')": 80,
+      "('mean_S', 'mean')": 12.45816,
+      "('mean_S', 'std')": 26.403719,
+      "('mean_S', 'count')": 80
+    },
+    "c": {
+      "('mean_cost', 'mean')": 14.144319,
+      "('mean_cost', 'std')": 26.892733,
+      "('mean_cost', 'count')": 80,
+      "('cycle_csl', 'mean')": 0.843421,
+      "('cycle_csl', 'std')": 0.072993,
+      "('cycle_csl', 'count')": 80,
+      "('fill_rate', 'mean')": 0.564515,
+      "('fill_rate', 'std')": 0.342838,
+      "('fill_rate', 'count')": 80,
+      "('n_stockout', 'mean')": 3.7125,
+      "('n_stockout', 'std')": 1.850034,
+      "('n_stockout', 'count')": 80,
+      "('mean_S', 'mean')": 12.45816,
+      "('mean_S', 'std')": 26.403719,
+      "('mean_S', 'count')": 80
+    }
+  },
+  "rows": [
+    {
+      "sku_id": "SYN5Y_2533",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 22.7611111111111,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9387859237536657,
+      "n_stockout": 3,
+      "mean_S": 29.733333333333324
+    },
+    {
+      "sku_id": "SYN5Y_3353",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 174.73205242135833,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9394987262703124,
+      "n_stockout": 3,
+      "mean_S": 174.21338045864616
+    },
+    {
+      "sku_id": "SYN5Y_4221",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 18.955555555555552,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9951923076923077,
+      "n_stockout": 2,
+      "mean_S": 27.754020467836256
+    },
+    {
+      "sku_id": "SYN5Y_0750",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.1388888888888888,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.625,
+      "n_stockout": 3,
+      "mean_S": 0.675925925925926
+    },
+    {
+      "sku_id": "SYN5Y_4485",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 5.930555555555555,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.375,
+      "n_stockout": 6,
+      "mean_S": 1.127314814814815
+    },
+    {
+      "sku_id": "SYN5Y_1767",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 16.551470110461338,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9201226053639847,
+      "n_stockout": 6,
+      "mean_S": 24.17958750151732
+    },
+    {
+      "sku_id": "SYN5Y_3290",
+      "arm": "a",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 9.141093474426803,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6024489795918367,
+      "n_stockout": 4,
+      "mean_S": 6.787147266313934
+    },
+    {
+      "sku_id": "SYN5Y_2171",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 15.848148148148148,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.21621621621621623,
+      "n_stockout": 4,
+      "mean_S": 1.426025132275133
+    },
+    {
+      "sku_id": "SYN5Y_3144",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 34.43783969728243,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9613899613899614,
+      "n_stockout": 2,
+      "mean_S": 52.28687972996218
+    },
+    {
+      "sku_id": "SYN5Y_1340",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 9.38888888888889,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 11.112654320987653
+    },
+    {
+      "sku_id": "SYN5Y_1107",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 7.138354700854699,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8874458874458874,
+      "n_stockout": 5,
+      "mean_S": 8.19795066045066
+    },
+    {
+      "sku_id": "SYN5Y_4590",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 8.021604938271604,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.8230829831932773,
+      "n_stockout": 4,
+      "mean_S": 7.950617283950617
+    },
+    {
+      "sku_id": "SYN5Y_2161",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 3.240277777777779,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.25,
+      "n_stockout": 4,
+      "mean_S": 0.5750000000000005
+    },
+    {
+      "sku_id": "SYN5Y_3320",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 13.034788359788362,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.8013056835637481,
+      "n_stockout": 3,
+      "mean_S": 5.585978835978837
+    },
+    {
+      "sku_id": "SYN5Y_0113",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 59.251356640817434,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9270812859750105,
+      "n_stockout": 3,
+      "mean_S": 58.40350851943991
+    },
+    {
+      "sku_id": "SYN5Y_3923",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 18.418055555555554,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.46,
+      "n_stockout": 7,
+      "mean_S": 5.257870370370372
+    },
+    {
+      "sku_id": "SYN5Y_1596",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 9.541109507776174,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.4738190730837791,
+      "n_stockout": 10,
+      "mean_S": 1.4332439936606605
+    },
+    {
+      "sku_id": "SYN5Y_3671",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 5.529166666666665,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.5757575757575758,
+      "n_stockout": 5,
+      "mean_S": 3.2492504409171077
+    },
+    {
+      "sku_id": "SYN5Y_4471",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.8888888888888884,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.2500000000000001,
+      "n_stockout": 4,
+      "mean_S": 0.37037037037037046
+    },
+    {
+      "sku_id": "SYN5Y_3835",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 2.638888888888889,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0785",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_3772",
+      "arm": "a",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 10.988807463868739,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.8326327433628319,
+      "n_stockout": 7,
+      "mean_S": 11.447166608808768
+    },
+    {
+      "sku_id": "SYN5Y_2762",
+      "arm": "a",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 0.0,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.125,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_3343",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 32.20313051146385,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.7662571851851852,
+      "n_stockout": 6,
+      "mean_S": 24.36917858376192
+    },
+    {
+      "sku_id": "SYN5Y_2413",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.3055555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.75,
+      "n_stockout": 2,
+      "mean_S": 0.7685185185185186
+    },
+    {
+      "sku_id": "SYN5Y_1174",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 6.656845238095238,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.8545454545454545,
+      "n_stockout": 3,
+      "mean_S": 7.2185074955908295
+    },
+    {
+      "sku_id": "SYN5Y_3288",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 0.9166666666666669,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9230769230769231,
+      "n_stockout": 1,
+      "mean_S": 1.0583333333333336
+    },
+    {
+      "sku_id": "SYN5Y_3973",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.0165343915343925,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6666666666666666,
+      "n_stockout": 4,
+      "mean_S": 1.0866402116402119
+    },
+    {
+      "sku_id": "SYN5Y_4810",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.8333333333333333,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.25,
+      "n_stockout": 3,
+      "mean_S": 0.3611111111111111
+    },
+    {
+      "sku_id": "SYN5Y_1943",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 5.805555555555555,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0414",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.5833333333333333,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0564",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 3.716666666666667,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.36363636363636365,
+      "n_stockout": 5,
+      "mean_S": 0.3000000000000001
+    },
+    {
+      "sku_id": "SYN5Y_4706",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.0833333333333335,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.3333333333333333,
+      "n_stockout": 5,
+      "mean_S": 0.3495370370370371
+    },
+    {
+      "sku_id": "SYN5Y_0184",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 156.7023906614303,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7771986970684039,
+      "n_stockout": 4,
+      "mean_S": 126.2617114340863
+    },
+    {
+      "sku_id": "SYN5Y_3665",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.7222222222222223,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.2,
+      "n_stockout": 3,
+      "mean_S": 0.26851851851851866
+    },
+    {
+      "sku_id": "SYN5Y_0590",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 32.35092592592593,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7105263157894737,
+      "n_stockout": 4,
+      "mean_S": 25.2787037037037
+    },
+    {
+      "sku_id": "SYN5Y_3947",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 13.620700056116723,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.3333333333333333,
+      "n_stockout": 6,
+      "mean_S": 2.23020860312527
+    },
+    {
+      "sku_id": "SYN5Y_3471",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.611111111111111,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.7,
+      "n_stockout": 2,
+      "mean_S": 0.7037037037037037
+    },
+    {
+      "sku_id": "SYN5Y_4119",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 11.443055555555553,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 21.900000000000002
+    },
+    {
+      "sku_id": "SYN5Y_2496",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 14.319633642930857,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.8618881118881119,
+      "n_stockout": 7,
+      "mean_S": 17.9916028838436
+    },
+    {
+      "sku_id": "SYN5Y_3837",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 4.412555114638447,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7633333333333333,
+      "n_stockout": 6,
+      "mean_S": 4.5266975308641975
+    },
+    {
+      "sku_id": "SYN5Y_2471",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 6.817669753086417,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.32222222222222247,
+      "n_stockout": 6,
+      "mean_S": 1.0040333894500562
+    },
+    {
+      "sku_id": "SYN5Y_3876",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 4.592626633986928,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9828125,
+      "n_stockout": 3,
+      "mean_S": 6.98672385620915
+    },
+    {
+      "sku_id": "SYN5Y_2315",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 4.052469135802469,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.8333333333333334,
+      "n_stockout": 1,
+      "mean_S": 1.3216820987654323
+    },
+    {
+      "sku_id": "SYN5Y_1208",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.4722222222222223,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.42857142857142855,
+      "n_stockout": 3,
+      "mean_S": 0.6111111111111112
+    },
+    {
+      "sku_id": "SYN5Y_4979",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 19.204629629629622,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0526315789473687,
+      "n_stockout": 5,
+      "mean_S": 0.6583333333333345
+    },
+    {
+      "sku_id": "SYN5Y_0391",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 6.94973544973545,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7152957264957266,
+      "n_stockout": 6,
+      "mean_S": 3.1144179894179893
+    },
+    {
+      "sku_id": "SYN5Y_2109",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 10.000000000000004,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.20833333333333334,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_4909",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 45.407651072124764,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9604037267080745,
+      "n_stockout": 3,
+      "mean_S": 55.96871345029239
+    },
+    {
+      "sku_id": "SYN5Y_2755",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.8757716049382713,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8133333333333335,
+      "n_stockout": 5,
+      "mean_S": 2.4405864197530867
+    },
+    {
+      "sku_id": "SYN5Y_2177",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 8.22922153191761,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 13.049705348663682
+    },
+    {
+      "sku_id": "SYN5Y_4397",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_4082",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.2777777777777777,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.4444444444444444,
+      "n_stockout": 3,
+      "mean_S": 0.3148148148148149
+    },
+    {
+      "sku_id": "SYN5Y_4856",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 0.5277777777777778,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 1,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_2266",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 37.88513092526573,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9301858916136846,
+      "n_stockout": 4,
+      "mean_S": 43.75201844497189
+    },
+    {
+      "sku_id": "SYN5Y_3770",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 4.427777777777778,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.375,
+      "n_stockout": 3,
+      "mean_S": 1.9222222222222227
+    },
+    {
+      "sku_id": "SYN5Y_0309",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 26.03902045666752,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8012572533849129,
+      "n_stockout": 6,
+      "mean_S": 27.29376603334937
+    },
+    {
+      "sku_id": "SYN5Y_2785",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 17.681332671957673,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9159408366533864,
+      "n_stockout": 3,
+      "mean_S": 23.648008092125743
+    },
+    {
+      "sku_id": "SYN5Y_0759",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 10.152777777777779,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.1590909090909091,
+      "n_stockout": 4,
+      "mean_S": 4.393518518518519
+    },
+    {
+      "sku_id": "SYN5Y_0881",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 3.613299663299663,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.7991255961844197,
+      "n_stockout": 6,
+      "mean_S": 3.23793490460157
+    },
+    {
+      "sku_id": "SYN5Y_2018",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.201388888888889,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.16666666666666666,
+      "n_stockout": 5,
+      "mean_S": 0.4537037037037038
+    },
+    {
+      "sku_id": "SYN5Y_2135",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 6.873015873015877,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9575242718446602,
+      "n_stockout": 4,
+      "mean_S": 9.927123185456518
+    },
+    {
+      "sku_id": "SYN5Y_0618",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 2.673611111111111,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 3,
+      "mean_S": 0.10416666666666667
+    },
+    {
+      "sku_id": "SYN5Y_3455",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 5.209876543209874,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.7283333333333334,
+      "n_stockout": 3,
+      "mean_S": 2.1430776014109347
+    },
+    {
+      "sku_id": "SYN5Y_3147",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.908730158730159,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.3095238095238097,
+      "n_stockout": 6,
+      "mean_S": 0.997619047619048
+    },
+    {
+      "sku_id": "SYN5Y_1712",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 8.666666666666666,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.275,
+      "n_stockout": 5,
+      "mean_S": 1.8472222222222223
+    },
+    {
+      "sku_id": "SYN5Y_3077",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 9.006944444444445,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9488139825218477,
+      "n_stockout": 2,
+      "mean_S": 10.839618406285075
+    },
+    {
+      "sku_id": "SYN5Y_3413",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 26.679166666666664,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9391197364705881,
+      "n_stockout": 3,
+      "mean_S": 35.8006970722012
+    },
+    {
+      "sku_id": "SYN5Y_1501",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 2.0833333333333335,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.7394117647058823,
+      "n_stockout": 5,
+      "mean_S": 2.0
+    },
+    {
+      "sku_id": "SYN5Y_3776",
+      "arm": "a",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.5128968253968256,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6041666666666666,
+      "n_stockout": 5,
+      "mean_S": 1.5013227513227518
+    },
+    {
+      "sku_id": "SYN5Y_1807",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 23.934242609242606,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9319045973038369,
+      "n_stockout": 4,
+      "mean_S": 29.132154882154882
+    },
+    {
+      "sku_id": "SYN5Y_3687",
+      "arm": "a",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 3.370093795093795,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7857954545454545,
+      "n_stockout": 6,
+      "mean_S": 2.5570606862273526
+    },
+    {
+      "sku_id": "SYN5Y_1901",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 10.033064774731441,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.45454545454545453,
+      "n_stockout": 6,
+      "mean_S": 1.8838482505149174
+    },
+    {
+      "sku_id": "SYN5Y_4949",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0945",
+      "arm": "a",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 28.015756985055233,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9661016949152542,
+      "n_stockout": 2,
+      "mean_S": 34.22219637899462
+    },
+    {
+      "sku_id": "SYN5Y_4070",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 5.291666666666667,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 4,
+      "mean_S": 0.125
+    },
+    {
+      "sku_id": "SYN5Y_0153",
+      "arm": "a",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 12.430555555555557,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.561351724137931,
+      "n_stockout": 4,
+      "mean_S": 4.8291666666666675
+    },
+    {
+      "sku_id": "SYN5Y_3120",
+      "arm": "a",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 5.516666666666667,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.5833333333333334,
+      "n_stockout": 3,
+      "mean_S": 1.0666666666666673
+    },
+    {
+      "sku_id": "SYN5Y_4673",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 3.2291666666666665,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 3,
+      "mean_S": 0.11805555555555555
+    },
+    {
+      "sku_id": "SYN5Y_0634",
+      "arm": "a",
+      "sb_cell": "dead",
+      "mean_cost": 11.654629629629628,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.1730769230769232,
+      "n_stockout": 6,
+      "mean_S": 0.9462962962962966
+    },
+    {
+      "sku_id": "SYN5Y_2533",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 22.7611111111111,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9387859237536657,
+      "n_stockout": 3,
+      "mean_S": 29.733333333333324
+    },
+    {
+      "sku_id": "SYN5Y_3353",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 174.73205242135833,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9394987262703124,
+      "n_stockout": 3,
+      "mean_S": 174.21338045864616
+    },
+    {
+      "sku_id": "SYN5Y_4221",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 18.955555555555552,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9951923076923077,
+      "n_stockout": 2,
+      "mean_S": 27.754020467836256
+    },
+    {
+      "sku_id": "SYN5Y_0750",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.1388888888888888,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.625,
+      "n_stockout": 3,
+      "mean_S": 0.675925925925926
+    },
+    {
+      "sku_id": "SYN5Y_4485",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 5.930555555555555,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.375,
+      "n_stockout": 6,
+      "mean_S": 1.127314814814815
+    },
+    {
+      "sku_id": "SYN5Y_1767",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 16.551470110461338,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9201226053639847,
+      "n_stockout": 6,
+      "mean_S": 24.17958750151732
+    },
+    {
+      "sku_id": "SYN5Y_3290",
+      "arm": "b",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 9.141093474426803,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6024489795918367,
+      "n_stockout": 4,
+      "mean_S": 6.787147266313934
+    },
+    {
+      "sku_id": "SYN5Y_2171",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 15.848148148148148,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.21621621621621623,
+      "n_stockout": 4,
+      "mean_S": 1.426025132275133
+    },
+    {
+      "sku_id": "SYN5Y_3144",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 34.43783969728243,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9613899613899614,
+      "n_stockout": 2,
+      "mean_S": 52.28687972996218
+    },
+    {
+      "sku_id": "SYN5Y_1340",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 9.38888888888889,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 11.112654320987653
+    },
+    {
+      "sku_id": "SYN5Y_1107",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 7.138354700854699,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8874458874458874,
+      "n_stockout": 5,
+      "mean_S": 8.19795066045066
+    },
+    {
+      "sku_id": "SYN5Y_4590",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 8.021604938271604,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.8230829831932773,
+      "n_stockout": 4,
+      "mean_S": 7.950617283950617
+    },
+    {
+      "sku_id": "SYN5Y_2161",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 3.240277777777779,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.25,
+      "n_stockout": 4,
+      "mean_S": 0.5750000000000005
+    },
+    {
+      "sku_id": "SYN5Y_3320",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 13.034788359788362,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.8013056835637481,
+      "n_stockout": 3,
+      "mean_S": 5.585978835978837
+    },
+    {
+      "sku_id": "SYN5Y_0113",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 59.251356640817434,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9270812859750105,
+      "n_stockout": 3,
+      "mean_S": 58.40350851943991
+    },
+    {
+      "sku_id": "SYN5Y_3923",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 18.418055555555554,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.46,
+      "n_stockout": 7,
+      "mean_S": 5.257870370370372
+    },
+    {
+      "sku_id": "SYN5Y_1596",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 9.541109507776174,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.4738190730837791,
+      "n_stockout": 10,
+      "mean_S": 1.4332439936606605
+    },
+    {
+      "sku_id": "SYN5Y_3671",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 5.529166666666665,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.5757575757575758,
+      "n_stockout": 5,
+      "mean_S": 3.2492504409171077
+    },
+    {
+      "sku_id": "SYN5Y_4471",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.8888888888888884,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.2500000000000001,
+      "n_stockout": 4,
+      "mean_S": 0.37037037037037046
+    },
+    {
+      "sku_id": "SYN5Y_3835",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 2.638888888888889,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0785",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_3772",
+      "arm": "b",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 10.988807463868739,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.8326327433628319,
+      "n_stockout": 7,
+      "mean_S": 11.447166608808768
+    },
+    {
+      "sku_id": "SYN5Y_2762",
+      "arm": "b",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 0.0,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.125,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_3343",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 32.20313051146385,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.7662571851851852,
+      "n_stockout": 6,
+      "mean_S": 24.36917858376192
+    },
+    {
+      "sku_id": "SYN5Y_2413",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.3055555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.75,
+      "n_stockout": 2,
+      "mean_S": 0.7685185185185186
+    },
+    {
+      "sku_id": "SYN5Y_1174",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 6.656845238095238,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.8545454545454545,
+      "n_stockout": 3,
+      "mean_S": 7.2185074955908295
+    },
+    {
+      "sku_id": "SYN5Y_3288",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 0.9166666666666669,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9230769230769231,
+      "n_stockout": 1,
+      "mean_S": 1.0583333333333336
+    },
+    {
+      "sku_id": "SYN5Y_3973",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.0165343915343925,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6666666666666666,
+      "n_stockout": 4,
+      "mean_S": 1.0866402116402119
+    },
+    {
+      "sku_id": "SYN5Y_4810",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.8333333333333333,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.25,
+      "n_stockout": 3,
+      "mean_S": 0.3611111111111111
+    },
+    {
+      "sku_id": "SYN5Y_1943",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 5.805555555555555,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0414",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.5833333333333333,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0564",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 3.716666666666667,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.36363636363636365,
+      "n_stockout": 5,
+      "mean_S": 0.3000000000000001
+    },
+    {
+      "sku_id": "SYN5Y_4706",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.0833333333333335,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.3333333333333333,
+      "n_stockout": 5,
+      "mean_S": 0.3495370370370371
+    },
+    {
+      "sku_id": "SYN5Y_0184",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 156.7023906614303,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7771986970684039,
+      "n_stockout": 4,
+      "mean_S": 126.2617114340863
+    },
+    {
+      "sku_id": "SYN5Y_3665",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.7222222222222223,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.2,
+      "n_stockout": 3,
+      "mean_S": 0.26851851851851866
+    },
+    {
+      "sku_id": "SYN5Y_0590",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 32.35092592592593,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7105263157894737,
+      "n_stockout": 4,
+      "mean_S": 25.2787037037037
+    },
+    {
+      "sku_id": "SYN5Y_3947",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 13.620700056116723,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.3333333333333333,
+      "n_stockout": 6,
+      "mean_S": 2.23020860312527
+    },
+    {
+      "sku_id": "SYN5Y_3471",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.611111111111111,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.7,
+      "n_stockout": 2,
+      "mean_S": 0.7037037037037037
+    },
+    {
+      "sku_id": "SYN5Y_4119",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 11.443055555555553,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 21.900000000000002
+    },
+    {
+      "sku_id": "SYN5Y_2496",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 14.319633642930857,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.8618881118881119,
+      "n_stockout": 7,
+      "mean_S": 17.9916028838436
+    },
+    {
+      "sku_id": "SYN5Y_3837",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 4.412555114638447,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7633333333333333,
+      "n_stockout": 6,
+      "mean_S": 4.5266975308641975
+    },
+    {
+      "sku_id": "SYN5Y_2471",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 6.817669753086417,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.32222222222222247,
+      "n_stockout": 6,
+      "mean_S": 1.0040333894500562
+    },
+    {
+      "sku_id": "SYN5Y_3876",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 4.592626633986928,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9828125,
+      "n_stockout": 3,
+      "mean_S": 6.98672385620915
+    },
+    {
+      "sku_id": "SYN5Y_2315",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 4.052469135802469,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.8333333333333334,
+      "n_stockout": 1,
+      "mean_S": 1.3216820987654323
+    },
+    {
+      "sku_id": "SYN5Y_1208",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.4722222222222223,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.42857142857142855,
+      "n_stockout": 3,
+      "mean_S": 0.6111111111111112
+    },
+    {
+      "sku_id": "SYN5Y_4979",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 19.204629629629622,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0526315789473687,
+      "n_stockout": 5,
+      "mean_S": 0.6583333333333345
+    },
+    {
+      "sku_id": "SYN5Y_0391",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 6.94973544973545,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7152957264957266,
+      "n_stockout": 6,
+      "mean_S": 3.1144179894179893
+    },
+    {
+      "sku_id": "SYN5Y_2109",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 10.000000000000004,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.20833333333333334,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_4909",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 45.407651072124764,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9604037267080745,
+      "n_stockout": 3,
+      "mean_S": 55.96871345029239
+    },
+    {
+      "sku_id": "SYN5Y_2755",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.8757716049382713,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8133333333333335,
+      "n_stockout": 5,
+      "mean_S": 2.4405864197530867
+    },
+    {
+      "sku_id": "SYN5Y_2177",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 8.22922153191761,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 13.049705348663682
+    },
+    {
+      "sku_id": "SYN5Y_4397",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_4082",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.2777777777777777,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.4444444444444444,
+      "n_stockout": 3,
+      "mean_S": 0.3148148148148149
+    },
+    {
+      "sku_id": "SYN5Y_4856",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 0.5277777777777778,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 1,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_2266",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 37.88513092526573,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9301858916136846,
+      "n_stockout": 4,
+      "mean_S": 43.75201844497189
+    },
+    {
+      "sku_id": "SYN5Y_3770",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 4.427777777777778,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.375,
+      "n_stockout": 3,
+      "mean_S": 1.9222222222222227
+    },
+    {
+      "sku_id": "SYN5Y_0309",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 26.03902045666752,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8012572533849129,
+      "n_stockout": 6,
+      "mean_S": 27.29376603334937
+    },
+    {
+      "sku_id": "SYN5Y_2785",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 17.681332671957673,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9159408366533864,
+      "n_stockout": 3,
+      "mean_S": 23.648008092125743
+    },
+    {
+      "sku_id": "SYN5Y_0759",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 10.152777777777779,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.1590909090909091,
+      "n_stockout": 4,
+      "mean_S": 4.393518518518519
+    },
+    {
+      "sku_id": "SYN5Y_0881",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 3.613299663299663,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.7991255961844197,
+      "n_stockout": 6,
+      "mean_S": 3.23793490460157
+    },
+    {
+      "sku_id": "SYN5Y_2018",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.201388888888889,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.16666666666666666,
+      "n_stockout": 5,
+      "mean_S": 0.4537037037037038
+    },
+    {
+      "sku_id": "SYN5Y_2135",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 6.873015873015877,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9575242718446602,
+      "n_stockout": 4,
+      "mean_S": 9.927123185456518
+    },
+    {
+      "sku_id": "SYN5Y_0618",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 2.673611111111111,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 3,
+      "mean_S": 0.10416666666666667
+    },
+    {
+      "sku_id": "SYN5Y_3455",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 5.209876543209874,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.7283333333333334,
+      "n_stockout": 3,
+      "mean_S": 2.1430776014109347
+    },
+    {
+      "sku_id": "SYN5Y_3147",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.908730158730159,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.3095238095238097,
+      "n_stockout": 6,
+      "mean_S": 0.997619047619048
+    },
+    {
+      "sku_id": "SYN5Y_1712",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 8.666666666666666,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.275,
+      "n_stockout": 5,
+      "mean_S": 1.8472222222222223
+    },
+    {
+      "sku_id": "SYN5Y_3077",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 9.006944444444445,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9488139825218477,
+      "n_stockout": 2,
+      "mean_S": 10.839618406285075
+    },
+    {
+      "sku_id": "SYN5Y_3413",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 26.679166666666664,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9391197364705881,
+      "n_stockout": 3,
+      "mean_S": 35.8006970722012
+    },
+    {
+      "sku_id": "SYN5Y_1501",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 2.0833333333333335,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.7394117647058823,
+      "n_stockout": 5,
+      "mean_S": 2.0
+    },
+    {
+      "sku_id": "SYN5Y_3776",
+      "arm": "b",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.5128968253968256,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6041666666666666,
+      "n_stockout": 5,
+      "mean_S": 1.5013227513227518
+    },
+    {
+      "sku_id": "SYN5Y_1807",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 23.934242609242606,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9319045973038369,
+      "n_stockout": 4,
+      "mean_S": 29.132154882154882
+    },
+    {
+      "sku_id": "SYN5Y_3687",
+      "arm": "b",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 3.370093795093795,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7857954545454545,
+      "n_stockout": 6,
+      "mean_S": 2.5570606862273526
+    },
+    {
+      "sku_id": "SYN5Y_1901",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 10.033064774731441,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.45454545454545453,
+      "n_stockout": 6,
+      "mean_S": 1.8838482505149174
+    },
+    {
+      "sku_id": "SYN5Y_4949",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0945",
+      "arm": "b",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 28.015756985055233,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9661016949152542,
+      "n_stockout": 2,
+      "mean_S": 34.22219637899462
+    },
+    {
+      "sku_id": "SYN5Y_4070",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 5.291666666666667,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 4,
+      "mean_S": 0.125
+    },
+    {
+      "sku_id": "SYN5Y_0153",
+      "arm": "b",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 12.430555555555557,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.561351724137931,
+      "n_stockout": 4,
+      "mean_S": 4.8291666666666675
+    },
+    {
+      "sku_id": "SYN5Y_3120",
+      "arm": "b",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 5.516666666666667,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.5833333333333334,
+      "n_stockout": 3,
+      "mean_S": 1.0666666666666673
+    },
+    {
+      "sku_id": "SYN5Y_4673",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 3.2291666666666665,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 3,
+      "mean_S": 0.11805555555555555
+    },
+    {
+      "sku_id": "SYN5Y_0634",
+      "arm": "b",
+      "sb_cell": "dead",
+      "mean_cost": 11.654629629629628,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.1730769230769232,
+      "n_stockout": 6,
+      "mean_S": 0.9462962962962966
+    },
+    {
+      "sku_id": "SYN5Y_2533",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 22.7611111111111,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9411436950146627,
+      "n_stockout": 3,
+      "mean_S": 29.733333333333324
+    },
+    {
+      "sku_id": "SYN5Y_3353",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 174.73205242135833,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9437989868153445,
+      "n_stockout": 3,
+      "mean_S": 174.21338045864616
+    },
+    {
+      "sku_id": "SYN5Y_4221",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 18.955555555555552,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9951923076923077,
+      "n_stockout": 2,
+      "mean_S": 27.754020467836256
+    },
+    {
+      "sku_id": "SYN5Y_0750",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.1388888888888888,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.625,
+      "n_stockout": 3,
+      "mean_S": 0.675925925925926
+    },
+    {
+      "sku_id": "SYN5Y_4485",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 5.930555555555555,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.375,
+      "n_stockout": 6,
+      "mean_S": 1.127314814814815
+    },
+    {
+      "sku_id": "SYN5Y_1767",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 16.551470110461338,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9268249647106271,
+      "n_stockout": 6,
+      "mean_S": 24.17958750151732
+    },
+    {
+      "sku_id": "SYN5Y_3290",
+      "arm": "c",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 9.141093474426803,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6066790352504638,
+      "n_stockout": 4,
+      "mean_S": 6.787147266313934
+    },
+    {
+      "sku_id": "SYN5Y_2171",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 15.848148148148148,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.21621621621621623,
+      "n_stockout": 4,
+      "mean_S": 1.426025132275133
+    },
+    {
+      "sku_id": "SYN5Y_3144",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 34.43783969728243,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9613899613899614,
+      "n_stockout": 2,
+      "mean_S": 52.28687972996218
+    },
+    {
+      "sku_id": "SYN5Y_1340",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 9.38888888888889,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 11.112654320987653
+    },
+    {
+      "sku_id": "SYN5Y_1107",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 7.138354700854699,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8874458874458874,
+      "n_stockout": 5,
+      "mean_S": 8.19795066045066
+    },
+    {
+      "sku_id": "SYN5Y_4590",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 8.021604938271604,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.826155462184874,
+      "n_stockout": 4,
+      "mean_S": 7.950617283950617
+    },
+    {
+      "sku_id": "SYN5Y_2161",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 3.240277777777779,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.25,
+      "n_stockout": 4,
+      "mean_S": 0.5750000000000005
+    },
+    {
+      "sku_id": "SYN5Y_3320",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 13.034788359788362,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.8013056835637481,
+      "n_stockout": 3,
+      "mean_S": 5.585978835978837
+    },
+    {
+      "sku_id": "SYN5Y_0113",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 59.251356640817434,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9270812859750105,
+      "n_stockout": 3,
+      "mean_S": 58.40350851943991
+    },
+    {
+      "sku_id": "SYN5Y_3923",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 18.418055555555554,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.46136363636363636,
+      "n_stockout": 7,
+      "mean_S": 5.257870370370372
+    },
+    {
+      "sku_id": "SYN5Y_1596",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 9.541109507776174,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.4738190730837791,
+      "n_stockout": 10,
+      "mean_S": 1.4332439936606605
+    },
+    {
+      "sku_id": "SYN5Y_3671",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 5.529166666666665,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.5757575757575758,
+      "n_stockout": 5,
+      "mean_S": 3.2492504409171077
+    },
+    {
+      "sku_id": "SYN5Y_4471",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.8888888888888884,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.2500000000000001,
+      "n_stockout": 4,
+      "mean_S": 0.37037037037037046
+    },
+    {
+      "sku_id": "SYN5Y_3835",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 2.638888888888889,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0785",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_3772",
+      "arm": "c",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 10.988807463868739,
+      "cycle_csl": 0.6842105263157895,
+      "fill_rate": 0.8326327433628319,
+      "n_stockout": 7,
+      "mean_S": 11.447166608808768
+    },
+    {
+      "sku_id": "SYN5Y_2762",
+      "arm": "c",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 0.0,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.125,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_3343",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 32.20313051146385,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.764828951088493,
+      "n_stockout": 5,
+      "mean_S": 24.36917858376192
+    },
+    {
+      "sku_id": "SYN5Y_2413",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 1.3055555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.75,
+      "n_stockout": 2,
+      "mean_S": 0.7685185185185186
+    },
+    {
+      "sku_id": "SYN5Y_1174",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 6.656845238095238,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.8545454545454545,
+      "n_stockout": 3,
+      "mean_S": 7.2185074955908295
+    },
+    {
+      "sku_id": "SYN5Y_3288",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 0.9166666666666669,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9230769230769231,
+      "n_stockout": 1,
+      "mean_S": 1.0583333333333336
+    },
+    {
+      "sku_id": "SYN5Y_3973",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.0165343915343925,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6666666666666666,
+      "n_stockout": 4,
+      "mean_S": 1.0866402116402119
+    },
+    {
+      "sku_id": "SYN5Y_4810",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.8333333333333333,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.25,
+      "n_stockout": 3,
+      "mean_S": 0.3611111111111111
+    },
+    {
+      "sku_id": "SYN5Y_1943",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 5.805555555555555,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0414",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.5833333333333333,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0564",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 3.716666666666667,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.36363636363636365,
+      "n_stockout": 5,
+      "mean_S": 0.3000000000000001
+    },
+    {
+      "sku_id": "SYN5Y_4706",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.0833333333333335,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.3333333333333333,
+      "n_stockout": 5,
+      "mean_S": 0.3495370370370371
+    },
+    {
+      "sku_id": "SYN5Y_0184",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 156.7023906614303,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7771986970684039,
+      "n_stockout": 4,
+      "mean_S": 126.2617114340863
+    },
+    {
+      "sku_id": "SYN5Y_3665",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.7222222222222223,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.2,
+      "n_stockout": 3,
+      "mean_S": 0.26851851851851866
+    },
+    {
+      "sku_id": "SYN5Y_0590",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 32.35092592592593,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7105263157894737,
+      "n_stockout": 4,
+      "mean_S": 25.2787037037037
+    },
+    {
+      "sku_id": "SYN5Y_3947",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 13.620700056116723,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.3333333333333333,
+      "n_stockout": 6,
+      "mean_S": 2.23020860312527
+    },
+    {
+      "sku_id": "SYN5Y_3471",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.611111111111111,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.7,
+      "n_stockout": 2,
+      "mean_S": 0.7037037037037037
+    },
+    {
+      "sku_id": "SYN5Y_4119",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 11.443055555555553,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 21.900000000000002
+    },
+    {
+      "sku_id": "SYN5Y_2496",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 14.319633642930857,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.8618881118881119,
+      "n_stockout": 7,
+      "mean_S": 17.9916028838436
+    },
+    {
+      "sku_id": "SYN5Y_3837",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 4.412555114638447,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7633333333333333,
+      "n_stockout": 6,
+      "mean_S": 4.5266975308641975
+    },
+    {
+      "sku_id": "SYN5Y_2471",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 6.817669753086417,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.32222222222222247,
+      "n_stockout": 6,
+      "mean_S": 1.0040333894500562
+    },
+    {
+      "sku_id": "SYN5Y_3876",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 4.592626633986928,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9828125,
+      "n_stockout": 3,
+      "mean_S": 6.98672385620915
+    },
+    {
+      "sku_id": "SYN5Y_2315",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 4.052469135802469,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.8333333333333334,
+      "n_stockout": 1,
+      "mean_S": 1.3216820987654323
+    },
+    {
+      "sku_id": "SYN5Y_1208",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.4722222222222223,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.42857142857142855,
+      "n_stockout": 3,
+      "mean_S": 0.6111111111111112
+    },
+    {
+      "sku_id": "SYN5Y_4979",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 19.204629629629622,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0526315789473687,
+      "n_stockout": 5,
+      "mean_S": 0.6583333333333345
+    },
+    {
+      "sku_id": "SYN5Y_0391",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 6.94973544973545,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7200854700854702,
+      "n_stockout": 6,
+      "mean_S": 3.1144179894179893
+    },
+    {
+      "sku_id": "SYN5Y_2109",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 10.000000000000004,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.20833333333333334,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_4909",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 45.40765107212477,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9604037267080745,
+      "n_stockout": 3,
+      "mean_S": 55.96871345029239
+    },
+    {
+      "sku_id": "SYN5Y_2755",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.8757716049382713,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8133333333333335,
+      "n_stockout": 5,
+      "mean_S": 2.4405864197530867
+    },
+    {
+      "sku_id": "SYN5Y_2177",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 8.22922153191761,
+      "cycle_csl": 1.0,
+      "fill_rate": 1.0,
+      "n_stockout": 0,
+      "mean_S": 13.049705348663682
+    },
+    {
+      "sku_id": "SYN5Y_4397",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_4082",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.2777777777777777,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.4444444444444444,
+      "n_stockout": 3,
+      "mean_S": 0.3148148148148149
+    },
+    {
+      "sku_id": "SYN5Y_4856",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 0.5277777777777778,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.0,
+      "n_stockout": 1,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_2266",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 37.88513092526573,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9316186387031073,
+      "n_stockout": 4,
+      "mean_S": 43.75201844497189
+    },
+    {
+      "sku_id": "SYN5Y_3770",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 4.427777777777778,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.375,
+      "n_stockout": 3,
+      "mean_S": 1.9222222222222227
+    },
+    {
+      "sku_id": "SYN5Y_0309",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 26.03902045666752,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.8012572533849129,
+      "n_stockout": 6,
+      "mean_S": 27.29376603334937
+    },
+    {
+      "sku_id": "SYN5Y_2785",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 17.681332671957673,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.921581673306773,
+      "n_stockout": 2,
+      "mean_S": 23.648008092125743
+    },
+    {
+      "sku_id": "SYN5Y_0759",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 10.152777777777779,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.1590909090909091,
+      "n_stockout": 4,
+      "mean_S": 4.393518518518519
+    },
+    {
+      "sku_id": "SYN5Y_0881",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 3.613299663299663,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.8003179650238473,
+      "n_stockout": 6,
+      "mean_S": 3.23793490460157
+    },
+    {
+      "sku_id": "SYN5Y_2018",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.201388888888889,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.16666666666666666,
+      "n_stockout": 5,
+      "mean_S": 0.4537037037037038
+    },
+    {
+      "sku_id": "SYN5Y_2135",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 6.873015873015877,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.9611650485436893,
+      "n_stockout": 4,
+      "mean_S": 9.927123185456518
+    },
+    {
+      "sku_id": "SYN5Y_0618",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 2.673611111111111,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 3,
+      "mean_S": 0.10416666666666667
+    },
+    {
+      "sku_id": "SYN5Y_3455",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 5.209876543209874,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.7333333333333333,
+      "n_stockout": 3,
+      "mean_S": 2.1430776014109347
+    },
+    {
+      "sku_id": "SYN5Y_3147",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.908730158730159,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.3095238095238097,
+      "n_stockout": 6,
+      "mean_S": 0.997619047619048
+    },
+    {
+      "sku_id": "SYN5Y_1712",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 8.666666666666666,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.275,
+      "n_stockout": 5,
+      "mean_S": 1.8472222222222223
+    },
+    {
+      "sku_id": "SYN5Y_3077",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 9.006944444444445,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9488139825218477,
+      "n_stockout": 2,
+      "mean_S": 10.839618406285075
+    },
+    {
+      "sku_id": "SYN5Y_3413",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 26.679166666666664,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.9420471241225444,
+      "n_stockout": 3,
+      "mean_S": 35.8006970722012
+    },
+    {
+      "sku_id": "SYN5Y_1501",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 2.0833333333333335,
+      "cycle_csl": 0.7368421052631579,
+      "fill_rate": 0.7411764705882353,
+      "n_stockout": 5,
+      "mean_S": 2.0
+    },
+    {
+      "sku_id": "SYN5Y_3776",
+      "arm": "c",
+      "sb_cell": "high_lowdisp",
+      "mean_cost": 2.5128968253968256,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.6041666666666666,
+      "n_stockout": 5,
+      "mean_S": 1.5013227513227518
+    },
+    {
+      "sku_id": "SYN5Y_1807",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 23.934242609242606,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.9319045973038369,
+      "n_stockout": 4,
+      "mean_S": 29.132154882154882
+    },
+    {
+      "sku_id": "SYN5Y_3687",
+      "arm": "c",
+      "sb_cell": "moderate_lowdisp",
+      "mean_cost": 3.370093795093795,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.7893155694879833,
+      "n_stockout": 4,
+      "mean_S": 2.5570606862273526
+    },
+    {
+      "sku_id": "SYN5Y_1901",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 10.033064774731441,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.45454545454545453,
+      "n_stockout": 6,
+      "mean_S": 1.8838482505149174
+    },
+    {
+      "sku_id": "SYN5Y_4949",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 1.0555555555555556,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.0,
+      "n_stockout": 2,
+      "mean_S": 0.0
+    },
+    {
+      "sku_id": "SYN5Y_0945",
+      "arm": "c",
+      "sb_cell": "moderate_highdisp",
+      "mean_cost": 28.015756985055233,
+      "cycle_csl": 0.9473684210526315,
+      "fill_rate": 0.9689265536723164,
+      "n_stockout": 1,
+      "mean_S": 34.22219637899462
+    },
+    {
+      "sku_id": "SYN5Y_4070",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 5.291666666666667,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 4,
+      "mean_S": 0.125
+    },
+    {
+      "sku_id": "SYN5Y_0153",
+      "arm": "c",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 12.430555555555557,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.5689655172413793,
+      "n_stockout": 3,
+      "mean_S": 4.8291666666666675
+    },
+    {
+      "sku_id": "SYN5Y_3120",
+      "arm": "c",
+      "sb_cell": "high_highdisp",
+      "mean_cost": 5.516666666666667,
+      "cycle_csl": 0.8947368421052632,
+      "fill_rate": 0.5833333333333334,
+      "n_stockout": 3,
+      "mean_S": 1.0666666666666673
+    },
+    {
+      "sku_id": "SYN5Y_4673",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 3.2291666666666665,
+      "cycle_csl": 0.8421052631578947,
+      "fill_rate": 0.0,
+      "n_stockout": 3,
+      "mean_S": 0.11805555555555555
+    },
+    {
+      "sku_id": "SYN5Y_0634",
+      "arm": "c",
+      "sb_cell": "dead",
+      "mean_cost": 11.654629629629628,
+      "cycle_csl": 0.7894736842105263,
+      "fill_rate": 0.1730769230769232,
+      "n_stockout": 6,
+      "mean_S": 0.9462962962962966
+    }
+  ]
+}

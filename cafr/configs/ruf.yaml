@@ -24,6 +24,24 @@ forecast:
   fit_on: observed
 
 # ---------------------------------------------------------------------------
+# The observation convention for RUF.
+#
+# RUF is a DEMAND panel, not an inventory transaction log. `stockout_flag` is False
+# everywhere (handoff H-3), so censoring is unobserved and there is no sales record to
+# fit on -- `fit_on: observed` can only mean "fit on demand_observed", the panel's own
+# column. The simulator's stock-outs remain a counterfactual COST layer; they are not
+# part of the policy's information set.
+#
+# Under the base default (`censored_sales`) the policy would instead see its own sales,
+# which are 0 from t=0 because it starts with no stock and no history. The forecaster
+# then correctly predicts 0 forever, the order-up-to level stays at 0, and every arm
+# returns identical numbers. That collapse is an artefact of the convention, not a
+# finding, so RUF uses `demand`.
+# ---------------------------------------------------------------------------
+sim:
+  observation_model: demand
+
+# ---------------------------------------------------------------------------
 # H-1 -- the panel-length decision, which is ESCALATED, not resolved here.
 #
 # Rev 2 §14.1 assumed 84 periods (24 burn-in + 60 evaluated). RUF v2 ships 60.

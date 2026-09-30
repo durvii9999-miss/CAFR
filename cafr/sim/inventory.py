@@ -126,6 +126,11 @@ class SimConfig:
     B_over_H: float = 19.0
     c7_safety_factor_scale: float = 1.0
     protection_convention: str = "L+1"
+    # What the policy observes as history. See `_run_series` step 4.
+    #   censored_sales  the policy sees sales; a stock-out hides unmet demand.
+    #   demand          the policy sees the demand series (panels that are demand
+    #                   panels, not transaction logs -- RUF, by H-3).
+    observation_model: str = "censored_sales"
 
     @classmethod
     def from_config(cls, cfg: dict) -> "SimConfig":
@@ -135,6 +140,12 @@ class SimConfig:
         unknown = set(sim) - known
         if unknown:
             raise ValueError(f"unknown sim config keys: {sorted(unknown)}")
+        obs_model = sim.get("observation_model", "censored_sales")
+        if obs_model not in ("censored_sales", "demand"):
+            raise ValueError(
+                f"unknown observation_model: {obs_model!r}; "
+                "expected 'censored_sales' or 'demand'"
+            )
         return cls(**{k: v for k, v in sim.items() if k in known})
 
     @property
@@ -374,8 +385,32 @@ class InventorySimulator:
             #    potentially censored exactly when sales were lost.
             demand_met[t] = met
             demand_lost[t] = lost
-            censored[t] = lost > 0
-            y_observed[t] = met
+
+            # WHAT THE POLICY GETS TO SEE. Two conventions, and the choice changes
+            # every number, so it is a named config value and never a silent default.
+            #
+            #   "censored_sales" (default) -- the policy sees what it SOLD. A stock-out
+            #       hides the demand it could not meet. Realistic for a transaction log,
+            #       and the convention the Step 1 gates were written against.
+            #
+            #   "demand" -- the policy sees the DEMAND series. Correct when the panel is
+            #       a demand panel rather than a transaction log and stock-outs are
+            #       unobserved (handoff H-3 for RUF: `stockout_flag` is False everywhere,
+            #       so `fit_on="observed"` means "fit on demand_observed", the column
+            #       name in the panel).
+            #
+            # Under "censored_sales" the run can COLLAPSE: the policy starts with no
+            # history and no stock, so `met` is 0 from t=0, the forecaster correctly
+            # predicts 0 from an all-zero history, S stays 0, and nothing is ever
+            # ordered. The order-up-to level never recovers. That is a cold-start
+            # artefact of the convention, not a property of any arm -- it makes every
+            # arm return identical numbers.
+            if cfg.observation_model == "censored_sales":
+                y_observed[t] = met
+                censored[t] = lost > 0
+            else:
+                y_observed[t] = y
+                censored[t] = False
 
             # 5. cost. The penalty term is the unmet quantity, whichever model.
             cost[t] = cfg.H * on_hand + cfg.B * unmet

@@ -150,6 +150,7 @@ def rollout_sku(
     cfg: dict,
     fit_on: str | None = None,
     alpha: float = 0.90,
+    pool: dict | None = None,
 ) -> RolloutResult:
     """Run the rolling-origin harness for ONE SKU under ONE arm.
 
@@ -202,7 +203,11 @@ def rollout_sku(
         censored = np.asarray(censored, dtype=bool)
 
     _fit_on = fit_on or cfg["forecast"].get("fit_on", "observed")
-    pool = build_pool(cfg)
+    # A pre-built pool may be supplied so that a globally-trained model (the pooled
+    # LightGBM) is trained ONCE for the whole panel instead of once per SKU. When no
+    # pool is given, build a fresh one -- the previous behaviour.
+    if pool is None:
+        pool = build_pool(cfg)
 
     # Storage for rolling outputs.
     periods_out = np.arange(burn_in, T, dtype=np.int32)
