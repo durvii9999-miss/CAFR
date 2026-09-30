@@ -71,6 +71,12 @@ class RolloutResult:
     # Optional extra columns
     extra: dict[str, np.ndarray] = field(default_factory=dict)
 
+    # How the arm's model was chosen, when the arm makes a choice. Arm (a) selects on
+    # the burn-in window; recording it here is what lets T7 report the chosen-method
+    # distribution from a run rather than from an assertion. ``None`` for arms that
+    # do not select (b, c, e) or that select inside the bandit (f, A4, g).
+    selection: dict | None = None
+
     # ------------------------------------------------------------------ #
     def as_forecast_rows(self) -> pd.DataFrame:
         """Long-format forecast log (§27 FORECASTS_COLUMNS)."""
@@ -307,4 +313,7 @@ def rollout_sku(
         cost_mean=cost_mean,
         cost_std=cost_std,
         extra={"mu_nonzero": mu_nonzero_out},
+        # Arm (a) fills this on its first call. Reading it after the rollout is the
+        # only way the driver can report WHICH method was selected and WHY.
+        selection=getattr(level_fn, "selection", None),
     )
