@@ -52,6 +52,11 @@
       "share": 0.9525,
       "status": "enforced",
       "note": "The coverage gap must clear tau_cov + margin on BOTH panels: C2 (a direct interval injection, demand untouched) and C2b (a genuine modelling error -- a per-period sigma applied to the R-period protection interval, the documented 42.3 % understatement).",
+      "n_infeasible_high_adi": 19,
+      "infeasible_p_range": [
+        0.0501496440261265,
+        0.09120075958602188
+      ],
       "both_variants": [
         "C2",
         "C2b"

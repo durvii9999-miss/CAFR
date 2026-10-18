@@ -125,6 +125,10 @@ class SimConfig:
     H: float = 1.0
     B_over_H: float = 19.0
     c7_safety_factor_scale: float = 1.0
+    # C2's injection: ``Q~_alpha = mu_hat + gamma*(Q_alpha - mu_hat)``. Carried here so
+    # `<sim>` stays the single namespace the per-SKU runner configures; the multiplier
+    # is applied inside ``aggregate_order_up_to`` via arm (c), not by the simulator.
+    c2_quantile_scale: float = 1.0
     protection_convention: str = "L+1"
     # What the policy observes as history. See `_run_series` step 4.
     #   censored_sales  the policy sees sales; a stock-out hides unmet demand.
@@ -225,22 +229,48 @@ def aggregate_order_up_to(
     R: int,
     alpha: float,
     *,
+    residuals: np.ndarray | None = None,
     window: int = 24,
     min_aggregates: int = 4,
     method: str = "linear",
     alpha_max_cap: float = 0.999,
     safety_factor_scale: float = 1.0,
+    c2_quantile_scale: float = 1.0,
 ) -> tuple[float, float, int, bool]:
     """``S = R * mu_hat + F_hat^{-1}(alpha)`` -- the R-period AGGREGATE quantile.
 
+    The quantile is taken over **R-period sums of the arm's own one-step-ahead
+    residuals**, ``A^e_s = sum_{k=0}^{R-1} e_{s-k}``. This is the residual-bootstrap
+    predictive quantile required by ``docs/17`` §5.
+
+    Why residuals and not ``aggregates - R * mu_hat``: sample quantiles are
+    translation-equivariant, so the old form cancelled ``R * mu_hat`` exactly and the
+    order-up-to level became a function of the observed history alone. The forecast had
+    no channel into the policy and arms (a), (b), (c) were the same arm. Residual sums
+    do not cancel: the historical ``e_s`` were produced by *different* past forecasts,
+    so ``mu_hat`` survives. ``residuals`` is therefore **required**; passing ``None``
+    raises rather than silently restoring the severed channel.
+
     Returns ``(S, alpha_effective, n_aggregates, fallback)``.
 
-    ``fallback`` is True when fewer than ``min_aggregates`` complete aggregates were
-    available, in which case ``S = R * mu_hat`` (no safety stock) and the decision
-    point must be flagged in the log. It is never silently smoothed over.
+    ``fallback`` is True when fewer than ``min_aggregates`` complete demand aggregates
+    or residual aggregates were available, in which case ``S = R * mu_hat`` (no safety
+    stock) and the decision point must be flagged in the log. It is never silently
+    smoothed over.
     """
     y_hist = np.asarray(y_hist, dtype="float64")
     aggregates = rolling_aggregates(y_hist, R, window)
+
+    if residuals is None:
+        raise ValueError(
+            "aggregate_order_up_to requires the arm's rolling residuals. Passing None "
+            "restores the severed policy-forecast channel documented in docs/17: "
+            "S = R*mu_hat + Q_alpha(aggregates - R*mu_hat) reduces to Q_alpha(aggregates)."
+        )
+    residuals = np.asarray(residuals, dtype="float64")
+    if residuals.ndim != 1:
+        raise ValueError(f"residuals must be one-dimensional, got shape {residuals.shape}")
+    resid_aggregates = rolling_aggregates(residuals, R, window)
 
     # n = nonzero cycles available for the quantile (Rev 2 §7.1). Computed on the
     # same trailing window the aggregates came from, so the floor and the sample
@@ -248,13 +278,17 @@ def aggregate_order_up_to(
     tail = y_hist[-window:] if window else y_hist
     n_cycles = int(np.count_nonzero(tail))
 
-    if aggregates.size < min_aggregates:
+    if aggregates.size < min_aggregates or resid_aggregates.size < min_aggregates:
         return float(R * mu_hat), float(alpha), int(aggregates.size), True
 
     alpha_eff = min(float(alpha), min(alpha_max_cap, 1.0 - 1.0 / (n_cycles + 1.0)))
-    residuals = aggregates - R * mu_hat
-    safety = float(np.quantile(residuals, alpha_eff, method=method))
+    safety = float(np.quantile(resid_aggregates, alpha_eff, method=method))
     safety *= float(safety_factor_scale)      # C7's injection scales ONLY this term
+    # C2's injection is ``Q~_alpha = mu_hat + gamma * (Q_alpha - mu_hat)`` (§15.2):
+    # the reported interval is rescaled about the point forecast and the DGP is not
+    # touched. Applied to the same safety term, for the same reason as C7's scale --
+    # the two injections never coexist on one SKU.
+    safety *= float(c2_quantile_scale)
     return float(R * mu_hat + safety), float(alpha_eff), int(aggregates.size), False
 
 

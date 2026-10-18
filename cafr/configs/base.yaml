@@ -108,12 +108,21 @@ forecast:
 monitor:
   windows:
     W_short: 24             # C1 bias
-    W_sign_stability: 96    # 4 x W_short
+    W_sign_stability: 96    # C1's sign blocks; Reading B splits available history
     W_cal: 30               # C2 coverage
     W_occ: 36               # C3 occurrence AUC. H-1: Rev 2 says 60; RUF has 60 periods.
-    W_sz: 24                # C4 size dispersion
+    W_sz: 24                # C4 size dispersion. Rev 2 §6.3's pre-registered value.
+                            # Constraint 9 already states the consequence: at W_sz = 24
+                            # and min_evidence = 10 the statistic needs p >= ~0.42 and
+                            # only ~35 % of the panel is evaluable, so C4's recall is
+                            # reported on the budget-restricted subset (§29.3) as well
+                            # as pooled. Do not widen this window to raise the evaluable
+                            # share: that would be a post-hoc change to a frozen knob.
     W_class: 30             # C6 ADI/CV2 cell
     W_svc: 30               # C7 service gap
+    W_cusum: 96             # C5's CUSUM horizon (multi-scale; both CUSUMs share it)
+    W_base: 24              # pre-injection reference window for every "now vs base"
+                            # statistic; equals burn-in so the reference is the burn-in
   min_evidence:
     c1_nonzero: 8
     c3_nonzero: 10
@@ -122,6 +131,7 @@ monitor:
     c6_periods: 30
     c7_periods: 30
     c7_unmet_cycles: 2
+    c5_baseline_nonzero: 8  # nonzero size residuals needed to calibrate the CUSUM scale
 
 # ---------------------------------------------------------------------------
 # detection -- Rev 2 §6.3, handoff §7.6.
@@ -130,7 +140,9 @@ detection:
   z_b_crit: 1.96
   binomial_p: 0.05
   tau_cov: 0.10             # C2 coverage gap
+  tau_occ: 0.10             # C3 occurrence calibration gap (Step 5 restatement)
   delta_svc: 0.10           # C7 service gap
+  c2_interval_alpha: 0.90   # the one-period interval level C2's coverage is scored at
 
   # C6's boundary is the REACHABLE one. Rev 2 §5: ADI* = 4.0, NOT the textbook 1.32.
   # A spare-parts panel has ADI >= 2 by construction, so 1.32 can never be crossed.

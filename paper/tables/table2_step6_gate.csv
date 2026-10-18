@@ -1,0 +1,11 @@
+panel,split_or_group,n_rows,candidates,true_c2_candidates,acted,true_c2_acted,precision,recall_all_c2,coverage_all_rows,coverage_candidates,true_c0_action_rate,auroc,metric,numerator,denominator,value,note
+A,train,960,246,115,147,109,0.7414965986394558,0.9083333333333333,0.153125,0.5975609756097561,0.025,0.9474278128111516,,,,,
+A,val,320,75,39,41,39,0.9512195121951219,0.975,0.128125,0.5466666666666666,0.0,0.9950142450142451,,,,,
+A,test,320,81,37,45,37,0.8222222222222222,0.925,0.140625,0.5555555555555556,0.025,0.9791154791154791,,,,,
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Acted,38,80,0.475,R2 decisions
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,True C2 acted,37,40,0.925,recall in C2 group
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,True C0 acted,1,40,0.025,false action; gamma=1 no-op
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,C2-attributed rows,44,80,0.55,37 true C2 + 7 true C0
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Precision,37,38,0.9736842105263158,true C2 among acted
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Coverage,38,80,0.475,acted / all compared SKUs
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Decision match,80,80,1.0,live decision equals stored-reading decision

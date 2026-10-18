@@ -1,0 +1,25 @@
+[
+  {
+    "scale": 1.0,
+    "fit_on": "uncensored",
+    "n_windows": 2040,
+    "n_skus": 40,
+    "acceptability_pass_rate": 0.32009803921568625,
+    "exposure_pass_rate": 0.38529411764705884,
+    "service_gap_rate": 0.38529411764705884,
+    "c7_fireable_rate": 0.07303921568627451,
+    "mean_achieved_csl": 0.8689705882352943,
+    "mean_coverage": 0.7311652598459564,
+    "rmsse_pooled_pass_rate": 0.625,
+    "rmsse_window_pass_rate": 0.4906862745098039,
+    "z_b_pass_rate": 0.9877450980392157,
+    "coverage_pass_rate": 0.5401960784313725,
+    "rmsse_tol": 0.1,
+    "constraint_6_pass": false,
+    "constraint_7_pass": false,
+    "gate_4_9_pass": false,
+    "control": "no_injection",
+    "seed": 42,
+    "n_c7_skus_requested": 40
+  }
+]

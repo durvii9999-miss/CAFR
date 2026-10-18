@@ -155,6 +155,29 @@ def test_level_fn_selects_at_the_first_call_from_the_burn_in_only(cfg, pool):
     assert lf.selection["n_origins"] == BURN_IN - 8
 
 
+def test_selection_waits_for_the_burn_in_to_be_complete(cfg, pool):
+    """The level function is called from ``t=0``; selecting there is the old bug.
+
+    The simulator calls the level function every period, including burn-in. An earlier
+    version resolved the method on the FIRST call, when ``y_observed`` had length 1, so
+    ``n_origins == 0`` and every SKU silently took the SB fallback -- making arm (a) a
+    copy of arm (b) again, for a different reason. The method must be chosen once the
+    window reaches ``burn_in``, and not before.
+    """
+    y = _intermittent(7)
+    lf = arm_a_factory(pool, cfg, "s", 0.95, "observed", sb_cell="moderate_lowdisp")
+
+    for t in range(BURN_IN - 1):          # lengths 1 .. burn_in - 1
+        lf(t=t, y_observed=y[: t + 1], censored=np.zeros(t + 1, bool), inventory=None)
+        assert lf.selection is None, f"selected early at t={t} with {t + 1} periods"
+    assert lf.chosen_method is None
+
+    lf(t=BURN_IN - 1, y_observed=y[:BURN_IN], censored=np.zeros(BURN_IN, bool),
+       inventory=None)
+    assert lf.selection is not None, "did not select once the burn-in was complete"
+    assert lf.selection["n_origins"] == BURN_IN - 8
+
+
 # --------------------------------------------------------------------------- #
 # a fallback is recorded, never silent
 # --------------------------------------------------------------------------- #

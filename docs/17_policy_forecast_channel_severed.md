@@ -1,8 +1,9 @@
 # Finding 17 — the policy does not read the forecast; every arm is the same arm
 
-**Status: OPEN — escalated, not resolved.** Date: 2026-09-30. Branch:
-`cafr/step3-10-completion`. This is a **more serious** blocker than gate 4.9, because it
-does not fail a gate — it makes the comparison the gate exists to protect *vacuous*.
+**Status: RESOLVED 2026-10-17 — §5 option 1 (residual bootstrap) implemented.** See §9.
+Date of finding: 2026-09-30. Branch: `cafr/step3-10-completion`. This was a **more
+serious** blocker than gate 4.9, because it did not fail a gate — it made the comparison
+the gate exists to protect *vacuous*.
 
 ---
 
@@ -167,4 +168,58 @@ were the same arm under two names *even before* §1's cancellation was found. Ar
 scores every classical candidate by rolling-origin one-step MASE on the burn-in window
 (`y_observed[:burn_in]`, strictly pre-evaluation) and holds the argmin fixed. Fallbacks
 are recorded with their reason, never silent. `RolloutResult.selection` carries the log.
-Locked in by `tests/test_arm_a_selection.py` (9 tests).
+Locked in by `tests/test_arm_a_selection.py` (10 tests).
+
+---
+
+## 9. Resolution — option 1 implemented (2026-10-17)
+
+**Decision.** §5 option 1, the residual-bootstrap predictive quantile. The project owner
+delegated the choice; this section records what was chosen and why.
+
+**The code now computes**
+
+```
+S = R * mu_hat_t  +  Q_alpha( sum_{k=0}^{R-1} e_{t-k} )
+```
+
+where ``e_t = y_t - mu_hat_{t|t-1}`` is the arm's own one-step-ahead residual, produced
+at the previous call before ``y_t`` was seen. The historical residuals come from
+*different* past forecasts, so ``R * mu_hat_t`` does not cancel.
+`aggregate_order_up_to` takes a ``residuals`` argument and raises ``ValueError`` if it is
+missing — forgetting it cannot silently restore the severed channel.
+
+**What changed**
+
+| File | Change |
+|---|---|
+| `cafr/sim/inventory.py` | `aggregate_order_up_to` takes ``residuals``; quantile is over R-period *residual* sums; ``None`` raises |
+| `cafr/arms/residuals.py` | new `ResidualTracker` — one-step-ahead residuals, out of sample |
+| `cafr/arms/arm_a.py`, `arm_b.py`, `arm_c.py`, `arm_e.py` | each level function owns a tracker; arm (f), (f′), (g), A4 inherit through arm (c) |
+| `tests/test_policy_forecast_link.py` | the old strict-xfail is now a passing requirement; added a negative control and the missing-residuals guard |
+| `tests/test_simulator_sanity.py` | gate 1.5 supplies a neutral residual series; its aggregate-vs-per-period assertion is unchanged |
+
+**A second silent defect found while verifying the fix.** Arm (a) resolved its method on
+the *first* level-function call — at ``t=0``, with one period of history — not at the end
+of burn-in. ``n_origins`` was always 0, so every SKU silently took the SB fallback and
+arm (a) was still a copy of arm (b), now for a different reason. It now waits until
+``len(y_observed) >= burn_in`` and selects on ``y_observed[:burn_in]``. Locked by
+``test_selection_waits_for_the_burn_in_to_be_complete``.
+
+**Verification.** 174 tests pass. On real RUF, 80 SKUs, seed 42:
+
+| arm | mean_cost | cycle_csl | mean_S |
+|---|---|---|---|
+| a | 19.1326 | 0.8339 | 11.8876 |
+| b | 19.0708 | 0.8322 | 11.9175 |
+| c | 20.2607 | 0.8339 | 11.8231 |
+
+Arm (a) selected by validation MASE on 24 of 32 test SKUs and fell back on 8
+(all-zero burn-in, recorded as ``zero_naive_scale``); it disagreed with the SB map on
+17 of 32. The arms are no longer the same policy. **No arm-level result is reported in
+the paper from this run** — it is a mechanism check on a 32-SKU sample, not an experiment.
+
+**What this obliges.** Every inventory number computed before this fix is invalid and
+must be recomputed. R-8's 42.3 % justification was derived for the old estimator and
+must be re-derived for this one before it is quoted (docs/17 §4). Gate 4.9 remains open
+and is unaffected by this fix.

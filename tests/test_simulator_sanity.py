@@ -140,8 +140,11 @@ def test_gate_1_5_order_up_to_uses_the_r_period_aggregate():
     y = np.where(delta, rng.gamma(k, mu_z / k, T), 0.0)
 
     mu_hat = float(y.mean())
+    # A neutral residual series for the aggregate-vs-per-period check: with
+    # residual = y - mu_hat, the residual aggregate is exactly the old
+    # ``aggregate - R*mu_hat`` term, so gate 1.5 keeps testing the same quantity.
     S, alpha_eff, n_agg, fallback = aggregate_order_up_to(
-        y, mu_hat, R, alpha, window=y.size, min_aggregates=4
+        y, mu_hat, R, alpha, residuals=y - mu_hat, window=y.size, min_aggregates=4
     )
 
     assert not fallback, "400 periods of history must clear min_aggregates"
@@ -182,7 +185,9 @@ def test_gate_1_5_the_per_period_substitution_is_absent():
     y = np.where(delta, rng.gamma(k, mu_z / k, T), 0.0)
     mu_hat = float(y.mean())
 
-    S, _, _, _ = aggregate_order_up_to(y, mu_hat, R, alpha, window=y.size)
+    S, _, _, _ = aggregate_order_up_to(
+        y, mu_hat, R, alpha, residuals=y - mu_hat, window=y.size
+    )
     safety = S - R * mu_hat
 
     per_period_quantile = float(np.quantile(y - mu_hat, alpha))
@@ -249,7 +254,8 @@ def test_aggregate_order_up_to_flags_insufficient_history():
     """Below ``min_aggregates`` the level falls back to ``R*mu_hat`` and SAYS SO."""
     y = np.asarray([5.0, 0.0, 3.0, 0.0, 0.0])        # 5 periods, R=3 -> 3 aggregates
     S, _, n_agg, fallback = aggregate_order_up_to(
-        y, 1.5, R=3, alpha=0.9, window=24, min_aggregates=4
+        y, 1.5, R=3, alpha=0.9, residuals=np.zeros_like(y),
+        window=24, min_aggregates=4,
     )
     assert n_agg == 3, f"5 periods at R=3 give 3 complete aggregates, got {n_agg}"
     assert fallback, "3 aggregates < min_aggregates=4 must set the fallback flag"
@@ -265,7 +271,8 @@ def test_aggregate_order_up_to_does_not_flag_at_the_boundary():
     """
     y = np.asarray([5.0, 0.0, 3.0, 0.0, 0.0, 4.0])   # 6 periods, R=3 -> 4 aggregates
     S, _, n_agg, fallback = aggregate_order_up_to(
-        y, 1.5, R=3, alpha=0.9, window=24, min_aggregates=4
+        y, 1.5, R=3, alpha=0.9, residuals=np.zeros_like(y),
+        window=24, min_aggregates=4,
     )
     assert n_agg == 4
     assert not fallback, "4 aggregates == min_aggregates=4 must NOT fall back"

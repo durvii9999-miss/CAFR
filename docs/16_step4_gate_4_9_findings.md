@@ -1,6 +1,10 @@
 # Step 4 findings — gate 4.9 FAILS, and five implementation bugs it exposed
 
-**Status: OPEN — needs a team decision. Nothing here has been resolved by changing a threshold.**
+**Status: SETTLED AND MEASURED (2026-10-17).** Constraint 7 now passes at a
+pre-registered scale (0.15). Constraint 6 still fails (0.3240) — and fails **identically
+with no injection at all** (0.3201), so it measures baseline forecast calibration, not
+C7. **Gate 4.9: FAIL.** Per §15.2's stop rule, C7 is reported as not separately
+identifiable. No threshold was moved (§7, §8).
 
 Date: 2026-09-30. Branch: `cafr/step3-10-completion`. Evidence: `results/synth/*.json`,
 `data/synth/generator_params.parquet`, and the reproduction command at the bottom.
@@ -153,6 +157,21 @@ cycle.
   `p`. Those SKUs now take the size branch, which is always satisfiable. Constraint 3:
   **0.6400 → 1.0000**. The budget was not relaxed.
 
+### 3.7 Coverage was scored against the trailing aggregate — fixed 2026-10-17
+
+`S_t` is set at the end of period `t` and covers the protection interval **ahead**,
+`[t+1, t+R]`. The coverage check compared it against the **trailing** aggregate
+`[t-R+1, t]`.
+
+That was correct in the pre-docs/17 code, where `S = Q_alpha(aggregates)` was a
+statement about the same observed data. After docs/17 replaced it with the
+residual-bootstrap predictive quantile, the comparison became a predictive quantile
+scored against the *wrong realisation* — a real quantity, but not coverage. Fixed by
+`forward_aggregates`: period `t` is scored against the demand it will actually have to
+cover. The last `R` periods have no complete forward window and are excluded from the
+coverage count. This is implementation, not specification: the clause always meant the
+forward interval.
+
 ---
 
 ## 4. What now passes, with manifests
@@ -203,3 +222,203 @@ numbers, no hand-entered values.
 3. **Constraint 7** — retune the C7 row's scale, lengthen the exposure window, or take
    §15.2's documented alternative and report C7 as not separately identifiable (§2c).
 4. **Constraint 5** — confirm the high-ADI flagging rule (§4a).
+
+---
+
+## 7. Decisions — signed off 2026-10-17
+
+The project owner delegated all four decisions ("choose best for paper project"). What
+follows is written down **before** the run that reports them, so the restatement cannot
+be reverse-engineered from the result. The rule that governs all four: **a clause that
+cannot express its own intent is restated; a gate that fails a restated clause is not
+relaxed.**
+
+### 7.1 Constraint 6, RMSSE clause — pooled per-SKU, 10 % tolerance band
+
+**Decision.** Replace the per-window comparison with the **pooled per-SKU** RMS of the
+rolling one-step residuals:
+
+```
+rmsse_pre  = RMS( e_t : burn_in <= t < tau_inj )
+rmsse_post = RMS( e_t : tau_inj <= t < T )
+pass       = rmsse_post <= (1 + RMSSE_TOL) * rmsse_pre      # RMSSE_TOL = 0.10
+```
+
+The per-window ratio is still computed and reported (`rmsse`, `rmsse_base`,
+`rmsse_window_ok`) for transparency, but it does not set the verdict.
+
+**Why this is a restatement, not a relaxation.** §2a: under the null, a per-window
+"post ≤ baseline" comparison has P(pass) = 0.5 *by construction*. An 80 % bar was
+therefore unreachable by any correct implementation — the clause as written did not
+assert "the error did not rise", it asserted a coin flip. Pooling turns the quantity
+into one estimate per SKU of the **ratio** it was always meant to be about; the 10 %
+band is the explicit statement of how much sampling noise counts as "did not rise".
+Before the change, 57.6 % of windows passed; that number measured sampling noise.
+
+**What it does not do.** It does not let a forecast degrade arbitrarily: the ratio is
+still one-sided, still against the SKU's own pre-injection error, and the 10 % band was
+chosen from the sampling spread of an 80–96-period RMS, not from the result.
+
+### 7.2 Constraint 6, coverage clause — the forecaster's UNSCALED quantile
+
+**Decision.** Coverage is measured against the forecast's predictive quantile **before**
+C7's safety-factor scaling:
+
+```
+S              = R * mu_hat + scale * Q_alpha(A^e)
+S_forecast     = R * mu_hat + Q_alpha(A^e) = R * mu_hat + (S - R * mu_hat) / scale
+coverage       = mean( A^agg <= S_forecast )
+pass           = |coverage - alpha_used| <= TAU_COV
+```
+
+`S_forecast` is reconstructed from the logged `S`, `mu_hat` and the scale
+(`unscaled_forecast_level`). A fallback period (`S == R*mu_hat`) reconstructs to the same
+value without a special case.
+
+**Why.** §2b: measured against the policy's scaled `S`, C7's injection *is* the
+coverage gap, so the clause becomes C2 and C7 is not identifiable — the exact failure
+constraint 6 exists to detect. Measured against the unscaled forecast, the clause asks
+the question it was written to ask: *did the forecast stay acceptable while the policy
+was mis-set?* This is also the only reading under which C7 differs from C2.
+
+**Consequence.** The coverage pass rate is now invariant to the injection scale, as it
+must be: C7 moves the policy, not the forecaster. `scale > 0` is enforced, because at 0
+the safety term carries no information and the reconstruction is undefined.
+
+### 7.3 Constraint 7 — pre-registered scale grid, mildest first
+
+**Decision.** The injection scale is chosen over a **grid fixed in advance**:
+
+```
+grid = (0.60, 0.45, 0.30, 0.15, 0.05)        # mildest first
+```
+
+Walk the grid in that order and use the **first** scale whose exposure pass rate
+(`n_usable >= 20` and `n_unmet_cycles >= 2`) is at least 0.80. If no scale reaches it,
+use the strongest scale (0.05), record `grid_exhausted_no_pass`, and **gate 4.9 fails**.
+
+Selection reads **constraint 7 only**. Constraint 6 is invariant to the scale under
+`observation_model = demand` — the forecaster sees demand, not sales — so letting it
+steer the pick would be selecting on noise.
+
+**Why 0.05 and not 0.0.** The unscaled quantile has to be recovered by dividing the
+safety term by the scale (§7.2). At scale 0 that is undefined and the policy carries no
+information about the forecast. 0.05 is the no-safety-stock regime in practice.
+
+**Why this is allowed.** §15.2's stop rule names retuning the injection table as its
+first option. The scale is a **generator parameter**, not a gate threshold. What would
+not be allowed — and is not done — is lowering the 0.80 pass rate or the ≥ 2 unmet
+cycles.
+
+### 7.4 Constraint 5 — high-ADI tail stays flagged, not redefined
+
+**Decision.** Confirmed: keep `gap_clears_with_margin = False` for the SKUs on which the
+gap is arithmetically infeasible, report them separately (count and `p` range in
+`panel_report.json`), and **do not** drop them or redefine C2 onto the per-period
+interval.
+
+**Why.** §4a: for `p` in `[0.05, 0.091]`, `P(A_R = 0) = (1-p)^3 >= 0.75`, so no interval
+centred at or above the mean can under-cover by `tau_cov + margin`. That is a property
+of the demand DGP, not of the injection. Redefining the object to make the constraint
+pass would change what C2 means and make it non-comparable to C2b. Flagging is the
+honest report; the drop is forbidden by handoff §13 item 23.
+
+---
+
+## 8. Measured outcome under the restated gate
+
+**Run: 2026-10-17, 40 C7 SKUs, 2,040 windows, seed 42.**
+
+```bash
+python experiments/build_synth_panel.py --seed 42 --c7-skus 40
+python experiments/c7_control_diagnostic.py --seed 42 --c7-skus 40   # scale 1.0
+```
+
+Artifacts: `results/synth/c7_constraints.json`, `c7_constraints.parquet`,
+`c7_windows.parquet`, `c7_scale_ladder.parquet`, `c7_control_scale1.json`, and the
+console log `c7_preflight_run.log`.
+
+### 8.1 The verdict
+
+| quantity | measured | required | verdict |
+|---|---|---|---|
+| constraint 6 — acceptability | **0.3240** | ≥ 0.80 | **FAIL** |
+| constraint 7 — exposure | **0.8265** | ≥ 0.80 | **PASS** |
+| gate 4.9 | — | both | **FAIL** |
+| constraint 5 (C2 gap) | 0.9525 (381/400) | unchanged | PASS, 19 high-ADI flagged |
+
+Constraint 7 is now settled: the pre-registered grid chose **scale 0.15**, the mildest
+scale whose exposure reached 80 %.
+
+| scale | acceptability | exposure | mean achieved CSL | selected |
+|---|---|---|---|---|
+| 0.60 | 0.3324 | 0.5794 | 0.8216 | no |
+| 0.45 | 0.3201 | 0.6833 | 0.7878 | no |
+| 0.30 | 0.3314 | 0.7686 | 0.7607 | no |
+| **0.15** | 0.3240 | **0.8265** | **0.7240** | **yes** |
+
+**No threshold was moved.** The 0.80 pass rates, the ≥ 2 unmet cycles, `TAU_COV`, the
+10 % RMSSE band and the gate itself are exactly as pre-registered in §7.
+
+### 8.2 Constraint 6, clause by clause
+
+| clause | pass rate | note |
+|---|---|---|
+| `\|z_b\| ≤ 1.96` | **0.9877** | passes; the size-error bias is not the problem |
+| RMSSE pooled ≤ 1.10 × baseline | **0.6250** | 15 of 40 SKUs exceed the band |
+| coverage within `tau_cov` of `alpha_used` | **0.5441** | mean gap **−0.070**; 38.1 % under by > 0.10, 7.5 % over |
+
+The pooled RMSSE ratios are centred where expected — median **1.04**, q10 0.61, q90 1.40
+— but the spread is wide enough that 15/40 SKUs cross a 10 % band. Coverage is
+systematically low: mean `alpha_used` 0.799, mean coverage 0.729.
+
+### 8.3 The decisive finding: constraint 6 fails WITHOUT the injection
+
+The same pipeline at **scale 1.0** — no injection at all — gives:
+
+| clause | injected (0.15) | control (1.0) | difference |
+|---|---|---|---|
+| acceptability | 0.3240 | **0.3201** | +0.0039 |
+| RMSSE pooled | 0.6250 | **0.6250** | 0 |
+| `z_b` | 0.9877 | **0.9877** | 0 |
+| coverage | 0.5441 | **0.5402** | +0.0039 |
+
+**Constraint 6 fails just as hard with no C7 in the panel.** This is not noise about the
+injection; it is the baseline forecaster's calibration. The reason is structural: under
+`observation_model = demand` the forecaster never sees the stock-outs the injection
+causes, so C7's scale cannot move its residuals, its `z_b`, or its predictive quantile.
+The tiny differences are floating-point boundary effects in reconstructing the unscaled
+quantile.
+
+Therefore **constraint 6 cannot identify C7**. It is a test of whether arm (c)'s
+forecast is acceptable in absolute terms, and on this sample it is not (0.32). No
+injection scale can fix that, and no restatement of the clause's object can either —
+which is why the restatements in §7, though correct, were not sufficient.
+
+### 8.4 What this means for the paper
+
+§15.2's stop rule is explicit: when the pre-flight cannot certify the injection, the
+documented alternative is to **report C7 as not separately identifiable in this
+simulator** and publish the six-cause taxonomy. That is the honest outcome here.
+
+This is a **negative finding about the condition set**, not about the attribution
+method: the monitor and classifier read the rolling residuals, which do depend on the
+forecast, so C7's detectability is a separate question. But the C7 *injection* cannot
+be certified by these constraints, so:
+
+- **Do not** claim C7 identification from this pre-flight.
+- **Do not** quote an arm-level inventory result as evidence about C7.
+- **Do not** lower the 0.80 bar, widen `TAU_COV`, or relax the 10 % band. Any of those
+  would turn a measured negative into an unmeasured claim.
+- A **redesign** of the condition set — e.g. a difference-in-difference against the
+  scale-1.0 control per SKU — is a team decision about what the gate should mean. It is
+  not implemented here, because it would be a new gate chosen after seeing this result.
+
+### 8.5 State saved for resumption
+
+Results and the control at `results/synth/`; log at `results/synth/c7_preflight_run.log`;
+the diagnostic driver at `experiments/c7_control_diagnostic.py`. Test suite: **181
+passed** (includes the new clause and calibration tests). Gate 4.9 remains the blocker
+for Steps 5–14 and M2.
+
+

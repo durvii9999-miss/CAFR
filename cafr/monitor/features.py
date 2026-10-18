@@ -10,6 +10,8 @@ __all__ = [
     "compute_bias_stats",
     "compute_coverage_stats",
     "compute_occurrence_stats",
+    "compute_occurrence_gap",
+    "conformal_interval",
     "compute_dispersion_stats",
     "compute_cusum_stats",
     "compute_intermittency_stats",
@@ -75,6 +77,90 @@ def compute_occurrence_stats(delta: np.ndarray, z_hat: np.ndarray, usable: np.nd
     fz = float(np.mean(z[d == 1] < 0.5)) if n_pos > 0 else float("nan")
     
     return {"auc": auc, "fz": fz}
+
+def compute_occurrence_gap(
+    delta: np.ndarray,
+    z_hat: np.ndarray,
+    usable: np.ndarray,
+    min_evidence: int = 10,
+) -> dict:
+    """C3's calibrated occurrence gap: realized rate minus the model's own ``z_hat``.
+
+    **Why this replaces the fixed 0.5 "false zero" threshold.** On this panel the
+    occurrence probability is ``p in [0.05, 0.50]`` by construction, so ``z_hat < 0.5``
+    is true on *every* period of an intermittent SKU: the measured false-zero rate was
+    **1.000 on the C0 control**, which made C3 fire on the control by construction.
+    A threshold can only discriminate when both sides of it are reachable.
+
+    The gap is the same object C3's injection moves: a step in ``p`` leaves the
+    forecaster's occurrence estimate behind for as long as it takes to adapt, so the
+    realized rate sits above (or below) ``z_hat``. The binomial test uses the model's
+    own mean occurrence probability as the null, which is the right null for
+    "the occurrence forecast is calibrated".
+
+    Returns ``occ_gap``, ``p_val``, ``n``. ``p_val`` is ``nan`` when the null is
+    degenerate (``mean(z)`` at 0 or 1) or the evidence floor is unmet.
+    """
+    delta = np.asarray(delta, dtype="float64")
+    z_hat = np.asarray(z_hat, dtype="float64")
+    mask = np.asarray(usable, dtype=bool) & np.isfinite(z_hat)
+    d, z = delta[mask], np.clip(z_hat[mask], 0.0, 1.0)
+    n = int(d.size)
+    if n < min_evidence:
+        return {"occ_gap": float("nan"), "p_val": float("nan"), "n": n}
+
+    p0 = float(np.mean(z))
+    if not (0.0 < p0 < 1.0):
+        return {"occ_gap": float("nan"), "p_val": float("nan"), "n": n}
+    k = int(np.sum(d))
+    return {
+        "occ_gap": float(k / n - p0),
+        "p_val": float(binomtest(k, n, p0).pvalue),
+        "n": n,
+    }
+
+
+def conformal_interval(
+    mu: float,
+    residuals: np.ndarray,
+    alpha: float = 0.90,
+    *,
+    scale: float = 1.0,
+    min_evidence: int = 8,
+) -> tuple[float, float]:
+    """A two-sided one-period prediction interval from the arm's own residuals.
+
+    **Why not the empirical 5 %/95 % quantiles.** C2's statistic is the realized
+    coverage of this interval, so the interval must actually attain its nominal level
+    on the control. Plug-in empirical quantiles do not: with ``n = 24`` calibration
+    residuals and a zero-inflated, right-skewed error distribution, the empirical
+    95th percentile is usually the second-largest draw, and the realized coverage
+    measured **0.73-0.80 against a nominal 0.90 on the C0 control at Step 5** -- a
+    bias the size of ``tau_cov`` itself, which made C2 fire on control SKUs.
+
+    Conformal order statistics give finite-sample marginal coverage under
+    exchangeability: with ``k_lo = floor((n+1)(1-alpha)/2)`` and
+    ``k_hi = ceil((n+1)(1-(1-alpha)/2))``, ``P(r_(k_lo) <= r_new <= r_(k_hi))`` is at
+    least ``alpha`` and at most ``alpha + 2/(n+1)``. It is conservative by at most
+    ``2/(n+1)`` (0.08 at ``n = 24``), which is the honest price of a 24-point
+    calibration set and is shared by every SKU alike.
+
+    ``scale`` is C2's per-SKU interval-rescale ``gamma``: the interval is
+    ``mu + scale * (r_lo, r_hi)``.
+    """
+    r = np.asarray(residuals, dtype="float64")
+    r = r[np.isfinite(r)]
+    n = int(r.size)
+    if n < min_evidence or not np.isfinite(mu):
+        return float("nan"), float("nan")
+    r = np.sort(r)
+    k_lo = max(1, int(np.floor((n + 1) * (1.0 - alpha) / 2.0)))
+    k_hi = min(n, int(np.ceil((n + 1) * (1.0 - (1.0 - alpha) / 2.0))))
+    return (
+        float(mu + scale * r[k_lo - 1]),
+        float(mu + scale * r[k_hi - 1]),
+    )
+
 
 def compute_dispersion_stats(
     y_now: np.ndarray,

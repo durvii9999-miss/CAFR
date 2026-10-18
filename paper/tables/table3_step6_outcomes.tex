@@ -1,0 +1,30 @@
+\begin{table*}[t]
+\centering
+\caption{Step 6 paired inventory outcomes (seed 42; 40 C2 + 40 C0 test SKUs). Differences are gated minus baseline over the 68-period window $[132,200)$; cycle CSL uses 22 complete 3-period cycles. Cost CIs and CSL CIs are percentile bootstrap intervals (10,000 resamples, seed 42). C0 is exactly zero on all 40 SKUs. Period service-level CIs were not stored and are not inferred.}
+\label{tab:step6-outcomes}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\multicolumn{6}{l}{\textit{Panel A: cost}} \\
+Group & $n$ & Baseline & Gated & $\Delta$ [95\% CI] & $\Delta$ (\%) \\
+\midrule
+C2 & 40 & 2507.26 & 2578.73 & $+71.48$ $[-20.01, +168.63]$ & $+2.85$ \\
+C0 & 40 & 2621.96 & 2621.96 & $+0.00$ $[+0.00, +0.00]$ & $+0.00$ \\
+All & 80 & 2564.61 & 2600.35 & $+35.74$ $[-9.32, +85.77]$ & $+1.39$ \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\begin{tabular}{lrrrrrrr}
+\toprule
+\multicolumn{8}{l}{\textit{Panel B: service}} \\
+Group & $n$ & Baseline CSL & Gated CSL & $\Delta$ CSL (pp) [95\% CI] & Baseline period SL & Gated period SL & $\Delta$ period SL (pp) \\
+\midrule
+C2 & 40 & 0.801 & 0.863 & $+6.14$ $[+4.20, +8.30]$ & 0.925 & 0.949 & $+2.46$ \\
+C0 & 40 & 0.882 & 0.882 & $+0.00$ $[+0.00, +0.00]$ & 0.957 & 0.957 & $+0.00$ \\
+All & 80 & 0.841 & 0.872 & $+3.07$ $[+1.93, +4.38]$ & 0.941 & 0.953 & $+1.23$ \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\footnotesize
+Notes: C2 cost direction: 21 up / 16 down / 3 equal; C2 cycle CSL: 27 up / 0 down / 13 equal. The C2 cost interval includes zero; the C2 CSL interval is entirely above zero. C0 is 0/40 changed on both outcomes. The overall cost interval also includes zero.
+\end{table*}

@@ -16,6 +16,7 @@ import numpy as np
 
 from ..forecasters.base import FittingInput, ForecastState
 from ..sim.inventory import aggregate_order_up_to
+from .residuals import ResidualTracker
 
 __all__ = ["arm_e_factory"]
 
@@ -32,11 +33,15 @@ class _ArmELevelFn:
         self.chosen_method = "lightgbm_global"
         self.last_state: ForecastState | None = None
         self._last_mu: float = float("nan")
+        self._residuals = ResidualTracker()
 
     def __call__(self, t, y_observed, censored, inventory):
         if len(y_observed) == 0:
             self.last_state = None
             return 1.0, self.alpha
+
+        # Score the forecast made at the previous call, BEFORE refitting on y_t.
+        self._residuals.observe(float(y_observed[-1]))
 
         method = self.chosen_method
         fc = self.pool[method]
@@ -52,6 +57,7 @@ class _ArmELevelFn:
         self.last_state = state
         state.method = method
         self._last_mu = float(state.mu)
+        self._residuals.set_forecast(self._last_mu)
 
         R = int(self.cfg["sim"]["R"])
         S, alpha_eff, _, _ = aggregate_order_up_to(
@@ -59,6 +65,7 @@ class _ArmELevelFn:
             mu_hat=state.mu,
             R=R,
             alpha=self.alpha,
+            residuals=self._residuals.to_array(),
             window=int(self.cfg["sim"].get("quantile_window", 24)),
             min_aggregates=int(self.cfg["sim"].get("min_aggregates", 4)),
             method=self.cfg["sim"].get("quantile_method", "linear"),

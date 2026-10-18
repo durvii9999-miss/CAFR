@@ -17,6 +17,7 @@ import numpy as np
 
 from ..forecasters.base import FittingInput, ForecastState
 from ..sim.inventory import aggregate_order_up_to
+from .residuals import ResidualTracker
 
 __all__ = ["arm_c_factory"]
 
@@ -27,13 +28,19 @@ class _ArmCLevelFn:
     Tracks the out-of-sample performance of ALL pool members.
     """
 
-    def __init__(self, pool, cfg, sku_id, alpha, fit_on, margin=0.0):
+    def __init__(self, pool, cfg, sku_id, alpha, fit_on, margin=0.0,
+                 c2_scale_provider=None):
         self.pool = pool
         self.cfg = cfg
         self.sku_id = sku_id
         self.alpha = alpha
         self.fit_on = fit_on
         self.margin = margin
+        # Optional live override for C2's interval scale. ``None`` keeps the frozen
+        # config path exactly as every earlier experiment used it. The experiment
+        # passes a provider so a reliability gate can reset the scale at a period
+        # without mutating the per-SKU config.
+        self.c2_scale_provider = c2_scale_provider
         
         self.burn_in = int(cfg["splits"]["burn_in"])
         self.active_method = "croston" # Default start
@@ -44,6 +51,9 @@ class _ArmCLevelFn:
         
         # Track out-of-sample absolute errors: {method: [abs_err_1, ...]}
         self._abs_errors = {m: [] for m in pool}
+        # One-step-ahead residuals of whichever method was active when the forecast
+        # was made. These feed the policy's aggregate quantile (docs/17 §5).
+        self._residuals = ResidualTracker()
         
         # Naive MAE from burn-in for MASE denominator
         self._naive_mae = float("nan")
@@ -52,6 +62,9 @@ class _ArmCLevelFn:
         if len(y_observed) == 0:
             self.last_state = None
             return 1.0, self.alpha
+
+        # Score the forecast made at the previous call, BEFORE any refit on y_t.
+        self._residuals.observe(float(y_observed[-1]))
 
         # 1. Update MASE tracking for all methods
         # If we have a new observation, compute the out-of-sample error for the LAST period's forecast
@@ -115,14 +128,20 @@ class _ArmCLevelFn:
                 active_state.method = m
                 
         self.last_state = active_state
+        self._residuals.set_forecast(float(active_state.mu))
 
         # 4. Generate Order-Up-To Level using the chosen method's forecast
         R = int(self.cfg["sim"]["R"])
+        if self.c2_scale_provider is not None:
+            c2_scale = float(self.c2_scale_provider(t))
+        else:
+            c2_scale = float(self.cfg["sim"].get("c2_quantile_scale", 1.0))
         S, alpha_eff, _, _ = aggregate_order_up_to(
             y_hist=y_observed,
             mu_hat=active_state.mu,
             R=R,
             alpha=self.alpha,
+            residuals=self._residuals.to_array(),
             window=int(self.cfg["sim"].get("quantile_window", 24)),
             min_aggregates=int(self.cfg["sim"].get("min_aggregates", 4)),
             method=self.cfg["sim"].get("quantile_method", "linear"),
@@ -130,13 +149,21 @@ class _ArmCLevelFn:
             # Read from config so the knob is live: nothing passed it before, which left
             # `sim.c7_safety_factor_scale` dead and made C7 undetectable by construction.
             safety_factor_scale=float(self.cfg["sim"].get("c7_safety_factor_scale", 1.0)),
+            # C2's injection rescales the REPORTED interval about the point forecast
+            # (§15.2). Read from config so the per-SKU gamma recorded by the generator
+            # is live; 1.0 everywhere else.
+            c2_quantile_scale=c2_scale,
         )
         return float(S), float(alpha_eff)
 
 
-def arm_c_factory(pool, cfg, sku_id, alpha, fit_on, *, margin=0.0):
+def arm_c_factory(pool, cfg, sku_id, alpha, fit_on, *, margin=0.0,
+                  c2_scale_provider=None):
     """Return a stateful level function for arm (c).
-    
+
     margin: the MASE improvement required to switch models. For gate 3.2, m=0.
+    c2_scale_provider: optional ``f(t) -> scale`` used by the C2-only reliability
+    experiment. ``None`` preserves the config-driven behaviour.
     """
-    return _ArmCLevelFn(pool, cfg, sku_id, alpha, fit_on, margin=margin)
+    return _ArmCLevelFn(pool, cfg, sku_id, alpha, fit_on, margin=margin,
+                        c2_scale_provider=c2_scale_provider)

@@ -1,0 +1,42 @@
+\begin{table*}[t]
+\centering
+\caption{Step 5 attribution gates on the seed-42 synthetic panel. Panel A: per-cause recall (correct cause attributed at the final reading) with 95\% Wilson intervals. The predeclared bar is 0.60 for C1--C6. C2 pooled is the gated denominator (C2 + C2b); C2 direct is the C2 panel alone. Panel B: control false-positive rate, row-normalised maximum off-diagonal confusion, and priority-order sensitivity. C2b is a variant panel and is excluded from gate 5.3. Overall verdict: FAIL; E-8 unchanged.}
+\label{tab:step5-gates}
+\small
+\begin{tabular}{lrrrrl}
+\toprule
+Cause & $N$ & Correct & Recall & 95\% Wilson CI & Verdict \\
+\midrule
+C1 & 200 & 6 & 0.030 & [0.014, 0.064] & FAIL \\
+C2 pooled & 400 & 209 & 0.522 & [0.474, 0.571] & FAIL \\
+C2 direct & 200 & 191 & 0.955 & [0.917, 0.976] & PASS \\
+C2b variant & 200 & 18 & 0.090 & [0.058, 0.138] & FAIL$^\dagger$ \\
+C3 & 200 & 11 & 0.055 & [0.031, 0.096] & FAIL \\
+C4 & 200 & 0 & 0.000 & [0.000, 0.019] & FAIL \\
+C5 & 200 & 22 & 0.110 & [0.074, 0.161] & FAIL \\
+C6 & 200 & 29 & 0.145 & [0.103, 0.200] & FAIL \\
+C7 reported & 200 & 56 & 0.280 & [0.222, 0.346] & not gated \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\begin{tabular}{llrrrl}
+\toprule
+Gate & Detail & $n$ & Estimate & 95\% CI & Verdict \\
+\midrule
+5.2 & C0 false-positive rate (any non-C0 call) & 200 & 0.450 & [0.383, 0.519] & FAIL \\
+5.3 C0 & max off-diagonal to C2 & 200 & 0.145 & -- & pass \\
+5.3 C1 & max off-diagonal to C0 & 200 & 0.545 & -- & FAIL \\
+5.3 C2 & max off-diagonal to C0; true C2 only 0.040 to C5 & 400 & 0.335 & -- & pass \\
+5.3 C3 & max off-diagonal to C0 & 200 & 0.360 & -- & pass \\
+5.3 C4 & max off-diagonal to C0 & 200 & 0.560 & -- & FAIL \\
+5.3 C5 & max off-diagonal to C6 & 200 & 0.230 & -- & pass \\
+5.3 C6 & max off-diagonal to C0 & 200 & 0.480 & -- & FAIL \\
+5.3 C7 & max off-diagonal to C0 & 200 & 0.390 & -- & pass \\
+5.4 & max |macro-F1 difference|, 10 permutations & -- & 0.011 & -- & PASS \\
+\multicolumn{5}{l}{Overall verdict (gates 5.1--5.5)} & \textbf{FAIL} \\
+\bottomrule
+\end{tabular}
+\par\smallskip
+\footnotesize
+$^\dagger$C2b is a variant panel; its recall is reported but it is not part of the six-cause gate. Gate 5.5 (outputs produced) passed; gate 5.6 budget-restricted recall does not change any verdict. C0 row in Panel B is the false-positive rate, not recall. C2 max off-diagonal is 0.335 to C0 on the pooled denominator; the true-C2-only value is 0.040 to C5.
+\end{table*}

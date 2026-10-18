@@ -1,0 +1,47 @@
+
+panel composition
+  single     1400
+  control    200
+  mixture    200
+  c2b        200
+  sb_cell_init:
+    high_lowdisp         0.3355
+    moderate_lowdisp     0.2750
+    moderate_highdisp    0.1620
+    high_highdisp        0.1460
+    dead                 0.0815
+
+constraints (generator-side)
+  1_c4_band_invariance               200/200  (1.0000)   [enforced]
+  3_c5_detectability_budget          200/200  (1.0000)   [scaled-then-flagged]
+  5_c2_coverage_gap                  381/400  (0.9525)   [enforced]
+  9_c4_detectability_budget          72/200  (0.3600)   [flagged-not-dropped]
+  8_c1_occurrence_untouched          200/200  (1.0000)   [enforced]
+  6_7_c7_simulator_pre_flight        see c7_constraints.json
+  C4 below budget (flagged, NOT dropped): 128/200
+  C5 occurrence branch infeasible (p too small): 0/160 -> routed to the size branch
+
+C7 pre-flight on 40 series through arm (c) ...
+  scale chosen by grid: 0.15  (mildest_passing_scale)
+  windows=2040 skus=40 (70.2s)
+  acceptability pass rate : 0.3240  (gate 4.9 needs >= 0.80)
+    RMSSE pooled          : 0.6250  (tolerance 10%)
+    z_b                   : 0.9877
+    coverage (unscaled Q) : 0.5441
+  exposure pass rate      : 0.8265  (gate 4.10 needs >= 0.80)
+  service-gap rate        : 0.8265
+  all three conditions    : 0.2588
+  mean achieved CSL       : 0.7240
+  constraint 6 : FAIL
+  constraint 7 : PASS
+  gate 4.9     : FAIL
+  scale ladder:
+    scale=0.60  accept=0.3324  exposure=0.5794  csl=0.8216  not_selected
+    scale=0.45  accept=0.3201  exposure=0.6833  csl=0.7878  not_selected
+    scale=0.30  accept=0.3314  exposure=0.7686  csl=0.7607  not_selected
+    scale=0.15  accept=0.3240  exposure=0.8265  csl=0.7240  mildest_passing_scale
+  wrote C:\Users\DELL\Minor_Project\CAFR\results\synth\c7_constraints.json
+
+total 84.5s
+
+[exited with code 0]

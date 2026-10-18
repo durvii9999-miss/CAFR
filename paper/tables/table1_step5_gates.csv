@@ -1,0 +1,21 @@
+panel,cause_or_gate,detail,n,correct,estimate,ci_low,ci_high,bar,verdict
+A,C1,,200,6,0.03,0.013820314340111346,0.06389429245451925,0.60,FAIL
+A,C2 (pooled),C2 + C2b; gated denominator,400,209,0.5225,0.4735694074890401,0.5710025392659165,0.60,FAIL
+A,C2 (direct),C2 panel only,200,191,0.955,0.9167032959981803,0.976147456998507,0.60,PASS
+A,C2b (variant),C2b panel only; excluded from gate,200,18,0.09,0.05768744886219316,0.13776571876716542,0.60,FAIL (variant)
+A,C3,,200,11,0.055,0.03098534170345884,0.0957869987723084,0.60,FAIL
+A,C4,,200,0,0.0,0.0,0.018845326377266575,0.60,FAIL
+A,C5,,200,22,0.11,0.07377244460125303,0.1609269099730149,0.60,FAIL
+A,C6,,200,29,0.145,0.10289350642004402,0.20048667530781522,0.60,FAIL
+A,C7 (reported),"reported, not gated",200,56,0.28,0.22236889773949028,0.3459230458665071,not gated,not gated
+B,5.2,C0 false-positive rate (any non-C0 call),200,,0.45,0.3826406840224836,0.5192438486152432,<= 0.10,FAIL
+B,5.3 C0,max off-diagonal to C2,200,,0.145,,,<= 0.40,pass
+B,5.3 C1,max off-diagonal to C0,200,,0.545,,,<= 0.40,FAIL
+B,5.3 C2,max off-diagonal to C0; true C2 only 0.040 to C5,400,,0.335,,,<= 0.40,pass
+B,5.3 C3,max off-diagonal to C0,200,,0.36,,,<= 0.40,pass
+B,5.3 C4,max off-diagonal to C0,200,,0.56,,,<= 0.40,FAIL
+B,5.3 C5,max off-diagonal to C6,200,,0.23,,,<= 0.40,pass
+B,5.3 C6,max off-diagonal to C0,200,,0.48,,,<= 0.40,FAIL
+B,5.3 C7,max off-diagonal to C0,200,,0.39,,,<= 0.40,pass
+B,5.4,"max |macro-F1 difference|, 10 permutations",,,0.011081653026416477,,,<= 0.10,PASS
+B,Overall,Step 5 gate verdict; E-8 unchanged,,,,,,,FAIL

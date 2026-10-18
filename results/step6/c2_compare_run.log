@@ -1,0 +1,215 @@
+﻿python : C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in 
+divide
+At line:1 char:302
++ ... tch {} } }; python experiments/step6_c2_gated.py --stage compare 2>&1 ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (C:\Users\DELL\M...tered in divide:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:38: RuntimeWarning: invalid value encountered in divide
+  mean = s1 / count
+C:\Users\DELL\Minor_Project\CAFR\cafr\monitor\stability.py:39: RuntimeWarning: invalid value encountered in divide
+  mean_sq = s2 / count
+gate train rows=246 val rows=75
+validation-selected tau=0.24462755647681794
+  tau  admitted  true_c2  precision
+0.992        15       15      1.000
+0.992        13       13      1.000
+0.993        12       12      1.000
+0.993        11       11      1.000
+0.994        10       10      1.000
+0.994         9        9      1.000
+0.994         8        8      1.000
+0.995         7        7      1.000
+0.996         6        6      1.000
+0.997         5        5      1.000
+0.997         4        4      1.000
+0.998         3        3      1.000
+
+Outcome window: {"eval_start": 132, "eval_periods": 68, "train_c2_detected": 120, "frac_affected_by_eval_start": 0.9583333333333334, "late_detectors": 5, "median_detect_t": 120.0, "p95_detect_t": 128.0}
+pool fitted in 1.4s
+compare: 80 SKUs (40 C2, 40 C0)
+  compare: 10/80 SKUs, 7.2s
+  compare: 20/80 SKUs, 23.5s
+  compare: 30/80 SKUs, 42.6s
+  compare: 40/80 SKUs, 61.6s
+  compare: 50/80 SKUs, 81.7s
+  compare: 60/80 SKUs, 98.3s
+  compare: 70/80 SKUs, 118.4s
+  compare: 80/80 SKUs, 10833.3s
+{
+  "label": "compare",
+  "n_skus": 80,
+  "elapsed_s": 10833.341280221939,
+  "baseline": {
+    "mean_cost": 2564.6102718741386,
+    "mean_cost_per_period": 37.71485693932557,
+    "mean_csl": 0.8414772727272727,
+    "mean_period_sl": 0.940625
+  },
+  "gated": {
+    "mean_cost": 2600.3493851802073,
+    "mean_cost_per_period": 38.24043213500305,
+    "mean_csl": 0.8721590909090908,
+    "mean_period_sl": 0.9529411764705884
+  },
+  "paired_all": {
+    "n": 80,
+    "d_cost_mean": 35.73911330606835,
+    "d_cost_ci95": [
+      -9.315517080705124,
+      85.7743906349025
+    ],
+    "d_csl_mean": 0.03068181818181818,
+    "d_csl_ci95": [
+      0.019318181818181818,
+      0.04375
+    ]
+  },
+  "paired_C2": {
+    "n": 40,
+    "d_cost_mean": 71.4782266121367,
+    "d_cost_ci95": [
+      -20.007025033579204,
+      168.63146064597674
+    ],
+    "d_csl_mean": 0.06136363636363636,
+    "d_csl_ci95": [
+      0.04204545454545455,
+      0.08295454545454546
+    ]
+  },
+  "paired_C0": {
+    "n": 40,
+    "d_cost_mean": 0.0,
+    "d_cost_ci95": [
+      0.0,
+      0.0
+    ],
+    "d_csl_mean": 0.0,
+    "d_csl_ci95": [
+      0.0,
+      0.0
+    ]
+  },
+  "acted": 38,
+  "decision_match_rate": 1.0,
+  "live_actions_by_cause": {
+    "C2": 44,
+    "C6": 7,
+    "C5": 5,
+    "C1": 1,
+    "C7": 1
+  }
+}

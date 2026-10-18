@@ -1,17 +1,25 @@
 [
   {
-    "scale": 0.6,
+    "scale": 0.15,
     "fit_on": "uncensored",
     "n_windows": 2040,
     "n_skus": 40,
-    "acceptability_pass_rate": 0.19607843137254902,
-    "exposure_pass_rate": 0.6225490196078431,
-    "service_gap_rate": 0.6225490196078431,
-    "c7_fireable_rate": 0.09901960784313725,
-    "mean_achieved_csl": 0.8012745098039218,
-    "mean_coverage": 0.7737254901960785,
+    "acceptability_pass_rate": 0.32401960784313727,
+    "exposure_pass_rate": 0.8264705882352941,
+    "service_gap_rate": 0.8264705882352941,
+    "c7_fireable_rate": 0.25882352941176473,
+    "mean_achieved_csl": 0.7240196078431372,
+    "mean_coverage": 0.7292021815111741,
+    "rmsse_pooled_pass_rate": 0.625,
+    "rmsse_window_pass_rate": 0.4906862745098039,
+    "z_b_pass_rate": 0.9877450980392157,
+    "coverage_pass_rate": 0.5441176470588235,
+    "rmsse_tol": 0.1,
     "constraint_6_pass": false,
-    "constraint_7_pass": false,
-    "gate_4_9_pass": false
+    "constraint_7_pass": true,
+    "gate_4_9_pass": false,
+    "scale_position": 4,
+    "grid_size": 5,
+    "selection_rule": "mildest_passing_scale"
   }
 ]

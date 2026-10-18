@@ -1,0 +1,66 @@
+pool fitted on 1800 SKUs x 24 periods in 1.2s
+  1/1800  (0.5s)
+  51/1800  (23.4s)
+  101/1800  (46.3s)
+  151/1800  (69.3s)
+  201/1800  (92.5s)
+  251/1800  (115.7s)
+  301/1800  (140.7s)
+  351/1800  (164.5s)
+  401/1800  (188.5s)
+  451/1800  (213.6s)
+  501/1800  (237.3s)
+  551/1800  (261.7s)
+  601/1800  (286.5s)
+  651/1800  (311.5s)
+  701/1800  (335.4s)
+  751/1800  (359.9s)
+  801/1800  (384.6s)
+  851/1800  (409.4s)
+  901/1800  (433.1s)
+  951/1800  (457.5s)
+  1001/1800  (482.2s)
+  1051/1800  (507.5s)
+  1101/1800  (531.6s)
+  1151/1800  (556.4s)
+  1201/1800  (581.1s)
+  1251/1800  (605.7s)
+  1301/1800  (629.4s)
+  1351/1800  (653.0s)
+  1401/1800  (677.4s)
+  1451/1800  (701.8s)
+  1501/1800  (725.2s)
+  1551/1800  (749.7s)
+  1601/1800  (774.3s)
+  1651/1800  (798.5s)
+  1701/1800  (822.4s)
+  1751/1800  (846.2s)
+ran 1800 SKUs, 0 errors, 869.5s
+
+=== Step 5 gates ===
+5.1 recall (bar 0.6):
+   C0: 0.550   [budget-restricted nan on n=0]
+   C1: 0.030   [budget-restricted 0.050 on n=120]
+   C2: 0.522   [budget-restricted 0.522 on n=400]
+   C3: 0.055   [budget-restricted 0.076 on n=144]
+   C4: 0.000   [budget-restricted 0.000 on n=39]
+   C5: 0.110   [budget-restricted 0.324 on n=68]
+   C6: 0.145   [budget-restricted 0.158 on n=184]
+   C7: 0.280 (reported, not gated)   [budget-restricted nan on n=0]
+   C2b variant -> C2: 0.090
+   FAIL (six-cause scope)
+5.2 FP on C0: 0.450 (bar 0.1) PASS: False
+5.3 max off-diagonal: 0.560 (bar 0.4) PASS: False
+5.4 priority sensitivity: 0.011 (bar 0.1) PASS: True
+5.6 budget-restricted: C4=0.000 (n=72), C5=0.110 (n=200)
+detection latency (median periods after check_from):
+   C1: flagged 0.445, median 28.0
+   C2: flagged 0.662, median 0.0
+   C3: flagged 0.625, median 28.0
+   C4: flagged 0.440, median 22.0
+   C5: flagged 0.790, median 16.0
+   C6: flagged 0.500, median 40.0
+   C7: flagged 0.600, median 28.0
+
+OVERALL: FAIL
+wrote C:\Users\DELL\Minor_Project\CAFR\results\step5

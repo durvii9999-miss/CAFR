@@ -181,3 +181,130 @@ def test_statics_do_not_shift_the_cell_draw():
     np.testing.assert_array_equal(y, y2)
     # And the statics really are present.
     assert {"lead_time", "unit_cost", "holding_rate"} <= set(param)
+
+
+# --------------------------------------------------------------------------- #
+# 6. gate 4.9's restated clauses (docs/16 §7, 2026-10-17)
+# --------------------------------------------------------------------------- #
+
+
+def test_unscaled_forecast_level_inverts_the_c7_scale():
+    """Constraint 6 must score the FORECASTER's quantile, not the policy's scaled ``S``.
+
+    ``S = R*mu_hat + scale*Q``. Dividing the safety term out recovers ``R*mu_hat + Q``
+    exactly, for any scale -- including a scale the calibration ladder chose later.
+    """
+    from cafr.data.synth.c7_constraints import unscaled_forecast_level
+
+    R, scale = 3, 0.45
+    mu = np.array([10.0, 4.0, 0.0, 7.5])
+    q = np.array([2.0, -1.0, 0.0, 3.0])
+    s = R * mu + scale * q
+    recovered = unscaled_forecast_level(s, mu, R, scale)
+    np.testing.assert_allclose(recovered, R * mu + q, atol=1e-12)
+
+    # Scale 1 is the identity; a fallback period (S == R*mu) stays at R*mu.
+    np.testing.assert_allclose(unscaled_forecast_level(s, mu, R, 1.0), s)
+    np.testing.assert_allclose(
+        unscaled_forecast_level(R * mu, mu, R, 0.6), R * mu
+    )
+
+
+def test_unscaled_forecast_level_rejects_a_zero_scale():
+    """At scale 0 the safety term carries no information; the reconstruction is undefined."""
+    from cafr.data.synth.c7_constraints import unscaled_forecast_level
+
+    with pytest.raises(ValueError):
+        unscaled_forecast_level(np.array([1.0]), np.array([0.0]), 3, 0.0)
+
+
+def test_pooled_rmsse_splits_pre_and_post_and_ignores_nan():
+    """Pooling is by PERIOD, and a NaN outside the evaluated window must not count."""
+    from cafr.data.synth.c7_constraints import pooled_rmsse
+
+    resid = np.full(20, np.nan)
+    resid[5:10] = 1.0        # pre-injection
+    resid[10:15] = 2.0       # post-injection
+    periods = np.arange(5, 15)
+
+    pre, post = pooled_rmsse(resid, periods, tau_inj=10)
+    assert pre == pytest.approx(1.0)
+    assert post == pytest.approx(2.0)
+
+    # No evaluated pre-injection period -> undefined, not zero.
+    pre2, post2 = pooled_rmsse(resid, periods, tau_inj=0)
+    assert np.isnan(pre2) and post2 == pytest.approx(np.sqrt(2.5))
+
+
+def test_calibrate_picks_the_mildest_passing_scale(monkeypatch):
+    """The pre-registered rule: walk mildest first, stop at the first 80 % exposure."""
+    import cafr.data.synth.c7_constraints as c7
+
+    seen: list[float] = []
+
+    def fake_eval(series, factory, cfg, *, sku_ids, tau_inj=120, scale=0.6,
+                  alpha=None, fit_on="uncensored", pool=None):
+        seen.append(float(scale))
+        return pd.DataFrame({"x": [1]}), pd.DataFrame(
+            [{"scale": scale, "n_windows": 1, "constraint_7_pass": scale <= 0.45}]
+        )
+
+    monkeypatch.setattr(c7, "evaluate_c7_constraints", fake_eval)
+    chosen, _, ladder = c7.calibrate_c7_scale(
+        {}, None, {}, sku_ids=[], grid=(0.15, 0.60, 0.45)
+    )
+
+    assert seen == [0.60, 0.45], "must be walked mildest-first and stop at the first pass"
+    assert chosen == 0.45
+    assert ladder["selected"].tolist() == [False, True]
+    assert ladder["selection_rule"].tolist() == ["not_selected", "mildest_passing_scale"]
+
+
+def test_calibrate_reports_grid_exhaustion_without_relaxing(monkeypatch):
+    """No scale in the grid clearing 80 % is a FAIL, reported at the strongest scale."""
+    import cafr.data.synth.c7_constraints as c7
+
+    def fake_eval(series, factory, cfg, *, sku_ids, tau_inj=120, scale=0.6,
+                  alpha=None, fit_on="uncensored", pool=None):
+        return pd.DataFrame({"x": [1]}), pd.DataFrame(
+            [{"scale": scale, "n_windows": 1, "constraint_7_pass": False}]
+        )
+
+    monkeypatch.setattr(c7, "evaluate_c7_constraints", fake_eval)
+    chosen, _, ladder = c7.calibrate_c7_scale({}, None, {}, sku_ids=[], grid=(0.60, 0.30))
+
+    assert chosen == 0.30
+    assert ladder.iloc[-1]["selection_rule"] == "grid_exhausted_no_pass"
+    assert ladder.iloc[-1]["selected"]
+    assert not ladder.iloc[-1]["constraint_7_pass"], "the gate must not be relaxed"
+
+
+def test_forward_aggregates_cover_the_protection_interval_ahead():
+    """``S_t`` covers ``[t+1, t+R]``, not the trailing ``[t-R+1, t]``.
+
+    The pre-docs/17 coverage check used a trailing aggregate, which was the same
+    realisation only while ``S`` *was* ``Q_alpha(aggregates)``. After the
+    residual-bootstrap fix, a predictive quantile must be scored against the window it
+    predicts. The last ``R`` periods have no complete forward window and stay NaN.
+    """
+    from cafr.data.synth.c7_constraints import forward_aggregates
+
+    y = np.arange(1.0, 11.0)          # 1..10
+    agg = forward_aggregates(y, R=3)
+    assert agg[0] == pytest.approx(2 + 3 + 4)
+    assert agg[1] == pytest.approx(3 + 4 + 5)
+    assert agg[6] == pytest.approx(8 + 9 + 10)   # the last complete forward window
+    assert np.isnan(agg[7])           # [9, 10, 11] -- period 11 does not exist
+    assert np.isnan(agg[8])
+    assert np.isnan(agg[9])
+
+
+def test_evaluate_rejects_a_zero_scale():
+    """A non-positive scale is refused before it can produce a meaningless coverage."""
+    from cafr.data.synth.c7_constraints import evaluate_c7_constraints
+
+    for bad in (0.0, -0.1):
+        with pytest.raises(ValueError):
+            evaluate_c7_constraints(
+                {}, None, {"splits": {}, "sim": {}}, sku_ids=[], scale=bad, pool={}
+            )

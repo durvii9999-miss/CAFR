@@ -30,7 +30,7 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from cafr.arms.arm_c import arm_c_factory
-from cafr.data.synth.c7_constraints import evaluate_c7_constraints, save_c7_report
+from cafr.data.synth.c7_constraints import calibrate_c7_scale, save_c7_report
 from cafr.data.synth.labels import generate_labelled_panel
 from cafr.data.synth.injections import INJECTORS
 from cafr.data.synth.budget import check_c4_budget
@@ -128,6 +128,18 @@ def _panel_report(
                     "modelling error -- a per-period sigma applied to the R-period "
                     "protection interval, the documented 42.3 % understatement)."
                 ),
+                # Constraint 5, decision 4 (docs/16 §7, 2026-10-17): the high-ADI tail
+                # is FLAGGED and reported separately, never dropped, and C2 is not
+                # redefined onto a per-period interval to make it pass. On these SKUs
+                # P(A_R = 0) = (1-p)^3 >= 0.75, so no interval centred at or above the
+                # mean can under-cover by tau_cov + margin (docs/16 §4a).
+                n_infeasible_high_adi=int(c2["gap_clears_with_margin"].ne(True).sum()),
+                infeasible_p_range=[
+                    float(c2.loc[c2["gap_clears_with_margin"].ne(True), "p"].min()),
+                    float(c2.loc[c2["gap_clears_with_margin"].ne(True), "p"].max()),
+                ]
+                if c2["gap_clears_with_margin"].ne(True).any()
+                else None,
                 both_variants=sorted(c2["true_cause"].unique().tolist()),
             ),
             "9_c4_detectability_budget": _block(
@@ -299,7 +311,10 @@ def main() -> None:
             pool_, cfg_, sku_id, alpha, fit_on, margin=0.0
         )
         t1 = time.time()
-        windows, summary = evaluate_c7_constraints(
+        # The scale is chosen over a PRE-REGISTERED grid, mildest first, on constraint 7
+        # alone (docs/16 §7). Constraint 6 is invariant to the scale under a demand
+        # observation model, so the ladder reports it without letting it steer the pick.
+        chosen_scale, windows, ladder = calibrate_c7_scale(
             series,
             factory,
             cfg,
@@ -307,13 +322,22 @@ def main() -> None:
             tau_inj=int(syn["tau_inj"]),
             pool=pool,
         )
-        path = save_c7_report(windows, summary)
+        summary = (
+            ladder[ladder["selected"]]
+            .drop(columns=["selected"])
+            .reset_index(drop=True)
+        )
+        path = save_c7_report(windows, summary, ladder=ladder)
         if summary.empty:
             print("  no windows produced -- check the panel length vs W_svc")
         else:
             row = summary.iloc[0]
+            print(f"  scale chosen by grid: {chosen_scale:.2f}  ({row['selection_rule'] if 'selection_rule' in row else 'n/a'})")
             print(f"  windows={row['n_windows']} skus={row['n_skus']} ({time.time() - t1:.1f}s)")
             print(f"  acceptability pass rate : {row['acceptability_pass_rate']:.4f}  (gate 4.9 needs >= 0.80)")
+            print(f"    RMSSE pooled          : {row['rmsse_pooled_pass_rate']:.4f}  (tolerance {row['rmsse_tol']:.0%})")
+            print(f"    z_b                   : {row['z_b_pass_rate']:.4f}")
+            print(f"    coverage (unscaled Q) : {row['coverage_pass_rate']:.4f}")
             print(f"  exposure pass rate      : {row['exposure_pass_rate']:.4f}  (gate 4.10 needs >= 0.80)")
             print(f"  service-gap rate        : {row['service_gap_rate']:.4f}")
             print(f"  all three conditions    : {row['c7_fireable_rate']:.4f}")
@@ -321,6 +345,14 @@ def main() -> None:
             print(f"  constraint 6 : {'PASS' if row['constraint_6_pass'] else 'FAIL'}")
             print(f"  constraint 7 : {'PASS' if row['constraint_7_pass'] else 'FAIL'}")
             print(f"  gate 4.9     : {'PASS' if row['gate_4_9_pass'] else 'FAIL'}")
+            print("  scale ladder:")
+            for _, lad in ladder.iterrows():
+                print(
+                    f"    scale={lad['scale']:.2f}  accept={lad['acceptability_pass_rate']:.4f}"
+                    f"  exposure={lad['exposure_pass_rate']:.4f}"
+                    f"  csl={lad['mean_achieved_csl']:.4f}"
+                    f"  {lad['selection_rule']}"
+                )
         print(f"  wrote {path}")
 
     print(f"\ntotal {time.time() - t0:.1f}s")

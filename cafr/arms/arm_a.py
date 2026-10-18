@@ -41,6 +41,7 @@ import numpy as np
 
 from ..forecasters.base import FittingInput, ForecastState
 from ..sim.inventory import aggregate_order_up_to
+from .residuals import ResidualTracker
 
 __all__ = [
     "arm_a_factory",
@@ -211,6 +212,7 @@ class _ArmALevelFn:
         self.chosen_method = chosen_method
         self.sb_cell = sb_cell
         self.candidates = candidates
+        self.burn_in = int(cfg["splits"]["burn_in"])
         self.last_state: ForecastState | None = None
         #: The selection log, populated on the first call when no method was supplied.
         self.selection: dict | None = (
@@ -219,14 +221,17 @@ class _ArmALevelFn:
             else None
         )
         self._last_mu: float = float("nan")
+        #: One-step-ahead residuals e_t = y_t - mu_hat_{t|t-1}; the policy's quantile
+        #: is taken over R-period sums of these (docs/17 §5).
+        self._residuals = ResidualTracker()
 
     def _resolve_method(self, y_observed, censored) -> str:
-        """Select on the burn-in window. Called exactly once."""
+        """Select on the burn-in window. Called exactly once, when it is complete."""
         burn_in = int(self.cfg.get("splits", {}).get("burn_in", y_observed.size))
-        # ``[:burn_in]`` and not ``[:t]``: the simulator has already appended period
-        # ``t``'s demand to ``y_observed``, and period ``t`` is the first EVALUATED
-        # period. Slicing by the burn-in length is what makes the selection strictly
-        # pre-evaluation.
+        # ``[:burn_in]`` and not ``[:t]``: the simulator appends period ``t``'s demand
+        # before calling the level function, so when ``len(y_observed) == burn_in`` the
+        # window is exactly periods ``[0, burn_in)``. Period ``burn_in`` -- the first
+        # evaluated one -- has not been seen and cannot leak into the selection.
         n_val = int(min(burn_in, y_observed.size))
         method, log = select_by_validation(
             np.asarray(y_observed[:n_val], dtype="float64"),
@@ -244,10 +249,20 @@ class _ArmALevelFn:
             self.last_state = None
             return 1.0, self.alpha
 
-        if self.chosen_method is None:
+        # Score the forecast made at the previous call, BEFORE refitting on y_t.
+        self._residuals.observe(float(y_observed[-1]))
+
+        if self.chosen_method is None and len(y_observed) >= self.burn_in:
             self.chosen_method = self._resolve_method(y_observed, censored)
 
-        method = self.chosen_method
+        # Until the burn-in window is complete there is nothing to validate on. Those
+        # periods are excluded from every metric, so the arm follows the SB map there;
+        # selection happens at the first call with a full burn-in history.
+        method = (
+            self.chosen_method
+            if self.chosen_method is not None
+            else SB_FALLBACK.get(self.sb_cell, "croston")
+        )
         fc = self.pool[method]
         fi = FittingInput(y_observed, censored, fit_on=self.fit_on)
         state = fc.fit(fi)
@@ -255,6 +270,7 @@ class _ArmALevelFn:
         state.method = method
 
         self._last_mu = float(state.mu)
+        self._residuals.set_forecast(self._last_mu)
 
         R = int(self.cfg["sim"]["R"])
         S, alpha_eff, _, _ = aggregate_order_up_to(
@@ -262,6 +278,7 @@ class _ArmALevelFn:
             mu_hat=state.mu,
             R=R,
             alpha=self.alpha,
+            residuals=self._residuals.to_array(),
             window=int(self.cfg["sim"].get("quantile_window", 24)),
             min_aggregates=int(self.cfg["sim"].get("min_aggregates", 4)),
             method=self.cfg["sim"].get("quantile_method", "linear"),
