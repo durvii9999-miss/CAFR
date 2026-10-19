@@ -211,6 +211,20 @@ column of zeros is not.
   taxonomy. Do not lower the 0.60 / 0.10 / 0.40 bars.
 - Full record: `docs/18_step5_findings.md`. Result files: `results/step5/`.
 
+**RESOLVED 2026-10-19 — project owner authorization for the correction round.** The
+three structural defects below are corrected without changing a registered gate bar,
+seed, horizon, injection time, or frozen base configuration:
+
+| Decision | Resolution | Reason |
+|---|---|---|
+| E-8 decision 1 — C4 | Remove occurrence AUC from C4's firing condition; retain it as a reported diagnostic. Keep the two-window, two-sided dispersion rule unchanged. | The AUC statistic is not estimable on the C4 panel and therefore vetoes a dispersion detector before its own evidence is tested. AUC measures occurrence ranking, not size dispersion. |
+| E-8 decision 2 — C5 | Calibrate the shared CUSUM threshold on training C0 controls' pre-injection checks only, targeting the authorized per-check false-alarm rate; reset after alarms and after burn-in. Keep separate occurrence and nonzero-size CUSUMs and retain the configured k. | The occurrence CUSUM was saturated on controls because its threshold was not calibrated to the occurrence residual process. Resetting makes repeated alarms distinct events; the size and occurrence streams remain independent. |
+| E-8 decision 3 — C2b | Apply the generator-reported interval half-width to the aggregate interval through arm (c) and inventory; leave demand and the point forecast untouched. | C2b recorded a calibration-window error in metadata but the policy consumed only the window length, so the labelled panel used the baseline interval. |
+
+The frozen gate bars remain recall >= 0.60, C0 false-positive <= 0.10, off-diagonal
+confusion <= 0.40, and minimum per-class F1 >= 0.40. The correction round measures them;
+it does not tune them.
+
 ---
 
 ## How to escalate, in practice

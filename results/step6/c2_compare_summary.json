@@ -1,7 +1,7 @@
 {
   "label": "compare",
   "n_skus": 80,
-  "elapsed_s": 10833.341280221939,
+  "elapsed_s": 92.84889578819275,
   "baseline": {
     "mean_cost": 2564.6102718741386,
     "mean_cost_per_period": 37.71485693932557,
@@ -54,12 +54,13 @@
     ]
   },
   "acted": 38,
-  "decision_match_rate": 1.0,
+  "decision_match_rate": 0.9625,
   "live_actions_by_cause": {
     "C2": 44,
     "C6": 7,
     "C5": 5,
     "C1": 1,
+    "C4": 1,
     "C7": 1
   }
 }
