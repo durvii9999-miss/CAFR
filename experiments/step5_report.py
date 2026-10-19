@@ -46,7 +46,9 @@ def fmt(d: dict) -> str:
 
 def main() -> None:
     df = pd.read_parquet(OUT / "step5_readings.parquet")
+    before_df = pd.read_parquet(OUT / "e8_before" / "step5_readings.parquet")
     summary = json.loads((OUT / "step5_summary.json").read_text())
+    params = pd.read_parquet(ROOT / "data" / "synth" / "generator_params.parquet")
 
     print("=" * 78)
     print("STEP 5 -- PRE-REGISTERED GATES (recall bar 0.60, FP bar 0.10, off-diag 0.40)")
@@ -72,6 +74,17 @@ def main() -> None:
     if len(c2b):
         k = int((c2b["attributed_cause"] == "C2").sum())
         print(f"   C2b variant -> C2: {fmt(rate(k, len(c2b)))}")
+    c2b_params = params[params["true_cause"] == "C2b"]
+    if len(c2b_params):
+        signed_gap = c2b_params["coverage_gap"]
+        abs_gap = signed_gap.abs()
+        print(f"   C2b induced coverage-gap median: {signed_gap.median():.6f}; "
+              f"absolute-gap median: {abs_gap.median():.6f} "
+              f"(n={abs_gap.notna().sum()})")
+    c4_rows = df[df["true_cause"] == "C4"]
+    c4_auc = c4_rows["c3_auc"].dropna()
+    print(f"   C4 occurrence AUC diagnostic median: {c4_auc.median():.6f} "
+          f"(estimable {len(c4_auc)}/{len(c4_rows)})")
 
     print("\n5.2 False positives on the C0 control panel (any post-tau non-C0 attribution)")
     c0 = df[df["true_cause"] == "C0"]
@@ -113,6 +126,34 @@ def main() -> None:
         k = int((sub["attributed_cause"] == c).sum())
         print(f"   {c}: {fmt(rate(k, len(sub)))}")
 
+
+    print("\nPer-rule firing on C0 controls")
+    print("   scored reading (same one-row-per-SKU definition before and after):")
+    for cause in CAUSES + ["C7"]:
+        print(f"   {cause} before: {fmt(_c0_scored_firing(before_df, cause))}; "
+              f"after: {fmt(_c0_scored_firing(df, cause))}")
+    for cause in ("C4", "C5"):
+        d = summary["c0_per_rule_firing"][cause]
+        print(f"      after any-check: {d['sku_rate']:.3f} "
+              f"[{d['sku_wilson95'][0]:.3f}, {d['sku_wilson95'][1]:.3f}] "
+              f"({d['sku_hits']}/{d['sku_n']})")
+    c5 = summary["c0_per_rule_firing"]["C5"]
+    occ_any = int((c0["c5_occ_alarm_checks"] > 0).sum())
+    print(f"   C5 occurrence CUSUM alarmed at least once: "
+          f"{fmt(rate(occ_any, len(c0)))}")
+    print(f"   C5 occurrence CUSUM check rate: {c5['occ_cusum_check_rate']:.4f} "
+          f"[{c5['occ_cusum_check_wilson95'][0]:.4f}, "
+          f"{c5['occ_cusum_check_wilson95'][1]:.4f}] "
+          f"({c5['occ_cusum_check_hits']}/{c5['check_n']})")
+    calibration = summary["cusum_calibration"]
+    print("\nC5 threshold calibration")
+    print(f"   h={calibration['h']:.6f}, k={calibration['k']:.2f}; "
+          f"target={calibration['target_per_check_false_alarm_rate']:.3f}, "
+          f"observed={calibration['calibration_per_check_false_alarm_rate']:.5f} "
+          f"({calibration['calibration_n_checks']} checks)")
+    print(f"   training data: {calibration['training_controls']} C0 controls, "
+          f"periods [{calibration['periods'][0]}, {calibration['periods'][1]})")
+
     print("\nDetection diagnostics (not gated)")
     for c in CAUSES + ["C0", "C7"]:
         sub = df[df["truth_for_gate"] == c]
@@ -126,7 +167,20 @@ def main() -> None:
     print("Gate 5.2 pass:", summary["5.2_false_positive"]["pass"])
     print("Gate 5.3 pass:", summary["5.3_off_diagonal"]["pass"])
     print("Gate 5.4 pass:", summary["5.4_priority_sensitivity"]["pass"])
+    f1 = {}
+    for cause in CAUSES:
+        tp = int(conf.loc[cause, cause])
+        fp = int(conf[cause].sum() - tp)
+        fn = int(conf.loc[cause].sum() - tp)
+        f1[cause] = 2 * tp / (2 * tp + fp + fn) if (2 * tp + fp + fn) else 0.0
+    print("Minimum per-class F1:", min(f1.values()), f1)
     print("OVERALL:", summary["overall_pass"])
+
+
+def _c0_scored_firing(df: pd.DataFrame, cause: str) -> dict:
+    c0 = df[df["true_cause"] == "C0"]
+    fired = c0["fired"].fillna("").map(lambda value: cause in value.split(","))
+    return rate(int(fired.sum()), len(c0))
 
 
 if __name__ == "__main__":
