@@ -152,6 +152,7 @@ def test_c2b_gap_is_flagged_when_it_cannot_clear():
     assert "gap_clears_with_margin" in params
     assert params["demand_touched"] is False, "C2's DGP must never be touched"
     assert params["c2_variant"] == "calibration_window"
+    assert np.isfinite(params["half_width"])
     # The recorded verdict must agree with the recorded gap.
     assert params["gap_clears_with_margin"] == bool(
         abs(params["coverage_gap"]) >= 0.12
@@ -194,6 +195,16 @@ def test_c2b_half_width_override_preserves_c0_and_c2_fixture():
     assert sum(not np.isclose(width, nominal_width) for width in widths) >= 18
 
 
+def test_c2b_panel_persists_generator_half_width():
+    _, _, params = generate_labelled_panel(
+        42, n_per_cause=1, n_control=1, n_mixture=0, n_c2b=10
+    )
+    c2b = params[params["true_cause"] == "C2b"]
+    assert len(c2b) == 10
+    assert np.isfinite(c2b["half_width"]).all()
+    assert np.isfinite(c2b["c2_sigma_period_hat"]).all()
+
+
 def test_c4_dispersion_fires_without_occurrence_auc_gate():
     from cafr.attribution.rules import check_c4_size
 
@@ -221,6 +232,24 @@ def test_non_c4_rule_predicates_remain_pinned():
         "C7": check_c7_policy(-0.2, 0.0, 1.0),
     }
     assert fixed_sample == {cause: True for cause in ("C1", "C2", "C3", "C5", "C6", "C7")}
+
+
+def test_cusum_resets_after_alarm_and_honors_burn_in():
+    from cafr.monitor.features import compute_cusum_stats
+
+    reset = compute_cusum_stats(np.array([3.0, 1.0]), 1.0, k=0.0, h=2.0)
+    assert reset["alarm"] is True
+    assert reset["final_S"] == pytest.approx(1.0)
+    assert reset["max_S"] == pytest.approx(4.0)
+    assert reset["alarm_score"] == pytest.approx(3.0)
+    no_alarm = compute_cusum_stats(np.array([1.0, 1.0]), 1.0, k=0.0, h=10.0)
+    assert no_alarm["alarm"] is False
+    assert no_alarm["alarm_score"] == pytest.approx(2.0)
+
+    burned = compute_cusum_stats(
+        np.array([2.0, 2.0, 0.0]), 1.0, k=0.0, h=10.0, burn_in=1
+    )
+    assert burned["final_S"] == pytest.approx(2.0)
 
 
 # --------------------------------------------------------------------------- #

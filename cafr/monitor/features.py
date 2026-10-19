@@ -228,22 +228,49 @@ def compute_dispersion_stats(
         "below_budget": False,
     }
 
-def compute_cusum_stats(e: np.ndarray, sigma: float, k: float = 0.25, h: float = 4.0) -> dict:
-    """C5: Two-sided CUSUM."""
+def compute_cusum_stats(
+    e: np.ndarray,
+    sigma: float,
+    k: float = 0.25,
+    h: float = 4.0,
+    *,
+    burn_in: int = 0,
+) -> dict:
+    """C5: Two-sided CUSUM, reset after an alarm and start after burn-in."""
+    e = np.asarray(e, dtype="float64")[max(0, int(burn_in)) :]
     if len(e) == 0 or sigma <= 1e-9:
-        return {"S_pos": 0.0, "S_neg": 0.0, "alarm": False, "max_S": 0.0}
+        return {
+            "S_pos": 0.0, "S_neg": 0.0, "alarm": False,
+            "max_S": 0.0, "final_S": 0.0, "alarm_score": 0.0,
+        }
         
     S_pos = 0.0
     S_neg = 0.0
+    diagnostic_pos = 0.0
+    diagnostic_neg = 0.0
     alarm = False
+    alarm_score = 0.0
     
     for val in e:
+        diagnostic_pos = max(0.0, diagnostic_pos + val - k * sigma)
+        diagnostic_neg = max(0.0, diagnostic_neg - val - k * sigma)
         S_pos = max(0.0, S_pos + val - k * sigma)
         S_neg = max(0.0, S_neg - val - k * sigma)
-        if max(S_pos, S_neg) > h * sigma:
+        current = max(S_pos, S_neg)
+        alarm_score = max(alarm_score, current)
+        if current > h * sigma:
             alarm = True
-            
-    return {"S_pos": S_pos, "S_neg": S_neg, "alarm": alarm, "max_S": max(S_pos, S_neg) / max(sigma, 1e-9)}
+            S_pos = 0.0
+            S_neg = 0.0
+
+    return {
+        "S_pos": S_pos,
+        "S_neg": S_neg,
+        "alarm": bool(alarm),
+        "max_S": max(diagnostic_pos, diagnostic_neg) / max(sigma, 1e-9),
+        "final_S": max(S_pos, S_neg) / max(sigma, 1e-9),
+        "alarm_score": alarm_score / max(sigma, 1e-9),
+    }
 
 def compute_intermittency_stats(delta: np.ndarray, usable: np.ndarray) -> dict:
     """C6: ADI."""

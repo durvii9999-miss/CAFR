@@ -99,6 +99,7 @@ def _run_one(
     check_from: int,
     detect_from: int,
     stride: int,
+    calibration_scores: list[float] | None = None,
 ) -> tuple[dict, "MonitorReading"]:
     cfg = _sku_cfg(base_cfg, param)
     sim_base = SimConfig.from_config(cfg)
@@ -141,9 +142,15 @@ def _run_one(
     pre_flag_t: int | None = None
     checks: list[tuple[int, str]] = []
     ev_any: dict[str, bool] = {k: False for k in ("c1", "c2", "c3", "c4", "c5", "c6", "c7")}
+    rule_fired_any: dict[str, bool] = {k: False for k in CAUSES_ALL[1:]}
+    c4_fired_checks = 0
+    c5_fired_checks = 0
+    c5_occ_alarm_checks = 0
+    c5_sz_alarm_checks = 0
 
     def level_fn(t, y_obs, cens, inv):
-        nonlocal pre_flag_t
+        nonlocal pre_flag_t, c4_fired_checks, c5_fired_checks
+        nonlocal c5_occ_alarm_checks, c5_sz_alarm_checks
         S, a = base(t, y_obs, cens, inv)
         st = base.last_state
         res = base._residuals.to_array()
@@ -176,6 +183,18 @@ def _run_one(
             rd = monitor.read()
             att = attribute(rd, cfg)
             checks.append((int(t), att.cause))
+            for cause in att.fired:
+                if cause in rule_fired_any:
+                    rule_fired_any[cause] = True
+            c4_fired_checks += int("C4" in att.fired)
+            c5_fired_checks += int("C5" in att.fired)
+            c5_occ_alarm_checks += int(bool(rd.statistics.get("c5_occ_alarm", 0.0)))
+            c5_sz_alarm_checks += int(bool(rd.statistics.get("c5_sz_alarm", 0.0)))
+            if calibration_scores is not None and int(t) < detect_from:
+                calibration_scores.append(max(
+                    float(rd.statistics.get("c5_sz_alarm_score", 0.0)),
+                    float(rd.statistics.get("c5_occ_alarm_score", 0.0)),
+                ))
             # Evidence availability is an EX-ANTE observable (the count of nonzero
             # observations in the window), and it is the pre-registered restriction
             # gate 4.9 uses. A cause whose statistic never had enough observations on
@@ -214,6 +233,11 @@ def _run_one(
         "detect_latency": latency,
         "n_checks": float(len(checks)),
         "n_flagged_checks": float(sum(c != "C0" for _, c in checks)),
+        "c4_fired_checks": int(c4_fired_checks),
+        "c5_fired_checks": int(c5_fired_checks),
+        "c5_occ_alarm_checks": int(c5_occ_alarm_checks),
+        "c5_sz_alarm_checks": int(c5_sz_alarm_checks),
+        **{f"rule_{cause}_any": bool(value) for cause, value in rule_fired_any.items()},
         "final_cause": final_att.cause,
         "confidence": att.confidence,
         "fired": ",".join(att.fired),
@@ -246,17 +270,38 @@ def _confusion(df: pd.DataFrame, rows: list[str], cols: list[str]) -> pd.DataFra
     return m
 
 
+def _wilson_interval(successes: int, total: int) -> list[float]:
+    if total <= 0:
+        return [float("nan"), float("nan")]
+    z = 1.959963984540054
+    p = successes / total
+    denom = 1.0 + z * z / total
+    center = (p + z * z / (2.0 * total)) / denom
+    half = z * np.sqrt(p * (1.0 - p) / total + z * z / (4.0 * total * total)) / denom
+    return [float(center - half), float(center + half)]
+
+
 def evaluate_gates(
-    df: pd.DataFrame, readings_for_order: list, base_cfg: dict, *, check_from: int
+    df: pd.DataFrame,
+    readings_for_order: list,
+    base_cfg: dict,
+    *,
+    check_from: int,
+    cusum_calibration: dict | None = None,
 ) -> dict:
     labels = CAUSES_ALL
     single = df[df["true_cause"].isin(CAUSES_ALL)].copy()
 
     # 5.1 -- recall, pooled over the panel and per cause (C2 includes C2b by mapping).
     recall = {}
+    recall_ci = {}
+    recall_counts = {}
     for c in CAUSES_ALL:
         sub = df[df["truth_for_gate"] == c] if c != "C2b" else df[df["true_cause"] == c]
-        recall[c] = float((sub["attributed_cause"] == c).mean()) if len(sub) else float("nan")
+        hits = int((sub["attributed_cause"] == c).sum())
+        recall[c] = float(hits / len(sub)) if len(sub) else float("nan")
+        recall_ci[c] = _wilson_interval(hits, len(sub))
+        recall_counts[c] = {"hits": hits, "n": int(len(sub))}
     recall_c2b = float(
         (df.loc[df["true_cause"] == "C2b", "attributed_cause"] == "C2").mean()
     ) if (df["true_cause"] == "C2b").any() else float("nan")
@@ -285,6 +330,33 @@ def evaluate_gates(
     pre_flag_rate = (
         float(c0["pre_injection_flag_t"].notna().mean()) if len(c0) else float("nan")
     )
+    c0_rule_firing = {}
+    n_c0_checks = int(c0["n_checks"].sum()) if len(c0) else 0
+    for cause in CAUSES_ALL[1:]:
+        sku_hits = int(c0[f"rule_{cause}_any"].astype(bool).sum()) if len(c0) else 0
+        check_col = f"{cause.lower()}_fired_checks"
+        check_hits = int(c0[check_col].sum()) if len(c0) and check_col in c0 else 0
+        c0_rule_firing[cause] = {
+            "sku_rate": float(sku_hits / len(c0)) if len(c0) else float("nan"),
+            "sku_wilson95": _wilson_interval(sku_hits, len(c0)),
+            "sku_hits": sku_hits,
+            "sku_n": int(len(c0)),
+            "check_rate": float(check_hits / n_c0_checks) if n_c0_checks else float("nan"),
+            "check_wilson95": _wilson_interval(check_hits, n_c0_checks),
+            "check_hits": check_hits,
+            "check_n": n_c0_checks,
+        }
+    if len(c0):
+        c5_occ_hits = int(c0["c5_occ_alarm_checks"].sum())
+        c5_sz_hits = int(c0["c5_sz_alarm_checks"].sum())
+        c0_rule_firing["C5"].update({
+            "occ_cusum_check_rate": float(c5_occ_hits / n_c0_checks) if n_c0_checks else float("nan"),
+            "occ_cusum_check_wilson95": _wilson_interval(c5_occ_hits, n_c0_checks),
+            "occ_cusum_check_hits": c5_occ_hits,
+            "sz_cusum_check_rate": float(c5_sz_hits / n_c0_checks) if n_c0_checks else float("nan"),
+            "sz_cusum_check_wilson95": _wilson_interval(c5_sz_hits, n_c0_checks),
+            "sz_cusum_check_hits": c5_sz_hits,
+        })
 
     # 5.3 -- row-normalised confusion over C0..C7.
     conf = _confusion(single, CAUSES_ALL, labels)
@@ -384,6 +456,11 @@ def evaluate_gates(
             "p90_latency": float(hit["detect_latency"].quantile(0.9)) if len(hit) else float("nan"),
         }
     gates["detection_latency"] = lat
+    gates["recall_wilson95"] = recall_ci
+    gates["recall_counts"] = recall_counts
+    gates["c0_per_rule_firing"] = c0_rule_firing
+    if cusum_calibration is not None:
+        gates["cusum_calibration"] = cusum_calibration
     gates["check_schedule"] = {
         "check_from": int(check_from),
         "n_checks_median": float(df["n_checks"].median()),
@@ -480,6 +557,46 @@ def main() -> None:
     pool = fit_global_pool(cfg, train_panel, statics_by_sku=statics_by_sku)
     print(f"pool fitted on {len(chosen)} SKUs x {burn} periods in {time.time()-t0:.1f}s")
 
+    c0_ids = sorted(
+        sid for sid in chosen if str(params.loc[sid, "true_cause"]) == "C0"
+    )
+    n_train_controls = int(np.floor(0.60 * len(c0_ids)))
+    train_control_ids = c0_ids[:n_train_controls]
+    calibration_cfg = copy.deepcopy(cfg)
+    calibration_cfg.setdefault("detection", {})["cusum_h"] = 1e12
+    calibration_scores: list[float] = []
+    calibration_start = time.time()
+    for sid in train_control_ids:
+        _run_one(
+            sid, series[sid], params.loc[sid], calibration_cfg, pool, args.seed,
+            check_from=check_from, detect_from=detect_from, stride=args.stride,
+            calibration_scores=calibration_scores,
+        )
+    if not calibration_scores:
+        raise RuntimeError("no pre-injection C0 checks available for CUSUM calibration")
+    target_cusum_fpr = 0.05
+    calibrated_h = float(np.quantile(calibration_scores, 1.0 - target_cusum_fpr, method="higher"))
+    cfg.setdefault("detection", {})["cusum_h"] = calibrated_h
+    cusum_calibration = {
+        "h": calibrated_h,
+        "k": float(cfg["detection"].get("cusum_k", 0.25)),
+        "target_per_check_false_alarm_rate": target_cusum_fpr,
+        "calibration_per_check_false_alarm_rate": float(
+            np.mean(np.asarray(calibration_scores) > calibrated_h)
+        ),
+        "calibration_n_checks": int(len(calibration_scores)),
+        "training_controls": int(len(train_control_ids)),
+        "training_control_ids": "sorted C0 sku_id first 60%; remaining C0 controls held out",
+        "periods": [burn, detect_from],
+        "statistic": "max reset-aware standardized excursion from size and occurrence CUSUMs",
+        "elapsed_seconds": float(time.time() - calibration_start),
+    }
+    print(
+        f"CUSUM h calibrated to {calibrated_h:.6g} from "
+        f"{len(calibration_scores)} train-control pre-injection checks "
+        f"(empirical rate {cusum_calibration['calibration_per_check_false_alarm_rate']:.4f})"
+    )
+
     rows: list[dict] = []
     readings_for_order: list = []
     t0 = time.time()
@@ -519,7 +636,10 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     df.to_parquet(OUT / "step5_readings.parquet", index=False)
 
-    gates = evaluate_gates(ok, readings_for_order, cfg, check_from=check_from)
+    gates = evaluate_gates(
+        ok, readings_for_order, cfg, check_from=check_from,
+        cusum_calibration=cusum_calibration,
+    )
     (OUT / "step5_summary.json").write_text(json.dumps(gates, indent=2, default=float),
                                             encoding="utf-8")
 

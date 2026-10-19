@@ -140,6 +140,7 @@ class Monitor:
         self.cv2_star = float(det.get("cv2_star", 0.49))
         self.cusum_k = float(det.get("cusum_k", 0.25))
         self.cusum_h = float(det.get("cusum_h", 4.0))
+        self.cusum_burn_in = int(cfg.get("splits", {}).get("burn_in", 0))
         self.c6_bootstrap_n = int(det.get("c6_bootstrap_n", 1000))
         self.alpha_target = float(alpha_target)
         # C2's interval level. base.yaml's C2 generator clears a 90 % interval; the
@@ -385,7 +386,8 @@ class Monitor:
             if ref.size >= fl["c4_nonzero"]
             else sigma_base
         )
-        e_sz_tail = e_sz[n - w5 :]
+        c5_start = max(self.cusum_burn_in, n - w5)
+        e_sz_tail = e_sz[c5_start:n]
         m_sz = np.isfinite(e_sz_tail) & np.isfinite(sigma_ref) & (sigma_ref > 1e-9)
         cusum_sz = compute_cusum_stats(
             e_sz_tail[m_sz] / sigma_ref, 1.0, k=self.cusum_k, h=self.cusum_h
@@ -395,8 +397,8 @@ class Monitor:
         # standardised by the square root of the model's own predicted variance.
         z_t = np.clip(z_prev, 0.02, 0.98)
         sd_occ_t = np.sqrt(z_t * (1.0 - z_t))
-        e_occ_tail = (delta - z_prev)[n - w5 :]
-        sd_occ_tail = sd_occ_t[n - w5 :]
+        e_occ_tail = (delta - z_prev)[c5_start:n]
+        sd_occ_tail = sd_occ_t[c5_start:n]
         m_occ = np.isfinite(e_occ_tail) & np.isfinite(sd_occ_tail) & (sd_occ_tail > 1e-9)
         cusum_occ = compute_cusum_stats(
             e_occ_tail[m_occ] / sd_occ_tail[m_occ], 1.0,
@@ -480,8 +482,10 @@ class Monitor:
             "c4_r_prev": float(c4_prev.get("r", np.nan)),
             "c4_below_budget": float(bool(c4.get("below_budget", True))),
             "c5_sz_max_s": float(cusum_sz["max_S"]),
+            "c5_sz_alarm_score": float(cusum_sz["alarm_score"]),
             "c5_sz_alarm": float(bool(cusum_sz["alarm"])),
             "c5_occ_max_s": float(cusum_occ["max_S"]),
+            "c5_occ_alarm_score": float(cusum_occ["alarm_score"]),
             "c5_occ_alarm": float(bool(cusum_occ["alarm"])),
             "c5_occ_step_bic": float(occ_step_bic),
             "c5_occ_drift_bic": float(occ_drift_bic),
