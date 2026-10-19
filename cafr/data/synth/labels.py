@@ -181,6 +181,8 @@ def _series(
         "cv2_after": cv2_after,
         "gamma": params.get("gamma"),
         "c2_calib_window": params.get("calib_window"),
+        "c2_sigma_period_hat": params.get("sigma_period_hat"),
+        "half_width": params.get("half_width"),
         "coverage_achieved": params.get("coverage_achieved"),
         "coverage_gap": params.get("coverage_gap"),
         "gap_clears_with_margin": params.get("gap_clears_with_margin"),

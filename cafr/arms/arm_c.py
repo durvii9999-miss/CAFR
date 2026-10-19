@@ -153,6 +153,8 @@ class _ArmCLevelFn:
             # (§15.2). Read from config so the per-SKU gamma recorded by the generator
             # is live; 1.0 everywhere else.
             c2_quantile_scale=c2_scale,
+            # C2b's modelling error reports an aggregate interval half-width directly.
+            interval_half_width=self.cfg["sim"].get("interval_half_width"),
         )
         return float(S), float(alpha_eff)
 

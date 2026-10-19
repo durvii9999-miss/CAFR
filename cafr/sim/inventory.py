@@ -236,6 +236,7 @@ def aggregate_order_up_to(
     alpha_max_cap: float = 0.999,
     safety_factor_scale: float = 1.0,
     c2_quantile_scale: float = 1.0,
+    interval_half_width: float | None = None,
 ) -> tuple[float, float, int, bool]:
     """``S = R * mu_hat + F_hat^{-1}(alpha)`` -- the R-period AGGREGATE quantile.
 
@@ -289,6 +290,13 @@ def aggregate_order_up_to(
     # touched. Applied to the same safety term, for the same reason as C7's scale --
     # the two injections never coexist on one SKU.
     safety *= float(c2_quantile_scale)
+    if interval_half_width is not None:
+        # C2b supplies the generator's per-period sigma half-width for the aggregate
+        # interval. It replaces the predictive quantile without changing R * mu_hat.
+        width = float(interval_half_width)
+        if not np.isfinite(width) or width < 0:
+            raise ValueError("interval_half_width must be finite and non-negative")
+        safety = width
     return float(R * mu_hat + safety), float(alpha_eff), int(aggregates.size), False
 
 

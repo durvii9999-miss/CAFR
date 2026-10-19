@@ -78,6 +78,9 @@ def _sku_cfg(base_cfg: dict, param: pd.Series) -> dict:
         w = param.get("c2_calib_window")
         if pd.notna(w):
             cfg["sim"]["quantile_window"] = int(w)
+        half_width = param.get("half_width")
+        if pd.notna(half_width):
+            cfg["sim"]["interval_half_width"] = float(half_width)
     elif cause == "C7":
         s = param.get("safety_scale")
         if pd.notna(s):

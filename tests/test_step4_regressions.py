@@ -25,7 +25,7 @@ from cafr.data.synth.injections import (
     _aggregate_samples,
 )
 from cafr.data.synth.labels import generate_labelled_panel
-from cafr.sim.inventory import SimConfig
+from cafr.sim.inventory import SimConfig, aggregate_order_up_to
 from cafr.utils.config import load_config
 
 
@@ -156,6 +156,42 @@ def test_c2b_gap_is_flagged_when_it_cannot_clear():
     assert params["gap_clears_with_margin"] == bool(
         abs(params["coverage_gap"]) >= 0.12
     )
+
+
+def test_c2b_half_width_override_preserves_c0_and_c2_fixture():
+    """C2b replaces only the interval width; the C0 and C2 scales stay frozen."""
+    from cafr.data.synth.injections import inject_C2b
+
+    y_hist = np.arange(1.0, 25.0)
+    residuals = np.arange(-12.0, 13.0)
+    common = dict(
+        y_hist=y_hist,
+        mu_hat=10.0,
+        R=3,
+        alpha=0.95,
+        residuals=residuals,
+        window=24,
+        min_aggregates=4,
+    )
+
+    c0 = aggregate_order_up_to(**common)
+    c2 = aggregate_order_up_to(**common, c2_quantile_scale=0.5)
+    assert c0[0] == pytest.approx(59.7)
+    assert c2[0] == pytest.approx(44.85)
+
+    nominal_width = c0[0] - 3 * common["mu_hat"]
+    rng = np.random.default_rng(42)
+    widths = []
+    for _ in range(20):
+        _, _, _, params = inject_C2b(200, 120, 0.2, 1.0, 50.0, rng)
+        assert params["demand_touched"] is False
+        result = aggregate_order_up_to(
+            **common, interval_half_width=params["half_width"]
+        )
+        widths.append(params["half_width"])
+        assert result[0] - 3 * common["mu_hat"] == pytest.approx(params["half_width"])
+
+    assert sum(not np.isclose(width, nominal_width) for width in widths) >= 18
 
 
 # --------------------------------------------------------------------------- #
