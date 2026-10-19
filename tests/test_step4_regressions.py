@@ -194,6 +194,35 @@ def test_c2b_half_width_override_preserves_c0_and_c2_fixture():
     assert sum(not np.isclose(width, nominal_width) for width in widths) >= 18
 
 
+def test_c4_dispersion_fires_without_occurrence_auc_gate():
+    from cafr.attribution.rules import check_c4_size
+
+    assert check_c4_size([0.60, 0.62], auc=0.44)
+    assert check_c4_size([1.80, 1.90], auc=float("nan"))
+    assert not check_c4_size([1.40, 1.60], auc=0.99)
+
+
+def test_non_c4_rule_predicates_remain_pinned():
+    from cafr.attribution.rules import (
+        check_c1_bias,
+        check_c2_coverage,
+        check_c3_occurrence,
+        check_c5_cusum,
+        check_c6_intermittency,
+        check_c7_policy,
+    )
+
+    fixed_sample = {
+        "C1": check_c1_bias(2.2, [1.0, 1.0, 1.0, 1.0], 8, 5.0, 4.0),
+        "C2": check_c2_coverage(0.2, 0.01, 0.0, 1.0),
+        "C3": check_c3_occurrence(0.2, 0.01, 1.0),
+        "C5": check_c5_cusum(True, False, 4.0, 5.0, 4.0, 5.0),
+        "C6": check_c6_intermittency(["new"] * 3, "old", 0.95),
+        "C7": check_c7_policy(-0.2, 0.0, 1.0),
+    }
+    assert fixed_sample == {cause: True for cause in ("C1", "C2", "C3", "C5", "C6", "C7")}
+
+
 # --------------------------------------------------------------------------- #
 # 5. the panel's statics do not perturb its parameters
 # --------------------------------------------------------------------------- #

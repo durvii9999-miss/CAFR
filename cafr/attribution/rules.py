@@ -134,7 +134,6 @@ def check_c4_size(
     """C4: Size failure -- the dispersion of nonzero sizes has changed.
 
     1. the dispersion ratio is out of band over 2 consecutive windows
-    2. AUC >= 0.65
 
     **The band is two-sided.** ``r = sd(log z)_now / sd(log z)_base``, so C4's
     injection (``k -> k * factor`` with ``factor in {0.25, 4.0}``) moves ``r`` in
@@ -153,9 +152,6 @@ def check_c4_size(
     if lo <= 0 or hi <= 0:
         return False
     if not (max(lo, 1.0 / lo) > 1.5 and max(hi, 1.0 / hi) > 1.5):
-        return False
-
-    if not np.isnan(auc) and auc < 0.65:
         return False
 
     return True
