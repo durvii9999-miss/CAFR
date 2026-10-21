@@ -65,7 +65,11 @@ def step6_split(df: pd.DataFrame) -> pd.DataFrame:
 s5 = pd.read_parquet(ROOT / "results/step5/step5_readings.parquet")
 s5_summary = json.loads((ROOT / "results/step5/step5_summary.json").read_text())
 s5_confusion = pd.read_parquet(ROOT / "results/step5/step5_confusion.parquet")
-s5_split = step6_split(s5)
+# The frozen Step 6 gate was fitted before the Step 5 correction. Its split and
+# candidate counts must therefore reproduce the archived readings, not the
+# corrected Step 5 readings.
+s5_step6 = pd.read_parquet(ROOT / "results/step5/e8_before/step5_readings.parquet")
+s5_split = step6_split(s5_step6)
 
 gate = json.loads((ROOT / "results/step6/c2_gate_summary.json").read_text())
 compare = json.loads((ROOT / "results/step6/c2_compare_summary.json").read_text())
@@ -144,13 +148,13 @@ panel_a = [
 panel_a_df = pd.DataFrame(panel_a)
 
 # Cross-check the computed counts against the stored summary.
-expected = {"C1": 6, "C2 (pooled)": 209, "C3": 11, "C4": 0, "C5": 22, "C6": 29}
+expected = {"C1": 5, "C2 (pooled)": 214, "C3": 12, "C4": 15, "C5": 7, "C6": 33}
 for cause, k in expected.items():
     row = panel_a_df[panel_a_df["cause_or_gate"] == cause].iloc[0]
     assert int(row["correct"]) == k, (cause, row["correct"], k)
-assert int(panel_a_df[panel_a_df["cause_or_gate"] == "C2 (direct)"]["correct"].iloc[0]) == 191
-assert int(panel_a_df[panel_a_df["cause_or_gate"] == "C2b (variant)"]["correct"].iloc[0]) == 18
-assert int(panel_a_df[panel_a_df["cause_or_gate"] == "C7 (reported)"]["correct"].iloc[0]) == 56
+assert int(panel_a_df[panel_a_df["cause_or_gate"] == "C2 (direct)"]["correct"].iloc[0]) == 197
+assert int(panel_a_df[panel_a_df["cause_or_gate"] == "C2b (variant)"]["correct"].iloc[0]) == 17
+assert int(panel_a_df[panel_a_df["cause_or_gate"] == "C7 (reported)"]["correct"].iloc[0]) == 57
 
 # Gate 5.2: any non-C0 attribution on the C0 control panel.
 c0 = s5[s5["truth_for_gate"] == "C0"]
@@ -158,7 +162,7 @@ c0_fp_k = int((c0["attributed_cause"] != "C0").sum())
 c0_fp_n = int(len(c0))
 c0_fp = c0_fp_k / c0_fp_n
 c0_fp_lo, c0_fp_hi = wilson_ci(c0_fp_k, c0_fp_n)
-assert c0_fp_k == 90 and c0_fp_n == 200
+assert c0_fp_k == 81 and c0_fp_n == 200
 
 # Gate 5.3: row-normalised max off-diagonal, truth_for_gate rows.
 ct = pd.crosstab(s5["truth_for_gate"], s5["attributed_cause"])
@@ -184,14 +188,15 @@ c2_true_off_v = float(c2_true_off.max())
 c2_true_off_to = str(c2_true_off.idxmax())
 
 # Verify the off-diagonal values used in the paper against the stored table.
-assert math.isclose(offdiag["C1"][0], 0.545, abs_tol=1e-12)
-assert math.isclose(offdiag["C4"][0], 0.560, abs_tol=1e-12)
-assert math.isclose(offdiag["C6"][0], 0.480, abs_tol=1e-12)
-assert math.isclose(offdiag["C2"][0], 0.335, abs_tol=1e-12)
-assert math.isclose(c2_true_off_v, 0.040, abs_tol=1e-12)
+assert math.isclose(offdiag["C1"][0], 0.585, abs_tol=1e-12)
+assert math.isclose(offdiag["C4"][0], 0.575, abs_tol=1e-12)
+assert math.isclose(offdiag["C6"][0], 0.505, abs_tol=1e-12)
+assert math.isclose(offdiag["C7"][0], 0.425, abs_tol=1e-12)
+assert math.isclose(offdiag["C2"][0], 0.2375, abs_tol=1e-12)
+assert math.isclose(c2_true_off_v, 0.005, abs_tol=1e-12)
 
 gate54 = s5_summary["5.4_priority_sensitivity"]
-assert math.isclose(gate54["value_max_abs_diff"], 0.011081653026416477, abs_tol=1e-15)
+assert math.isclose(gate54["value_max_abs_diff"], 0.013529424156386277, abs_tol=1e-15)
 
 panel_b = [
     {
@@ -211,7 +216,10 @@ for cause in CAUSES:
     value, target = offdiag[cause]
     detail = f"max off-diagonal to {target}"
     if cause == "C2":
-        detail += f"; true C2 only {c2_true_off_v:.3f} to {c2_true_off_to}"
+        detail = (
+            f"max off-diagonal to {target}; true C2 only "
+            f"{c2_true_off_v:.3f} to C4/C5/C6"
+        )
     panel_b.append(
         {
             "panel": "B",
@@ -223,7 +231,7 @@ for cause in CAUSES:
             "ci_low": "",
             "ci_high": "",
             "bar": "<= 0.40",
-            "verdict": "FAIL" if cause in {"C1", "C4", "C6"} else "pass",
+            "verdict": "FAIL" if cause in {"C1", "C4", "C6", "C7"} else "pass",
         }
     )
 panel_b.extend(
@@ -270,8 +278,8 @@ assert int(((gated["action"] == "R2") & (gated["true_cause"] == "C0")).sum()) ==
 assert int((gated["attributed"] == "C2").sum()) == 44
 assert int(((gated["attributed"] == "C2") & (gated["true_cause"] == "C2")).sum()) == 37
 assert int((gated["reason"] == "low_reliability").sum()) == 6
-assert int((gated["reason"] == "not_C2").sum()) == 14
-assert int((gated["decision_match"] == True).sum()) == 80
+assert int((gated["reason"] == "not_C2").sum()) == 15
+assert int((gated["decision_match"] == True).sum()) == 77
 
 # Panel A: gate metrics by split, with candidate counts recomputed from readings.
 split_rows = []
@@ -309,7 +317,7 @@ comparison_rows = [
     ("C2-attributed rows", 44, 80, "37 true C2 + 7 true C0"),
     ("Precision", 37, 38, "true C2 among acted"),
     ("Coverage", 38, 80, "acted / all compared SKUs"),
-    ("Decision match", 80, 80, "live decision equals stored-reading decision"),
+    ("Decision match", 77, 80, "live decision equals stored-reading decision"),
 ]
 comparison_rows = [
     {
@@ -494,7 +502,7 @@ fig.text(
     0.015,
     "Whiskers: 95% Wilson intervals. Green = passes 0.60; red = fails / variant; gray = reported, not gated.\n"
     "C2 pooled = C2 + C2b (n=400); C2 direct = C2 panel only (n=200).\n"
-    "C0 control false-positive rate = 0.450 (90/200; 95% CI 0.383-0.519), bar <= 0.10: FAIL. Overall Step 5: FAIL.",
+    "C0 control false-positive rate = 0.405 (81/200; 95% CI 0.339-0.474), bar <= 0.10: FAIL. Overall Step 5: FAIL.",
     fontsize=7.0,
     color="#333333",
     va="bottom",
@@ -611,7 +619,10 @@ plt.close(fig)
 def f3(x) -> str:
     if x == "" or x is None or (isinstance(x, float) and math.isnan(x)):
         return "--"
-    return f"{float(x):.3f}"
+    # The stored C2 pooled off-diagonal is exactly 0.2375. Half-even float
+    # formatting prints that as 0.237, while the manuscript correctly reports
+    # 0.238. Round half up so the table matches the text.
+    return f"{math.floor(float(x) * 1000.0 + 0.5) / 1000.0:.3f}"
 
 
 def f2(x) -> str:
@@ -675,7 +686,7 @@ lines += [
     r"\end{tabular}",
     r"\par\smallskip",
     r"\footnotesize",
-    r"$^\dagger$C2b is a variant panel; its recall is reported but it is not part of the six-cause gate. Gate 5.5 (outputs produced) passed; gate 5.6 budget-restricted recall does not change any verdict. C0 row in Panel B is the false-positive rate, not recall. C2 max off-diagonal is 0.335 to C0 on the pooled denominator; the true-C2-only value is 0.040 to C5.",
+    r"$^\dagger$C2b is a variant panel; its recall is reported but it is not part of the six-cause gate. Gate 5.5 (outputs produced) passed; gate 5.6 budget-restricted recall does not change any verdict. C0 row in Panel B is the false-positive rate, not recall. C2 max off-diagonal is 0.238 to C0 on the pooled denominator; the true-C2-only value is 0.005 to C4/C5/C6.",
     r"\end{table*}",
 ]
 (TABDIR / "table1_step5_gates.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -685,7 +696,7 @@ lines += [
 lines = [
     r"\begin{table*}[t]",
     r"\centering",
-    r"\caption{Step 6 reliability-gate performance. Panel A: stored Step 5 readings by split; ``Recall'' divides by all true C2 SKUs in the split, and ``Coverage (rows)'' divides by all non-C2b rows. The validation split selected $\tau=0.2446$; the test split was untouched. Panel B: live actions on the 80-SKU C2+C0 comparison. The comparison precision of 0.974 is not the all-cause test precision of 0.822.}",
+    r"\caption{Step 6 reliability-gate performance. Panel A: archived pre-correction Step 5 readings by split, the readings used to fit the frozen gate; ``Recall'' divides by all true C2 SKUs in the split, and ``Coverage (rows)'' divides by all non-C2b rows. The validation split selected $\tau=0.2446$; the test split was untouched. Panel B: live actions on the 80-SKU C2+C0 comparison. The comparison precision of 0.974 is not the all-cause test precision of 0.822.}",
     r"\label{tab:step6-gate}",
     r"\footnotesize",
     r"\setlength{\tabcolsep}{3pt}",
@@ -719,7 +730,7 @@ lines += [
     r"\end{tabular}",
     r"\par\smallskip",
     r"\footnotesize",
-    r"Notes: Candidates are rows with \texttt{detected=True} and \texttt{attributed\_cause=C2}. Panel B has 44 C2-attributed rows (37 true C2 + 7 true C0); 38 are acted (37 true C2 + 1 true C0). Six low-reliability fallbacks are all true C0; 14 \texttt{not\_C2} fallbacks comprise 3 true C2 attributed C5 and 11 true C0. The single false action was \texttt{control:C0:0099}, whose $\gamma=1.0$ made the scale reset a no-op.",
+    r"Notes: Candidates are rows with \texttt{detected=True} and \texttt{attributed\_cause=C2}. Panel B has 44 C2-attributed rows (37 true C2 + 7 true C0); 38 are acted (37 true C2 + 1 true C0). Six low-reliability fallbacks are all true C0; 15 \texttt{not\_C2} fallbacks comprise 3 true C2 attributed C5 and 12 true C0. The single false action was \texttt{control:C0:0099}, whose $\gamma=1.0$ made the scale reset a no-op.",
     r"\end{table*}",
 ]
 (TABDIR / "table2_step6_gate.tex").write_text("\n".join(lines) + "\n", encoding="utf-8")

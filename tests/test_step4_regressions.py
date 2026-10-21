@@ -195,6 +195,48 @@ def test_c2b_half_width_override_preserves_c0_and_c2_fixture():
     assert sum(not np.isclose(width, nominal_width) for width in widths) >= 18
 
 
+def test_c2b_half_width_is_a_supported_sim_key():
+    """C2b's width must pass ``SimConfig.from_config`` validation.
+
+    The per-SKU runner writes the generator's half-width into ``cfg["sim"]``. When the
+    schema did not carry the key, every C2b SKU raised
+    ``ValueError("unknown sim config keys: ['interval_half_width']")``, was recorded as
+    an ERROR row, and was dropped from the Step 5 gates -- which then read C2 as
+    direct-only and C2b as NaN.
+    """
+    cfg = load_config(
+        "synthetic.yaml", overrides={"sim": {"interval_half_width": 0.75}}
+    )
+    assert SimConfig.from_config(cfg).interval_half_width == pytest.approx(0.75)
+
+
+def test_arm_c_applies_the_configured_c2b_half_width():
+    """The validated key must reach the order-up-to level, not stop at the schema."""
+    from cafr.arms.arm_c import arm_c_factory
+    from cafr.forecasters.base import ForecastState
+
+    class _FixedForecaster:
+        def fit(self, fi):
+            return ForecastState(mu=10.0, z=1.0, sigma=1.0, method="croston")
+
+    cfg = load_config(
+        "synthetic.yaml", overrides={"sim": {"interval_half_width": 0.75}}
+    )
+    SimConfig.from_config(cfg)  # this used to raise on the C2b key
+
+    R = int(cfg["sim"]["R"])
+    fn = arm_c_factory(
+        {"croston": _FixedForecaster()}, cfg, "c2b-test", 0.95, "observed"
+    )
+    y = np.ones(60)
+    cens = np.zeros(60, dtype=bool)
+    for t in range(60):
+        S, _ = fn(t, y[: t + 1], cens[: t + 1], {"on_hand": 1.0})
+
+    # C2b replaces only the safety term: S = R * mu_hat + half_width.
+    assert S == pytest.approx(R * 10.0 + 0.75)
+
+
 def test_c2b_panel_persists_generator_half_width():
     _, _, params = generate_labelled_panel(
         42, n_per_cause=1, n_control=1, n_mixture=0, n_c2b=10

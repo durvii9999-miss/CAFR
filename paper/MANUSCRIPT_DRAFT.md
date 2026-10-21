@@ -14,7 +14,7 @@
 
 **Abstract**
 
-Intermittent demand makes forecast failure difficult to diagnose: a bad forecast can arise from a biased size process, a changed occurrence rate, a level shift, a mis-calibrated uncertainty interval, a mis-set inventory policy, or simply noise. Cause-attributed forecast repair (CAFR) proposes diagnosing the mechanism behind a forecast failure and applying a matched corrective action, including actions outside the forecasting model. This paper reports two executed experiments on a labelled synthetic panel of intermittent demand (seed 42), using the accuracy-based adaptive-selection policy (arm c) as the base policy. The first experiment measured whether a live monitor and priority-ordered attribution rule could name seven injected causes at predeclared recall, false-positive, confusion, and priority-sensitivity bars. The overall verdict was failure. Only the direct C2 panel (interval miscalibration) passed the 0.60 recall bar, with recall 0.955 (191/200; 95% Wilson interval [0.917, 0.976]). The C0 control false-positive rate was 0.450 [0.383, 0.519], far above the 0.10 bar. C1 and C3 were undetectable as generated; C4 was blocked by an unsatisfiable rule guard; C5's occurrence CUSUM was saturated; C6 failed on both generator and detector; C7 remained a documented negative. The C2b variant was a generator defect and its 0.090 recall is not a detector result. The second experiment asked whether a reliability gate trained on the Step 5 readings could decide when to apply a one-time C2 scale reset. On 40 C2 and 40 C0 test SKUs, the gate acted on 37 of 40 true C2 SKUs and one control; the control action was a no-op. Cycle service level in the C2 group rose by 6.14 percentage points (95% percentile bootstrap interval [4.20, 8.30]), while cost rose by 71.48 units, or 2.85%, with an interval that includes zero ([−20.01, 168.63]). The C0 group was exactly unchanged. Gated C2 cycle service level was 0.8625, still below the 95% target. The experiments therefore provide evidence that a C2-type calibration error can be repaired in this synthetic setting, but they do not demonstrate a cost reduction, generalisation, real-world validity, or the original full-CAFR claim that cause-attributed repair beats accuracy-based selection at equal churn. That claim was not tested and is not supported here.
+Intermittent demand makes forecast failure difficult to diagnose: a bad forecast can arise from a biased size process, a changed occurrence rate, a level shift, a mis-calibrated uncertainty interval, a mis-set inventory policy, or simply noise. Cause-attributed forecast repair (CAFR) proposes diagnosing the mechanism behind a forecast failure and applying a matched corrective action, including actions outside the forecasting model. This paper reports two executed experiments on a labelled synthetic panel of intermittent demand (seed 42), using the accuracy-based adaptive-selection policy (arm c) as the base policy. The first experiment measured whether a live monitor and priority-ordered attribution rule could name seven injected causes at predeclared recall, false-positive, confusion, and priority-sensitivity bars. The overall verdict was failure. Only the direct C2 panel (interval miscalibration) passed the 0.60 recall bar, with recall 0.985 (197/200; 95% Wilson interval [0.957, 0.995]). The C0 control false-positive rate was 0.405 [0.339, 0.474], far above the 0.10 bar. C1 and C3 remained undetectable as generated; C4's unsatisfiable occurrence-AUC guard was removed but its recall was 0.075; C5's CUSUM was recalibrated but its recall was 0.035; C6 failed on both generator and detector; C7 remained a documented negative. The C2b generator was corrected to apply its interval half-width, but C2b recall was 0.085 and it still failed. The second experiment asked whether a reliability gate trained on the Step 5 readings could decide when to apply a one-time C2 scale reset. On 40 C2 and 40 C0 test SKUs, the gate acted on 37 of 40 true C2 SKUs and one control; the control action was a no-op. Cycle service level in the C2 group rose by 6.14 percentage points (95% percentile bootstrap interval [4.20, 8.30]), while cost rose by 71.48 units, or 2.85%, with an interval that includes zero ([−20.01, 168.63]). The C0 group was exactly unchanged. Gated C2 cycle service level was 0.8625, still below the 95% target. The experiments therefore provide evidence that a C2-type calibration error can be repaired in this synthetic setting, but they do not demonstrate a cost reduction, generalisation, real-world validity, or the original full-CAFR claim that cause-attributed repair beats accuracy-based selection at equal churn. That claim was not tested and is not supported here.
 
 **Keywords:** intermittent demand; spare-parts inventory; forecast error; cause attribution; inventory control; cycle service level; conformal prediction; reliability gating; negative results; synthetic panel
 
@@ -34,7 +34,7 @@ The second experiment, Step 6, asked a narrower question. Conditional on the liv
 
 The paper makes three contributions, each proportional to the evidence:
 
-1. **An attribution-detectability result.** On the labelled synthetic panel, only C2 direct passes the predeclared recall bar (0.955, 191/200). The remaining causes fail for identifiable and different reasons: two injections are undetectable as generated, one rule has an unsatisfiable guard, one detector is saturated, one cause fails on both generator and detector, and one is a documented negative. The paper reports these boundaries rather than collapsing them into a single "the monitor does not work" statement.
+1. **An attribution-detectability result.** On the labelled synthetic panel, only C2 direct passes the predeclared recall bar (0.985, 197/200). The remaining causes fail for identifiable and different reasons: two injections are undetectable as generated, the C4 guard was removed but recall remained low, the C5 CUSUM was recalibrated but recall remained low, one cause fails on both generator and detector, the corrected C2b variant still fails, and one is a documented negative. The paper reports these boundaries rather than collapsing them into a single "the monitor does not work" statement.
 2. **A C2-only feasibility result.** A reliability gate trained on Step 5 readings can select most true C2 SKUs in the test comparison (37/40) with one false action, and a one-time scale reset is associated with a 6.14-percentage-point cycle-CSL gain. The same intervention is associated with a 2.85% cost increase whose interval includes zero. No cost saving is demonstrated.
 3. **A negative/mixed-results record.** The original full-CAFR hypothesis—cause-attributed repair beats accuracy-based selection at equal churn—is retired. The paper states what was not run, what failed, and what would be needed to test the larger claim.
 
@@ -134,7 +134,7 @@ The gate results are reported in Section 7; the injections themselves are summar
 | C0 | Nothing; control | No injection |
 | C1 | Size mean $\mu_z$: linear ramp over 40 periods after $\tau$ | $\phi \in \{-0.4,-0.2,+0.2,+0.4\}$; $p$ and $k$ untouched |
 | C2 | Forecaster's reported interval, not demand: $\tilde{Q} = \hat{\mu} + \gamma(Q_\alpha - \hat{\mu})$ | $\gamma$ solved per SKU; target coverage gap 0.12 at $\alpha=0.95$, $R=3$; bounds (0.02, 8.0) |
-| C2b | Intended modelling-error variant of C2 | Per-period sigma applied without the $\sqrt{R}$ correction; longest calibration window that clears the 0.12 target. Generator defect; see below |
+| C2b | Intended modelling-error variant of C2 | Per-period sigma half-width applied to the aggregate interval through arm (c); demand and point forecast untouched. See below |
 | C3 | Occurrence probability $p$: step at $\tau$ | $p_{\mathrm{new}} = \mathrm{clip}(p \pm 0.15, 0.03, 0.60)$; sizes untouched |
 | C4 | Size dispersion: $k \to k \times \mathrm{factor}$ at fixed $\mu_z$ | factor $\in \{0.25, 4.0\}$; $k$ resampled to stay in the same CV² band |
 | C5 | Abrupt step in $\mu_z$ or $p$ at $\tau$ | Step scaled to the detectability budget; occurrence branch used only when feasible |
@@ -145,7 +145,7 @@ For C2, the generator solves $\gamma$ by bisection on Monte-Carlo coverage (20,0
 
 The monitor checks a 90% conformal interval (`c2_interval_alpha = 0.90`), scaled by the same $\gamma$. The generator's 95% solve and the monitor's 90% check are different coverage objects and are not equated in this paper.
 
-**C2b generator defect.** The C2b injection was intended to represent a modelling-error variant of C2. In the executed generator, `inject_C2b` returns the untouched baseline demand and records the intended per-period-sigma modelling error only in metadata. The Step 5 pipeline applies the generator's calibration window to the simulator's quantile window, not to the forecaster's reported interval. The C2b panel is therefore statistically indistinguishable from the control: its coverage-gap median is +0.033 (10th–90th percentile −0.100 to +0.100), and the binomial $p<0.05$ rate is 9.5% versus 14.5% on controls. The 0.090 C2b recall is a property of the generator defect, not evidence about the detector. This is stated explicitly wherever C2b appears.
+**C2b correction.** The C2b injection was intended to represent a modelling-error variant of C2. The generator records a per-period-sigma half-width, and the correction round now carries that value through panel generation, Step 5, arm (c), and the inventory function, where it replaces the residual safety quantile for the aggregate interval. Demand and the point forecast remain untouched. The rebuilt panel's signed generator coverage-gap median is −0.176 (absolute median 0.176), which meets the intended 0.10 gap-magnitude check. The Step 5 C2 monitor still evaluates its one-period conformal interval, however, and C2b attribution recall is 17/200 = 0.085 [0.054, 0.132]. The C2b panel is therefore a real interval variant but remains a failed gate, not a detector pass.
 
 ### 5.4 Pipeline and arm (c)
 
@@ -163,7 +163,7 @@ Each SKU is run through arm (c):
 
 The inventory settings are: lead time $L=2$, review period 1, protection interval $R=3$, lost sales, demand observation, $\alpha=0.95$, $B/H=19$, quantile window 24, and a minimum of four aggregates. The monitor starts at the burn-in (period 24) and checks every `stride=4` periods, giving 44 checks over periods 24–196.
 
-The monitor uses windows $W_{\mathrm{short}}=24$, $W_{\mathrm{sign}}=96$, $W_{\mathrm{cal}}=30$, $W_{\mathrm{occ}}=36$, $W_{\mathrm{sz}}=24$, $W_{\mathrm{class}}=30$, $W_{\mathrm{svc}}=30$, $W_{\mathrm{cusum}}=96$, and $W_{\mathrm{base}}=24$. Evidence floors are C1 8 nonzero observations, C3 10, C4 10, C2 30 coverage observations, C6 30 periods, C7 30 periods or 2 unmet cycles, and C5 8 baseline nonzero observations. Detection settings include $|z_b|>1.96$, binomial $p=0.05$, $\tau_{\mathrm{cov}}=0.10$, $\tau_{\mathrm{occ}}=0.10$, a 0.90 C2 interval level, $\delta_{\mathrm{svc}}=0.10$, $\mathrm{ADI}^*=4.0$, $\mathrm{CV^2}^*=0.49$, cumulative sum (CUSUM) parameters $k=0.25$ and $h=4.0$, C3 area under the curve (AUC) 0.65 and false-zero rate 0.30, C4 ratio threshold 1.5 with two windows and an occurrence-AUC guard of 0.65, C6 three windows with 1,000 bootstrap draws and stability 0.90, and a confidence gate $\tau_{\mathrm{conf}}=0.35$.
+The monitor uses windows $W_{\mathrm{short}}=24$, $W_{\mathrm{sign}}=96$, $W_{\mathrm{cal}}=30$, $W_{\mathrm{occ}}=36$, $W_{\mathrm{sz}}=24$, $W_{\mathrm{class}}=30$, $W_{\mathrm{svc}}=30$, $W_{\mathrm{cusum}}=96$, and $W_{\mathrm{base}}=24$. Evidence floors are C1 8 nonzero observations, C3 10, C4 10, C2 30 coverage observations, C6 30 periods, C7 30 periods or 2 unmet cycles, and C5 8 baseline nonzero observations. Detection settings include $|z_b|>1.96$, binomial $p=0.05$, $\tau_{\mathrm{cov}}=0.10$, $\tau_{\mathrm{occ}}=0.10$, a 0.90 C2 interval level, $\delta_{\mathrm{svc}}=0.10$, $\mathrm{ADI}^*=4.0$, $\mathrm{CV^2}^*=0.49$, cumulative sum (CUSUM) parameters $k=0.25$ and a threshold calibrated on training controls ($h=10.642717$), C3 area under the curve (AUC) 0.65 and false-zero rate 0.30, C4 ratio threshold 1.5 with two windows (the occurrence AUC is reported as a diagnostic, not used as a firing guard), C6 three windows with 1,000 bootstrap draws and stability 0.90, and a confidence gate $\tau_{\mathrm{conf}}=0.35$.
 
 No threshold or frozen parameter was changed to make a gate pass after the run.
 
@@ -198,13 +198,13 @@ The predeclared gates are:
 
 The 95% Wilson intervals shown for Step 5 are descriptive confidence intervals (CIs), computed from the integer counts (Wilson, 1927). The gate bars are applied to point estimates.
 
-Two denominator notes matter for interpretation. First, the C2 pooled denominator of 400 includes the C2b variant. The pooled C2 recall therefore mixes a real C2 panel with a panel that is, in effect, a control. Second, the budget-restricted recall in gate 5.1 uses evidence availability: C4 has $n=39$ and C5 has $n=68$. The Step 5 findings document also reports the generator's own budget-flag denominators (C4 $n=72$, C5 $n=200$). These are not the same denominator and should not be compared directly. Both sets fail the 0.60 bar.
+Two denominator notes matter for interpretation. First, the C2 pooled denominator of 400 includes the C2b variant. The pooled C2 recall therefore mixes the direct C2 panel with the C2b variant panel. Second, the budget-restricted recall in gate 5.1 uses evidence availability: C4 has $n=39$ and C5 has $n=68$. The Step 5 findings document also reports the generator's own budget-flag denominators (C4 $n=72$, C5 $n=200$). These are not the same denominator and should not be compared directly. Both sets fail the 0.60 bar.
 
 ### 6.2 Step 6: panel, split, and reliability gate
 
 Step 6 uses the same seed-42 panel. C2b is excluded everywhere. The split is deterministic within each true cause: sort by `sku_id`, then cycle `train, train, train, validation, test`. Each cause contributes 120 train, 40 validation, and 40 test SKUs. The test split contains 40 C2 and 40 C0 SKUs. Only these 80 test SKUs enter the inventory comparison. No training or validation SKU enters the outcome comparison.
 
-The reliability gate is trained only on Step 5 readings satisfying `detected == True`, `attributed_cause == "C2"`, and `true_cause != "C2b"`. The label is `true_cause == "C2"`. These are the first post-$\tau$ checkpoint readings, the exact event at which the policy makes its one decision. Undetected final-reading rows are excluded.
+The reliability gate is trained only on the archived pre-correction Step 5 readings (the readings used to fit and freeze the Step 6 gate) satisfying `detected == True`, `attributed_cause == "C2"`, and `true_cause != "C2b"`. The label is `true_cause == "C2"`. These are the first post-$\tau$ checkpoint readings, the exact event at which the policy makes its one decision. Undetected final-reading rows are excluded.
 
 | Split | Rows | Candidates | True-C2 candidates |
 |---|---:|---:|---:|
@@ -275,47 +275,47 @@ Table 1 and Figure 1 report the Step 5 gates. The overall verdict is **FAIL**.
 
 | Cause | N | Correct | Recall | 95% Wilson CI | Verdict |
 |---|---:|---:|---:|---|---|
-| C1 | 200 | 6 | 0.030 | [0.014, 0.064] | FAIL |
-| C2 pooled | 400 | 209 | 0.522 | [0.474, 0.571] | FAIL |
-| C2 direct | 200 | 191 | 0.955 | [0.917, 0.976] | PASS |
-| C2b variant | 200 | 18 | 0.090 | [0.058, 0.138] | FAIL (variant) |
-| C3 | 200 | 11 | 0.055 | [0.031, 0.096] | FAIL |
-| C4 | 200 | 0 | 0.000 | [0.000, 0.019] | FAIL |
-| C5 | 200 | 22 | 0.110 | [0.074, 0.161] | FAIL |
-| C6 | 200 | 29 | 0.145 | [0.103, 0.200] | FAIL |
-| C7 reported, not gated | 200 | 56 | 0.280 | [0.222, 0.346] | not gated |
+| C1 | 200 | 5 | 0.025 | [0.011, 0.057] | FAIL |
+| C2 pooled | 400 | 214 | 0.535 | [0.486, 0.583] | FAIL |
+| C2 direct | 200 | 197 | 0.985 | [0.957, 0.995] | PASS |
+| C2b variant | 200 | 17 | 0.085 | [0.054, 0.132] | FAIL (variant) |
+| C3 | 200 | 12 | 0.060 | [0.035, 0.102] | FAIL |
+| C4 | 200 | 15 | 0.075 | [0.046, 0.120] | FAIL |
+| C5 | 200 | 7 | 0.035 | [0.017, 0.070] | FAIL |
+| C6 | 200 | 33 | 0.165 | [0.120, 0.223] | FAIL |
+| C7 reported, not gated | 200 | 57 | 0.285 | [0.227, 0.351] | not gated |
 
 | Gate | Detail | n | Estimate | 95% CI | Verdict |
 |---|---|---:|---|---|---|
-| 5.2 | C0 false-positive rate (any non-C0 call) | 200 | 0.450 | [0.383, 0.519] | FAIL |
+| 5.2 | C0 false-positive rate (any non-C0 call) | 200 | 0.405 | [0.339, 0.474] | FAIL |
 | 5.3 C0 | max off-diagonal to C2 | 200 | 0.145 | — | pass |
-| 5.3 C1 | max off-diagonal to C0 | 200 | 0.545 | — | FAIL |
-| 5.3 C2 | max off-diagonal to C0; true C2 only 0.040 to C5 | 400 | 0.335 | — | pass |
-| 5.3 C3 | max off-diagonal to C0 | 200 | 0.360 | — | pass |
-| 5.3 C4 | max off-diagonal to C0 | 200 | 0.560 | — | FAIL |
-| 5.3 C5 | max off-diagonal to C6 | 200 | 0.230 | — | pass |
-| 5.3 C6 | max off-diagonal to C0 | 200 | 0.480 | — | FAIL |
-| 5.3 C7 | max off-diagonal to C0 | 200 | 0.390 | — | pass |
-| 5.4 | max absolute macro-F1 difference, 10 permutations | — | 0.011 | — | PASS |
+| 5.3 C1 | max off-diagonal to C0 | 200 | 0.585 | — | FAIL |
+| 5.3 C2 | max off-diagonal to C0; true C2 only 0.005 to C4/C5/C6 | 400 | 0.238 | — | pass |
+| 5.3 C3 | max off-diagonal to C0 | 200 | 0.375 | — | pass |
+| 5.3 C4 | max off-diagonal to C0 | 200 | 0.575 | — | FAIL |
+| 5.3 C5 | max off-diagonal to C0 | 200 | 0.250 | — | pass |
+| 5.3 C6 | max off-diagonal to C0 | 200 | 0.505 | — | FAIL |
+| 5.3 C7 | max off-diagonal to C0 | 200 | 0.425 | — | FAIL |
+| 5.4 | max absolute macro-F1 difference, 10 permutations | — | 0.0135 | — | PASS |
 | Overall | gates 5.1–5.5 | — | — | — | **FAIL** |
 
 Note: the `.tex` source caption uses "final reading" as shorthand. The implementation and the counts in this paper use the first post-injection non-C0 reading, with the final reading as fallback (Section 5.5). E-8 is the project's internal escalation identifier for the Step 5 attribution failure; it is unchanged.
 
-![Figure 1. Step 5 per-cause attribution recall on the seed-42 synthetic panel. Points are recall at the detection reading; whiskers are 95% Wilson intervals. The dashed line is the predeclared 0.60 bar for C1–C6. C2 direct is the only cause that clears the bar. The C0 control false-positive rate is 0.450 against a bar of at most 0.10.](figures/fig1_step5_attribution.png)
+![Figure 1. Step 5 per-cause attribution recall on the seed-42 synthetic panel. Points are recall at the detection reading; whiskers are 95% Wilson intervals. The dashed line is the predeclared 0.60 bar for C1–C6. C2 direct is the only cause that clears the bar. The C0 control false-positive rate is 0.405 against a bar of at most 0.10.](figures/fig1_step5_attribution.png)
 
-Only C2 direct passes: 191/200, recall 0.955, 95% Wilson interval [0.917, 0.976]. C2 pooled, the conservative gate denominator that includes the C2b variant, is 209/400 = 0.522 [0.474, 0.571] and fails. C2b on its own is 18/200 = 0.090 [0.058, 0.138]. As explained in Section 5.3, the C2b panel is a generator defect: the demand is untouched and the intended miscalibration is recorded only in metadata. The C2b recall is therefore not a detector failure.
+Only C2 direct passes: 197/200, recall 0.985, 95% Wilson interval [0.957, 0.995]. C2 pooled, the conservative gate denominator that includes the C2b variant, is 214/400 = 0.535 [0.486, 0.583] and fails. C2b on its own is 17/200 = 0.085 [0.054, 0.132]. The C2b generator now applies its interval half-width, so the panel carries the intended modelling error; the Step 5 monitor still evaluates a one-period interval and the C2b gate therefore remains failed.
 
-The budget-restricted recalls also fail the 0.60 bar: C1 0.050 (6/120), C2 0.522 (209/400), C3 0.076 (11/144), C4 0.000 (0/39), C5 0.324 (22/68), and C6 0.158 (29/184). The gate fails on both denominators, so the verdict does not depend on the C2b mapping.
+The budget-restricted recalls also fail the 0.60 bar: C1 0.0417 (5/120), C2 0.535 (214/400), C3 0.0833 (12/144), C4 0.3846 (15/39), C5 0.1029 (7/68), and C6 0.1793 (33/184). The gate fails on both denominators, so the verdict does not depend on the C2b mapping.
 
 ### 7.2 Step 5: false positives and confusion
 
-The C0 false-positive rate is 90/200 = 0.450 [0.383, 0.519], against a bar of at most 0.10. The 90 false positives were attributed to C2 (29), C6 (27), C5 (15), C7 (13), C1 (5), and C3 (1). The pre-injection flag rate, a diagnostic, was 0.630 (126/200); the per-check flag rate was 1,258/8,800 = 0.143.
+The C0 false-positive rate is 81/200 = 0.405 [0.339, 0.474], against a bar of at most 0.10. The 81 false positives were attributed to C2 (29), C6 (27), C7 (13), C1 (6), C4 (3), C5 (2), and C3 (1). The pre-injection flag rate, a diagnostic, was 0.575 (115/200); the per-check flag rate was 887/8,800 = 0.101.
 
-Every gate 5.3 failure is abstention to C0, not cross-cause confusion. C1, C4, and C6 are labelled C0 at 0.545, 0.560, and 0.480. The largest true cross-cause confusion is C5 → C6 at 0.230. The monitor is not mixing causes up; it is largely failing to name them.
+Every gate 5.3 failure is abstention to C0, not cross-cause confusion. C1, C4, C6, and C7 are labelled C0 at 0.585, 0.575, 0.505, and 0.425. The largest true cross-cause confusion is C5 ↔ C6 at 0.235. The monitor is not mixing causes up; it is largely failing to name them.
 
-The priority-sensitivity gate passes: the maximum absolute macro-F1 difference over ten permutations is 0.0111, against a bar of 0.10, and the base macro-F1 over C1–C7 is 0.1498. The ordering is not what decides the result; the detectors are.
+The priority-sensitivity gate passes: the maximum absolute macro-F1 difference over ten permutations is 0.0135, against a bar of 0.10, and the base macro-F1 over C1–C7 is 0.1634. The ordering is not what decides the result; the detectors are.
 
-For C2, the stored gate value is 0.040 on the true-C2 row (to C5); the pooled C2 row including C2b has a maximum off-diagonal of 0.335 (to C0). Both are below the 0.40 bar. The gate itself used the true-C2 value.
+For C2, the stored gate value is 0.005 on the true-C2 row (to C4, C5, or C6); the pooled C2 row including C2b has a maximum off-diagonal of 0.238 (to C0). Both are below the 0.40 bar. The gate itself used the true-C2 value.
 
 ### 7.3 Step 5: why the failures occurred
 
@@ -323,35 +323,37 @@ The failures have different causes, and separating them is the main scientific v
 
 **C1: undetectable injection as generated.** The linear ramp with $\phi \in \{\pm 0.2, \pm 0.4\}$ is too small for the bias statistic. With a frozen forecast, the expected $|z_b|$ is approximately $3.48|\phi|$, at most 1.39, below the 1.96 bar. With the live adaptive forecaster, the tracking model absorbs what remains. The measured $|z_b|>1.96$ crossing rate was 0.000 on C1 versus 0.067 on C0. No threshold change can recover a signal the statistic does not contain.
 
-**C2: supported on the direct panel.** Direct C2 recall is 0.955, with a rule firing rate of 0.540 versus 0.145 on control (two-proportion $z=+9.28$), and a coverage-gap median of −0.567 versus 0.000 on control. The detector works on the object it was designed to detect.
+**C2: supported on the direct panel.** Direct C2 recall is 0.985, with a rule firing rate of 0.990 versus 0.145 on control (two-proportion $z=+17.05$), and a coverage-gap median of −0.567 versus 0.000 on control. The detector works on the object it was designed to detect.
 
-**C2b: generator defect, not a detector result.** The C2b panel is statistically indistinguishable from control, as described in Section 5.3. Its 0.090 recall is not evidence that the detector cannot detect a modelling-error variant; the panel does not contain the intended error.
+**C2b: corrected generator, still a failed gate.** The correction carries the generator's per-period-sigma half-width through panel generation, Step 5, arm (c), and inventory, so the aggregate policy interval now carries the intended modelling error; demand and the point forecast are untouched. The rebuilt panel's signed generator coverage-gap median is −0.176 (absolute median 0.176), meeting the intended 0.10 gap-magnitude check. The Step 5 monitor still evaluates its one-period conformal interval, and C2b attribution recall is 17/200 = 0.085 [0.054, 0.132]. This is a real interval variant that still misses the 0.60 bar, not a detector pass.
 
-**C3: undetectable injection as generated.** The median injected change in $p$ is +0.031 (10th–90th percentile −0.167 to +0.188). One sampling standard deviation of an occurrence rate over 36 periods near $p=0.2$ is about 0.048, and $\tau_{\mathrm{occ}}=0.10$. The step is within one standard error for most SKUs, and the forecaster tracks the step within about five periods. The rule is highly specific—firing 0.055 on C3 versus 0.005 on C0 ($z=+2.93$)—but that is 11 SKUs, far below 0.60.
+**C3: undetectable injection as generated.** The median injected change in $p$ is +0.031 (10th–90th percentile −0.167 to +0.188). One sampling standard deviation of an occurrence rate over 36 periods near $p=0.2$ is about 0.048, and $\tau_{\mathrm{occ}}=0.10$. The step is within one standard error for most SKUs, and the forecaster tracks the step within about five periods. The rule is highly specific—firing 0.060 on C3 versus 0.010 on C0 ($z=+2.72$)—but that is 12 SKUs, far below 0.60.
 
-**C4: specification limitation.** The injection is strong, changing the Gamma shape $k \to k \times \{0.25, 4.0\}$ at fixed $\mu_z$. The rule's occurrence-AUC guard, however, is unsatisfiable on this panel: occurrence AUC is 0.65 or more on 1.6% of all SKUs and 0% of C4 SKUs. The rule fired on 0 of 1,800 SKUs. The generator's budget flag marks 72/200 C4 SKUs as clearing its constraint; the monitor's evidence floor is met on 27/200 at the final reading, and both size windows are in band on 5/200. All five are blocked by the AUC guard.
+**C4: specification limitation removed; recall still low.** The injection is strong, changing the Gamma shape $k \to k \times \{0.25, 4.0\}$ at fixed $\mu_z$. The correction round removed the unsatisfiable occurrence-AUC guard from the firing condition; AUC remains a diagnostic (C4-panel median 0.435, estimable on 96/200 SKUs). The rule now fires on 15/200 C4 SKUs (0.075 [0.046, 0.120]), and the recall bar is still missed. The any-check firing rate on C0 is 6/200 (0.030).
 
-**C5: detector calibration limitation.** The injection is strong: the median change in $p$ is 0.204, and every C5 SKU clears the generator's detectability budget. But the occurrence CUSUM alarms on 99.0% of controls, so the alarm is saturated and carries little information. The step-versus-drift Bayesian information criterion (BIC) that must arbitrate it passes on 3.9% of SKUs. The size CUSUM is better (alarm 0.236 overall, 0.200 on C0) but is still not calibrated to the 10% false-alarm bar.
+**C5: detector calibration limitation.** The injection is strong: the median change in $p$ is 0.204, and every C5 SKU clears the generator's detectability budget. The correction round calibrated the CUSUM threshold on 120 training-control SKUs and 2,880 pre-injection checks, selecting $h=10.642717$ with a measured per-check false-alarm rate of 0.04896 against the 0.05 target. On held-out C0 controls the C5 rule fires on 10/200 SKUs at any check (0.050 [0.027, 0.090]); the occurrence CUSUM alarms on 40/200 controls (0.200 [0.150, 0.261]). C5 recall is 7/200 = 0.035 [0.017, 0.070], so the attribution verdict is still **FAIL** despite the control calibration behaving as targeted.
 
-**C6: both generator and detector.** The ADI/CV² cell moves from its initial value on 47.1% of SKUs, but the bootstrap-stability guard passes on only 14.2%. The rule fires on 0.195 of controls versus 0.180 of C6 SKUs ($z=-0.38$). ADI estimated on 30 periods of an intermittent series is too noisy to carry the classification, and the generator does not require the cell to cross either.
+**C6: both generator and detector.** The ADI/CV² cell moves from its initial value on 47.1% of SKUs, but the bootstrap-stability guard passes on only 14.2%. The rule fires on 0.195 of controls versus 0.200 of C6 SKUs ($z=+0.12$). ADI estimated on 30 periods of an intermittent series is too noisy to carry the classification, and the generator does not require the cell to cross either. Recall is 33/200 = 0.165.
 
-**C7: documented negative.** Recall is 0.280, and the rule is not gated. The policy-outcome service statistic separates C7 from control on this synthetic panel (0.305 versus 0.070, $z=+6.02$), but this does not reverse the earlier forecast-diagnostic negative: under demand observation, the forecaster never sees the stock-outs that C7 causes. The earlier negative therefore stands.
+**C7: documented negative.** Recall is 57/200 = 0.285, and the rule is not gated. The policy-outcome service statistic separates C7 from control on this synthetic panel (0.310 versus 0.070, $z=+6.12$), but this does not reverse the earlier forecast-diagnostic negative: under demand observation, the forecaster never sees the stock-outs that C7 causes. The earlier negative therefore stands.
 
-Across the panel, 717 of 1,800 SKUs (about 40%) never trigger any rule at the final reading: C0 107, C1 105, C2 128 (all C2b), C3 64, C4 109, C5 35, C6 94, and C7 75. The confidence gate is not the binding constraint where a rule does fire: among SKUs with one cause firing, only 3.4% abstain; with two, 1.9%.
+Across the panel, 725 of 1,800 SKUs (about 40%) never trigger any rule at the final reading: C0 117, C1 113, C2 0, C2b 91, C3 67, C4 112, C5 44, C6 99, and C7 82. The confidence gate is not the binding constraint where a rule does fire: among SKUs with one cause firing, only 3.4% abstain; with two, 1.9%.
 
 The Step 5 overall verdict is **FAIL**. The E-8 escalation in the project's `ESCALATIONS.md` remains the authoritative escalation, and no gate was relaxed or reopened.
 
 ### 7.4 Step 6: reliability-gate performance
 
-Table 2 reports the gate diagnostics on the stored Step 5 readings and on the 80-SKU comparison.
+Table 2 reports the frozen gate diagnostics on the archived pre-correction Step 5 readings used to fit it, and on the 80-SKU comparison.
 
-**Table 2.** Step 6 reliability-gate performance. Panel A: stored Step 5 readings by split. "Recall" divides by all true C2 SKUs in the split; "Coverage (rows)" divides by all non-C2b rows. The validation split selected $\tau = 0.2446$; the test split was untouched. Panel B: live actions on the 80-SKU C2+C0 comparison. The comparison precision of 0.974 is not the all-cause test precision of 0.822. Source: `paper/tables/table2_step6_gate.tex`.
+**Table 2.** Step 6 reliability-gate performance. Panel A: archived pre-correction Step 5 readings by split, the readings used to fit the frozen gate. "Recall" divides by all true C2 SKUs in the split; "Coverage (rows)" divides by all non-C2b rows. The validation split selected $\tau = 0.2446$; the test split was untouched. Panel B: live actions on the 80-SKU C2+C0 comparison. The comparison precision of 0.974 is not the all-cause test precision of 0.822. Source: `paper/tables/table2_step6_gate.tex`.
 
 | Split | Rows | Candidates | True-C2 candidates | Acted | True-C2 acted | Precision | Recall | Coverage (rows) | Coverage (cand.) | C0 action | AUROC |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | Train | 960 | 246 | 115 | 147 | 109 | 0.741 | 0.908 | 0.153 | 0.598 | 0.025 | 0.947 |
 | Validation | 320 | 75 | 39 | 41 | 39 | 0.951 | 0.975 | 0.128 | 0.547 | 0.000 | 0.995 |
 | Test | 320 | 81 | 37 | 45 | 37 | 0.822 | 0.925 | 0.141 | 0.556 | 0.025 | 0.979 |
+
+The corrected Step 5 readings are not used to refit this gate or rerun the Step 6 outcomes. Under the same deterministic split they give 251 train, 77 validation, and 84 test candidates, so the frozen 246/75/81 counts are reported unchanged.
 
 | Metric | Value |
 |---|---:|
@@ -361,13 +363,13 @@ Table 2 reports the gate diagnostics on the stored Step 5 readings and on the 80
 | C2-attributed rows | 44/80 (0.550) |
 | Precision | 37/38 (0.974) |
 | Coverage | 38/80 (0.475) |
-| Decision match | 80/80 (1.000) |
+| Decision match | 77/80 (0.963) |
 
 The gate is a candidate filter: a candidate is a row with `detected == True` and `attributed_cause == "C2"`. On the test split, 45 of 81 candidates were acted on; 37 were true C2 and 8 were non-C2 (one true C0 plus seven true C1–C7 SKUs outside the inventory comparison). The test all-cause precision is therefore 0.822. The comparison precision on the 80 C2+C0 SKUs is 0.974. These two numbers are intentional and must not be conflated: seven false actions fall outside the inventory comparison. AUROC in Table 2 is the area under the receiver-operating characteristic curve.
 
 ### 7.5 Step 6: actions and attribution misses
 
-On the 80 compared SKUs, 44 were attributed to C2: 37 true C2 and 7 true C0. Of these, 38 were acted on (37 true C2 and 1 true C0). Six low-reliability fallbacks were all true C0. Fourteen `not_C2` fallbacks comprised 3 true C2 SKUs attributed C5 and 11 true C0 SKUs. Twenty-two SKUs had no decision, all true C0. The live decision matched the stored-reading decision on 80/80 SKUs.
+On the 80 compared SKUs, 44 were attributed to C2: 37 true C2 and 7 true C0. Of these, 38 were acted on (37 true C2 and 1 true C0). Six low-reliability fallbacks were all true C0. Fifteen `not_C2` fallbacks comprised 3 true C2 SKUs attributed C5 and 12 true C0 SKUs. Twenty-one SKUs had no decision, all true C0. The live decision matched the stored-reading decision on 77/80 SKUs.
 
 The single false action was `control:C0:0099` at $t=120$, with a gate score of 0.630. Its $\gamma$ was 1.0, so resetting the scale to 1.0 was a no-op; its cost and CSL differences are exactly zero. This is why the C0 group is exactly unchanged even though a control was acted on. A false action on a genuinely miscalibrated non-C2 cause would not be a no-op; that case was not in this experiment.
 
@@ -407,11 +409,11 @@ Gated C2 cycle CSL is 0.8625, and control cycle CSL is 0.8818. The 95% service t
 
 ### 8.1 Attribution is the binding constraint
 
-The Step 5 result is not a single failure but a set of distinct detectability boundaries. Only C2 direct passes. For C1 and C3, the injected signal is too small relative to the statistic's noise for the live forecaster; these are generator-design failures as much as detector failures. For C4, the generator produces a strong dispersion change, but the rule contains an occurrence-AUC guard that is effectively unsatisfiable on an i.i.d. Bernoulli occurrence process: the AUC of such a process against a smoothed rate forecast is near 0.5 by construction, and a 0.65 bar was written for a different case. For C5, the occurrence CUSUM alarms on almost all controls, so the alarm is saturated. For C6, the classification cell is too noisy at 30 periods and the detector fails on both generator and detector. C7 remains a documented negative.
+The Step 5 result is not a single failure but a set of distinct detectability boundaries. Only C2 direct passes. For C1 and C3, the injected signal is too small relative to the statistic's noise for the live forecaster; these are generator-design failures as much as detector failures. For C4, the correction round removed the occurrence-AUC guard, but the rule still fires on only 15/200 C4 SKUs and recall remains 0.075. For C5, the CUSUM was recalibrated on training controls, bringing the held-out control any-check rate to 0.05, but recall remains 0.035. For C6, the classification cell is too noisy at 30 periods and the detector fails on both generator and detector. C7 remains a documented negative.
 
 This matters for CAFR as a research programme. A repair layer can only be as good as the attribution that triggers it. The present results suggest that, under a live adaptive forecaster, the set of causes that remain visible is much smaller than the set that can be injected. That is a useful and reportable finding: it says where a mechanism-attribution claim must be tested before it is made. It also explains why the paper does not claim a six-cause taxonomy.
 
-The C2b panel is a separate lesson. A generator defect made a cause panel statistically indistinguishable from control. If the defect had not been found, the low C2b recall would have been misread as a detector failure. The paper reports the defect explicitly so that the C2b number is not used as evidence either way.
+The C2b panel is a separate lesson. The original generator recorded the intended interval error only in metadata, making the panel statistically indistinguishable from control. The correction now carries the half-width into the policy interval, and the panel still reaches only 0.085 recall. Fixing the generator changed the interpretation from "not a detector test" to a measured, failed attribution result.
 
 ### 8.2 The C2 repair trades service for cost in this seed
 
@@ -429,7 +431,7 @@ The experiment is also narrower than the diagnose-then-correct precedents. Manar
 
 ### 8.4 Implications for research and practice
 
-For research, the main implication is methodological. Attribution studies need explicit detectability budgets for each injected cause, and they need to report generator defects and unsatisfiable rule guards as part of the result. A gate that fails because the injection is too small is not the same as a gate that fails because the detector is bad. The Step 5 analysis separates these cases.
+For research, the main implication is methodological. Attribution studies need explicit detectability budgets for each injected cause, and they should report generator and specification defects, the correction applied, and the recall that remains afterward. A gate that fails because the injection is too small is not the same as a gate that fails because the detector is bad. The Step 5 analysis separates these cases.
 
 For practice, the result is a caution and a narrow signal. A C2-type calibration error—where the demand process is fine but the reported uncertainty is wrong—may be repairable with a simple scale reset, and the service effect can be material. But the cost effect is uncertain, the service target is not reached, and the result comes from one seed and 40 C2 test SKUs. Deployment would require multi-seed replication, a leak-free forecaster, a larger test set, and a real-data transfer study.
 
@@ -445,7 +447,7 @@ For the CAFR programme, the original claim that full CAFR beats accuracy-based s
 4. **No demonstrated cost reduction.** The C2 point estimate is a 2.85% cost increase, and the 95% interval includes zero. The all-80 estimate is +1.39%, also with an interval that includes zero. No cost saving, cost neutrality, or cost-effectiveness claim is supported.
 5. **Service is below the 95% target.** Gated C2 cycle CSL is 0.8625; C0 is 0.8818. The scale reset repairs the C2-specific miscalibration only; a residual service gap is shared with the control and is not repaired.
 6. **Pooled-forecaster exposure and possible leakage.** The global pooled forecaster is fitted on the first 24 periods of all 1,800 SKUs, including the 40 C2 and 40 C0 test SKUs. The gate model is trained only on train-split rows, but the forecaster's burn-in exposure to test SKUs is mild leakage. Its effect on gate robustness is not measured. A leak-free replication would fit the pool on train SKUs only or freeze it at burn-in.
-7. **Step 5 attribution is largely unvalidated.** Only C2 direct passes the recall bar. C1 and C3 are undetectable as generated; C4's rule is blocked by an unsatisfiable guard; C5's CUSUM is saturated; C6 fails on both generator and detector; C7 is a documented negative. The C2b panel is a generator defect, so its 0.090 recall is not a detector result. No six-cause attribution claim is possible.
+7. **Step 5 attribution is largely unvalidated.** Only C2 direct passes the recall bar (0.985, 197/200). C1 and C3 are undetectable as generated; C4's unsatisfiable guard was removed but recall is 0.075; C5's CUSUM was recalibrated but recall is 0.035; C6 fails on both generator and detector; C7 is a documented negative. The C2b generator now carries its interval error into the policy, but its recall is 0.085, so it also fails. No six-cause attribution claim is possible.
 8. **C2-only, one-time remedy.** Step 6 repairs one C2 scale, once per SKU. It does not adapt over time, does not address C2b or any other cause, and does not test a multi-cause policy. The result is conditional on C2 attribution.
 9. **No full-CAFR or churn comparison.** Both arms use arm (c). The bandit, churn control, and the original full-CAFR-versus-accuracy-selection hypothesis were not run. Step 6 isolates a C2 scale reset, not CAFR's full decision layer.
 10. **Gate limitations.** The threshold was selected on 75 validation candidates; the test split has 81 candidates. All-cause test precision is 0.822, while the C2+C0 comparison precision is 0.974; the difference is seven false actions on C1–C7 SKUs outside the comparison. The gate missed three true C2 SKUs through attribution, and six of seven false C2 attributions on controls were filtered as low reliability. The 0.974 figure must not be quoted as full-panel precision.
@@ -460,18 +462,18 @@ Additional reporting notes, recorded rather than silently corrected:
 - The `step5_summary.json` confusion keys are stored in a column-oriented/mislabeled form. The results pack uses `step5_confusion.parquet` (rows = truth, columns = attributed) and recomputes row-normalised values from `step5_readings.parquet`; the recomputed values match the Step 5 findings document.
 - `step5_confusion.parquet` is 8×8 and excludes C2b. C2b counts and the C2 pooled denominator come from `step5_readings.parquet`.
 - Step 5 recall intervals are not stored in `step5_summary.json`; they are computed from the integer counts and match the rounded values in the Step 5 findings document.
-- The `c2_compare_summary.json` field `elapsed_s = 10833.3` is a machine-suspend artifact, not compute time. It is not used anywhere in this paper.
-- The Step 6 `live_actions_by_cause` key counts attributed causes (C2 44, C6 7, C5 5, C1 1, C7 1), not R2 actions. The 80-SKU comparison has 38 R2 actions. Action counts in this paper come from `c2_compare_arms.csv`.
+- The `c2_compare_summary.json` field `elapsed_s = 57.63` is the wall time of the frozen comparison run; it is not used as a compute-time estimate anywhere in this paper.
+- The Step 6 `live_actions_by_cause` key counts attributed causes (C2 44, C6 7, C5 5, C1 1, C4 1, C7 1), not R2 actions. The 80-SKU comparison has 38 R2 actions. Action counts in this paper come from `c2_compare_arms.csv`.
 
 ---
 
 ## 10. Conclusion and future work
 
-This paper reported a synthetic-panel study of cause-attributed forecast repair for intermittent demand. The study had two parts. Step 5 measured whether a live monitor and priority-ordered attribution rule could name seven injected causes at predeclared bars. The answer was largely no: only direct C2 passed the recall bar (0.955), the control false-positive rate was 0.450, and the other causes failed for a mixture of generator, specification, and detector reasons. Step 6 asked whether a reliability gate trained on those readings could decide when to apply a one-time C2 scale reset. On 40 C2 and 40 C0 test SKUs, the gate acted on 37 true C2 SKUs and one control, and the reset was associated with a 6.14-percentage-point cycle-CSL gain and a 2.85% cost increase whose interval includes zero. The C0 group was exactly unchanged. Gated service remained below 95%.
+This paper reported a synthetic-panel study of cause-attributed forecast repair for intermittent demand. The study had two parts. Step 5 measured whether a live monitor and priority-ordered attribution rule could name seven injected causes at predeclared bars. The answer was largely no: only direct C2 passed the recall bar (0.985, 197/200), the control false-positive rate was 0.405, and the other causes failed for a mixture of generator, specification, and detector reasons. Step 6 asked whether a reliability gate trained on those readings could decide when to apply a one-time C2 scale reset. On 40 C2 and 40 C0 test SKUs, the gate acted on 37 true C2 SKUs and one control, and the reset was associated with a 6.14-percentage-point cycle-CSL gain and a 2.85% cost increase whose interval includes zero. The C0 group was exactly unchanged. Gated service remained below 95%.
 
 The experiments do not establish that full CAFR beats accuracy-based selection at equal churn. That claim was not tested, and it is retired. They do establish a narrower set of findings: attribution detectability is a real and measurable constraint; a C2-type calibration error can be detected and repaired in this synthetic setting; and the service and cost consequences of that repair need to be reported separately.
 
-Future work should proceed in the order the evidence demands. First, the attribution study should be repeated with injections that have explicit detectability budgets, a fixed C4 guard, a calibrated C5 CUSUM, and a corrected C2b generator. Second, the C2 repair should be replicated across multiple seeds, with a leak-free pooled forecaster fitted only on training SKUs and a larger test set. Third, the remedy set should be extended beyond C2, but only for causes that pass their attribution gates. Fourth, the full CAFR comparison—including the bandit, the churn constraint, and non-forecast actions—should be run only after the attribution layer is validated. Fifth, the work should be transferred to a real panel with a documented licence and a pre-registered analysis plan.
+Future work should proceed in the order the evidence demands. First, the attribution study should be repeated with injections that have explicit detectability budgets and with independently replicated detector thresholds for the corrected C4, C5, and C2b implementations. Second, the C2 repair should be replicated across multiple seeds, with a leak-free pooled forecaster fitted only on training SKUs and a larger test set. Third, the remedy set should be extended beyond C2, but only for causes that pass their attribution gates. Fourth, the full CAFR comparison—including the bandit, the churn constraint, and non-forecast actions—should be run only after the attribution layer is validated. Fifth, the work should be transferred to a real panel with a documented licence and a pre-registered analysis plan.
 
 ---
 
@@ -497,7 +499,8 @@ The analysis artifacts are held in the project repository. The principal files a
 | `results/step6/c2_compare_paired.csv` | 80 rows: per-SKU differences and actions |
 | `results/step6/c2_compare_run.log` | Comparison log; contains the suspend-time artifact |
 | `results/step6/c2_smoke_*`, `c2_timing_*` | Smoke and timing checks |
-| `docs/18_step5_findings.md` | Step 5 narrative |
+| `docs/18_step5_findings.md` | Original Step 5 narrative (pre-correction) |
+| `docs/20_correction_round_findings.md` | Corrected Step 5 rerun and verdicts |
 | `docs/19_step6_c2_gated_findings.md` | Step 6 narrative |
 | `ESCALATIONS.md` E-8 | Step 5 FAIL escalation; unchanged |
 | `paper/RESULTS_PACK.md` | Frozen results pack and provenance |
@@ -541,7 +544,7 @@ These commands were not rerun for this manuscript. The results pack reads existi
 
 ### 11.4 Environment and compute time
 
-The results pack records Python 3.13.5, NumPy 2.5.3, pandas 2.3.3, Matplotlib 3.11.2, and pyarrow for Parquet input. The Step 5 run took 869.5 s for 1,800 SKUs with 0 errors. The Step 6 gate run and the clean 20-SKU timing run are recorded in the Step 6 findings document (13.53 s for 20 SKUs; pool fit 1.4 s). The `c2_compare_summary.json` field `elapsed_s = 10833.3` is a machine-suspend artifact and must not be cited as compute time.
+The results pack records Python 3.13.5, NumPy 2.5.3, pandas 2.3.3, Matplotlib 3.11.2, and pyarrow for Parquet input. The Step 5 run took 869.5 s for 1,800 SKUs with 0 errors. The Step 6 gate run and the clean 20-SKU timing run are recorded in the Step 6 findings document (13.53 s for 20 SKUs; pool fit 1.4 s). The `c2_compare_summary.json` field `elapsed_s = 57.63` is the frozen comparison run's wall time and is not used as a compute-time estimate.
 
 ### 11.5 Data and code availability
 

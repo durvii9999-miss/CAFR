@@ -1,23 +1,24 @@
 # Paper results pack — Step 5 attribution and Step 6 C2-only feasibility
 
-**Scope:** synthetic panel only, seed 42. This pack is a re-presentation of frozen
-Step 5 and Step 6 artifacts. It contains **no new experiment, no regenerated data,
-no source or configuration change, and no new simulation or bootstrap**. The only
-derived interval is the 95% Wilson interval computed from stored integer counts;
-all other values are read from, or recomputed directly from, stored artifacts for
-verification. The Step 5 overall **FAIL** and **E-8** stand unchanged. The original
-claim that full CAFR beats accuracy-based selection at equal churn is **not**
-supported and is not restated here.
+**Scope:** synthetic panel only, seed 42. This pack re-presents the corrected Step 5
+rerun (2026-10-20) and the frozen Step 6 artifacts. It contains **no new experiment,
+no regenerated data, no source or configuration change, and no new simulation or
+bootstrap**. The only derived interval is the 95% Wilson interval computed from stored
+integer counts; all other values are read from, or recomputed directly from, stored
+artifacts for verification. The Step 5 overall **FAIL** and **E-8** stand unchanged.
+The original claim that full CAFR beats accuracy-based selection at equal churn is
+**not** supported and is not restated here.
 
 **Built by:** `paper/make_results_pack.py` (reads existing artifacts only).
-**Run date:** 2026-10-18.
+**Original run date:** 2026-10-18. **Step 5 values corrected:** 2026-10-21 from the
+2026-10-20 rerun; figures and tables regenerated from stored artifacts on 2026-10-21.
 
 **Key verified values**
 
 - Step 5 overall: **FAIL**. Only C2 direct passes the 0.60 recall bar:
-  **0.955 [0.917, 0.976]** (191/200). C2 pooled is **0.522 [0.474, 0.571]**
-  (209/400) and fails. C0 false-positive rate is **0.450 [0.383, 0.519]**
-  (90/200), against a bar of ≤ 0.10.
+  **0.985 [0.957, 0.995]** (197/200). C2 pooled is **0.535 [0.486, 0.583]**
+  (214/400) and fails. C0 false-positive rate is **0.405 [0.339, 0.474]**
+  (81/200), against a bar of ≤ 0.10.
 - Step 6 C2 group: cost **+71.48 [−20.01, 168.63]** (point estimate +2.85%;
   interval includes zero); cycle CSL **+6.14 pp [4.20, 8.30]**.
 - Step 6 C0 group: exactly **0/40** changed on both cost and CSL.
@@ -37,9 +38,9 @@ generalization, real-world validity, or publication novelty.
 (200 SKUs per cause; C2 pooled denominator 400). Points are recall at the final
 reading; whiskers are 95% Wilson intervals. The dashed line is the predeclared
 0.60 recall bar for C1–C6. C2 direct (200 SKUs) is the only cause that clears the
-bar (0.955 [0.917, 0.976]); C2 pooled (C2 + C2b) is 0.522 [0.474, 0.571] and
+bar (0.985 [0.957, 0.995]); C2 pooled (C2 + C2b) is 0.535 [0.486, 0.583] and
 fails. C2b variant, C1, C3, C4, C5, and C6 fail; C7 is reported but not gated.
-The C0 control false-positive rate is 0.450 [0.383, 0.519] against a ≤ 0.10 bar.
+The C0 control false-positive rate is 0.405 [0.339, 0.474] against a ≤ 0.10 bar.
 Overall Step 5 verdict: FAIL; E-8 unchanged.
 
 **Definitions.**
@@ -59,27 +60,28 @@ Overall Step 5 verdict: FAIL; E-8 unchanged.
   `truth_for_gate`, and `attributed_cause`.
 - Stored gate values: `results/step5/step5_summary.json` (`5.1_recall`,
   `5.2_false_positive`).
-- Cross-check: `results/step5/step5_confusion.parquet` and
-  `docs/18_step5_findings.md`.
+- Cross-check: `results/step5/step5_confusion.parquet`,
+  `docs/18_step5_findings.md` (original run), and
+  `docs/20_correction_round_findings.md` (corrected run).
 - CIs are computed from the counts because the summary does not store the
-  per-cause intervals; the rounded values match `docs/18`.
+  per-cause intervals; the rounded values match `docs/20`.
 
 **Verified values plotted.**
 
 | Cause | N | Correct | Recall | 95% Wilson CI | Bar / status |
 |---|---:|---:|---:|---|---|
-| C1 | 200 | 6 | 0.030 | [0.014, 0.064] | 0.60 — FAIL |
-| C2 pooled (C2 + C2b) | 400 | 209 | 0.5225 | [0.474, 0.571] | 0.60 — FAIL |
-| C2 direct (C2 only) | 200 | 191 | 0.955 | [0.917, 0.976] | 0.60 — PASS |
-| C2b variant | 200 | 18 | 0.090 | [0.058, 0.138] | 0.60 — FAIL (variant) |
-| C3 | 200 | 11 | 0.055 | [0.031, 0.096] | 0.60 — FAIL |
-| C4 | 200 | 0 | 0.000 | [0.000, 0.019] | 0.60 — FAIL |
-| C5 | 200 | 22 | 0.110 | [0.074, 0.161] | 0.60 — FAIL |
-| C6 | 200 | 29 | 0.145 | [0.103, 0.200] | 0.60 — FAIL |
-| C7 reported, not gated | 200 | 56 | 0.280 | [0.222, 0.346] | not gated |
+| C1 | 200 | 5 | 0.025 | [0.011, 0.057] | 0.60 — FAIL |
+| C2 pooled (C2 + C2b) | 400 | 214 | 0.535 | [0.486, 0.583] | 0.60 — FAIL |
+| C2 direct (C2 only) | 200 | 197 | 0.985 | [0.957, 0.995] | 0.60 — PASS |
+| C2b variant | 200 | 17 | 0.085 | [0.054, 0.132] | 0.60 — FAIL (variant) |
+| C3 | 200 | 12 | 0.060 | [0.035, 0.102] | 0.60 — FAIL |
+| C4 | 200 | 15 | 0.075 | [0.046, 0.120] | 0.60 — FAIL |
+| C5 | 200 | 7 | 0.035 | [0.017, 0.070] | 0.60 — FAIL |
+| C6 | 200 | 33 | 0.165 | [0.120, 0.223] | 0.60 — FAIL |
+| C7 reported, not gated | 200 | 57 | 0.285 | [0.227, 0.351] | not gated |
 
-**C0 control (annotation):** 90/200 = **0.450 [0.383, 0.519]**, bar ≤ 0.10 —
-**FAIL**. The 90 false positives are C2 29, C6 27, C5 15, C7 13, C1 5, C3 1.
+**C0 control (annotation):** 81/200 = **0.405 [0.339, 0.474]**, bar ≤ 0.10 —
+**FAIL**. The 81 false positives are C2 29, C6 27, C7 13, C1 6, C4 3, C5 2, C3 1.
 
 ---
 
@@ -156,30 +158,30 @@ Overall verdict: FAIL; E-8 unchanged.
 
 | Cause | N | Correct | Recall | 95% Wilson CI | Verdict |
 |---|---:|---:|---:|---|---|
-| C1 | 200 | 6 | 0.030 | [0.014, 0.064] | FAIL |
-| C2 pooled | 400 | 209 | 0.522 | [0.474, 0.571] | FAIL |
-| C2 direct | 200 | 191 | 0.955 | [0.917, 0.976] | PASS |
-| C2b variant | 200 | 18 | 0.090 | [0.058, 0.138] | FAIL (variant) |
-| C3 | 200 | 11 | 0.055 | [0.031, 0.096] | FAIL |
-| C4 | 200 | 0 | 0.000 | [0.000, 0.019] | FAIL |
-| C5 | 200 | 22 | 0.110 | [0.074, 0.161] | FAIL |
-| C6 | 200 | 29 | 0.145 | [0.103, 0.200] | FAIL |
-| C7 reported, not gated | 200 | 56 | 0.280 | [0.222, 0.346] | not gated |
+| C1 | 200 | 5 | 0.025 | [0.011, 0.057] | FAIL |
+| C2 pooled | 400 | 214 | 0.535 | [0.486, 0.583] | FAIL |
+| C2 direct | 200 | 197 | 0.985 | [0.957, 0.995] | PASS |
+| C2b variant | 200 | 17 | 0.085 | [0.054, 0.132] | FAIL (variant) |
+| C3 | 200 | 12 | 0.060 | [0.035, 0.102] | FAIL |
+| C4 | 200 | 15 | 0.075 | [0.046, 0.120] | FAIL |
+| C5 | 200 | 7 | 0.035 | [0.017, 0.070] | FAIL |
+| C6 | 200 | 33 | 0.165 | [0.120, 0.223] | FAIL |
+| C7 reported, not gated | 200 | 57 | 0.285 | [0.227, 0.351] | not gated |
 
 **Panel B (other gates).**
 
 | Gate | Detail | n | Estimate | 95% CI | Verdict |
 |---|---|---|---:|---|---|
-| 5.2 | C0 false-positive rate (any non-C0 call) | 200 | 0.450 | [0.383, 0.519] | FAIL |
+| 5.2 | C0 false-positive rate (any non-C0 call) | 200 | 0.405 | [0.339, 0.474] | FAIL |
 | 5.3 C0 | max off-diagonal to C2 | 200 | 0.145 | — | pass |
-| 5.3 C1 | max off-diagonal to C0 | 200 | 0.545 | — | FAIL |
-| 5.3 C2 | max off-diagonal to C0; true C2 only 0.040 to C5 | 400 | 0.335 | — | pass |
-| 5.3 C3 | max off-diagonal to C0 | 200 | 0.360 | — | pass |
-| 5.3 C4 | max off-diagonal to C0 | 200 | 0.560 | — | FAIL |
-| 5.3 C5 | max off-diagonal to C6 | 200 | 0.230 | — | pass |
-| 5.3 C6 | max off-diagonal to C0 | 200 | 0.480 | — | FAIL |
-| 5.3 C7 | max off-diagonal to C0 | 200 | 0.390 | — | pass |
-| 5.4 | max absolute macro-F1 difference, 10 permutations | — | 0.011 | — | PASS |
+| 5.3 C1 | max off-diagonal to C0 | 200 | 0.585 | — | FAIL |
+| 5.3 C2 | max off-diagonal to C0; true C2 only 0.005 to C4/C5/C6 | 400 | 0.238 | — | pass |
+| 5.3 C3 | max off-diagonal to C0 | 200 | 0.375 | — | pass |
+| 5.3 C4 | max off-diagonal to C0 | 200 | 0.575 | — | FAIL |
+| 5.3 C5 | max off-diagonal to C0 | 200 | 0.250 | — | pass |
+| 5.3 C6 | max off-diagonal to C0 | 200 | 0.505 | — | FAIL |
+| 5.3 C7 | max off-diagonal to C0 | 200 | 0.425 | — | FAIL |
+| 5.4 | max absolute macro-F1 difference, 10 permutations | — | 0.0135 | — | PASS |
 | Overall | gates 5.1–5.5 | — | — | — | **FAIL** |
 
 **Provenance.**
@@ -191,7 +193,8 @@ Overall verdict: FAIL; E-8 unchanged.
 - `results/step5/step5_summary.json`: gate 5.2 value, gate 5.4 value, and the
   stored C1–C6 recalls.
 - `results/step5/step5_priority_sensitivity.parquet` and `run_full.log`.
-- `docs/18_step5_findings.md`.
+- `docs/20_correction_round_findings.md` (corrected Step 5 run) and
+  `docs/18_step5_findings.md` (original run).
 
 **Definitions.** “Max off-diagonal” is the largest row-normalised entry
 outside the diagonal for that truth row. For C2 pooled, the row is
@@ -206,14 +209,14 @@ gate 5.6 (budget-restricted recall) do not change any verdict.
 **Files:** `paper/tables/table2_step6_gate.csv`,
 `paper/tables/table2_step6_gate.tex`.
 
-**Caption.** Step 6 reliability-gate performance. Panel A: stored Step 5 readings
-by split; “Recall” divides by all true C2 SKUs in the split, and “Coverage
-(rows)” divides by all non-C2b rows. The validation split selected τ = 0.2446;
-the test split was untouched. Panel B: live actions on the 80-SKU C2+C0
-comparison. The comparison precision of 0.974 is not the all-cause test
-precision of 0.822.
+**Caption.** Step 6 reliability-gate performance. Panel A: archived pre-correction
+Step 5 readings by split, the readings used to fit the frozen gate; “Recall”
+divides by all true C2 SKUs in the split, and “Coverage (rows)” divides by all
+non-C2b rows. The validation split selected τ = 0.2446; the test split was
+untouched. Panel B: live actions on the 80-SKU C2+C0 comparison. The comparison
+precision of 0.974 is not the all-cause test precision of 0.822.
 
-**Panel A (stored readings by split).**
+**Panel A (archived pre-correction readings by split).**
 
 | Split | Rows | Candidates | True C2 cand. | Acted | True C2 acted | Precision | Recall | Coverage (rows) | Coverage (cand.) | C0 action | AUROC |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -231,11 +234,11 @@ precision of 0.822.
 | C2-attributed rows | 44/80 (0.550) |
 | Precision | 37/38 (0.974) |
 | Coverage | 38/80 (0.475) |
-| Decision match | 80/80 (1.000) |
+| Decision match | 77/80 (0.963) |
 
 The 44 C2-attributed rows are 37 true C2 + 7 true C0. Of these, 38 were acted
 (37 true C2 + 1 true C0). Six low-reliability fallbacks were all true C0; the
-14 `not_C2` fallbacks were 3 true C2 attributed C5 plus 11 true C0. The single
+15 `not_C2` fallbacks were 3 true C2 attributed C5 plus 12 true C0. The single
 false action was `control:C0:0099` at t = 120; its γ = 1.0, so resetting the
 scale to 1.0 was a no-op and its cost/CSL differences are exactly zero.
 
@@ -245,8 +248,10 @@ scale to 1.0 was a no-op and its cost/CSL differences are exactly zero.
   `window`, and candidate counts.
 - `results/step6/c2_compare_arms.csv`: live actions, reasons, attributed cause,
   and decision match on the 80 SKUs.
-- `results/step5/step5_readings.parquet`: candidate counts recomputed under the
-  deterministic Step 6 split (train/val/test cycle 3/1/1 per true cause).
+- `results/step5/e8_before/step5_readings.parquet`: the archived pre-correction
+  readings used to fit the frozen Step 6 gate; candidate counts are recomputed
+  under the deterministic Step 6 split (train/val/test cycle 3/1/1 per true cause).
+  The corrected `results/step5/step5_readings.parquet` is used only for Step 5.
 - `results/step6/c2_compare_summary.json`: acted count.
 - `docs/19_step6_c2_gated_findings.md`.
 
@@ -315,47 +320,54 @@ bootstrap (10,000 resamples, seed 42).
 
 The build script asserts the following before writing any output:
 
-- Step 5 counts: C1 6/200, C2 pooled 209/400, C2 direct 191/200, C2b 18/200,
-  C3 11/200, C4 0/200, C5 22/200, C6 29/200, C7 56/200.
-- Step 5 C0 false positives: 90/200.
-- Step 5 max off-diagonal values used in Table 1: C1 0.545, C2 0.335 (pooled;
-  true C2 0.040), C4 0.560, C6 0.480.
-- Step 5 gate 5.4 value: 0.011081653026416477.
+- Step 5 counts: C1 5/200, C2 pooled 214/400, C2 direct 197/200, C2b 17/200,
+  C3 12/200, C4 15/200, C5 7/200, C6 33/200, C7 57/200.
+- Step 5 C0 false positives: 81/200.
+- Step 5 max off-diagonal values used in Table 1: C1 0.585, C2 0.238 (pooled;
+  true C2 0.005), C4 0.575, C6 0.505, C7 0.425.
+- Step 5 gate 5.4 value: 0.013529424156386277.
 - Step 6 split rows: 960 train, 320 validation, 320 test.
 - Step 6 candidates: 246 train, 75 validation, 81 test; true C2 candidates
   115/39/37; acted 147/41/45; true C2 acted 109/39/37.
 - Step 6 comparison: 38 acted, 37 true C2, 1 true C0, 44 C2-attributed rows,
-  6 low-reliability fallbacks, 14 `not_C2` fallbacks, 80/80 decision match.
+  6 low-reliability fallbacks, 15 `not_C2` fallbacks, 77/80 decision match.
 - Step 6 paired means: C2 cost +71.4782266121367, C2 CSL +0.06136363636363634;
   All cost +35.73911330606835, All CSL +0.03068181818181817; C0 exactly 0.
 - Arm means reproduce the paired differences; C0 is exactly 0 on all 40 SKUs.
+- Targeted regression tests:
+  `python -m pytest tests/test_step4_regressions.py tests/test_c2_gated.py -q`
+  -> 27 passed, 4 warnings in 26.08 s.
 
-All checks passed when the pack was generated. No plotted value was estimated or
-interpolated.
+All values above were checked against the corrected Step 5 artifacts and the frozen
+Step 6 artifacts on 2026-10-21. The pack script was rerun after its Step 5
+assertions were updated; it regenerated Figures 1–2 and Tables 1–3 from the stored
+artifacts and completed without error. The pack itself ran no experiment or
+simulation. No plotted value was estimated or interpolated.
 
 ---
 
 ## 7. Unresolved discrepancies and gaps
 
 These are source-artifact issues, documented rather than silently corrected.
-No source file, result file, or frozen configuration was modified.
+No experiment source file, result file, or frozen configuration was modified.
 
 1. **`step5_summary.json` confusion keys are transposed/mislabeled.**
    `confusion` and `confusion_rownormalised` are stored in column-oriented order
-   and do not match the row-normalised table in `docs/18`. The pack uses
+   and do not match the row-normalised table in `docs/20`. The pack uses
    `step5_confusion.parquet` (rows = truth, columns = attributed) and recomputes
    the row-normalised values from `step5_readings.parquet`. The recomputed values
-   match `docs/18`. This is an artifact-key issue, not a change to any result.
+   match the corrected readings recorded in `docs/20`. This is an artifact-key
+   issue, not a change to any result.
 2. **`step5_confusion.parquet` excludes C2b.** It is 8×8 (C0–C7). C2b counts and
    the C2 pooled denominator are taken from `step5_readings.parquet`.
 3. **C2 direct and C2b intervals are not stored in `step5_summary.json`.** The
-   summary stores the pooled C2 recall (0.5225) and C2b recall (0.09), but not
+   summary stores the pooled C2 recall (0.535) and C2b recall (0.085), but not
    the direct-panel count or either interval. The pack computes them from the
-   readings; the rounded values match `docs/18`.
+   readings; the rounded values match `docs/20`.
 4. **Period SL has no stored bootstrap interval.** Table 3 reports period SL
    point estimates only. No CI is inferred or invented.
-5. **`c2_compare_summary.json` `elapsed_s = 10833.3` is a machine-suspend
-   artifact.** It is not compute time and is not used anywhere in this pack.
+5. **`c2_compare_summary.json` `elapsed_s` is run wall time.** The frozen file
+   records 57.63 s; it is not used anywhere in this pack.
 6. **Two different precisions are intentional.** Test all-cause precision is
    0.822 (45 acted, 37 true C2, 8 non-C2: 1 true C0 + 7 C1–C7). The C2+C0
    comparison precision is 0.974 (38 acted, 37 true C2, 1 true C0). The difference
@@ -364,13 +376,24 @@ No source file, result file, or frozen configuration was modified.
 7. **Single seed and small sample.** All Step 6 values are seed 42 with 40 C2 +
    40 C0 test SKUs. No generalization claim is made. The 95% CSL target is not
    reached (gated C2 CSL 0.8625; C0 0.8818).
-8. **Tests were not re-run for this pack.** `docs/19` records 186 passing tests
-   in 63.57 s. The results pack reads artifacts only and does not depend on a
-   new test run.
+8. **The full test suite was not rerun.** Twenty-seven targeted Step 4/Step 6
+   regression tests passed after regeneration (see §6); `docs/20` records 191
+   passing tests after the Step 5 rerun. The results pack reads artifacts only.
+9. **Step 6 Panel A reproduces the frozen gate, not a refit on corrected Step 5
+   readings.** The gate summary stores 246 train / 75 validation / 81 test
+   candidates at `tau = 0.2446`. Recomputing the same deterministic split from
+   the corrected readings gives 251 / 77 / 84 candidates, and `docs/20` records a
+   refit selecting `tau = 0.242753`. The pack therefore takes Panel A's candidate
+   counts from `results/step5/e8_before/step5_readings.parquet`, the archived
+   readings used to fit the frozen gate. Step 6 outcomes are unchanged.
+10. **Decision match is 77/80, not 80/80.** The three mismatches are the three
+    true-C2 SKUs whose first non-C0 attribution was C5; they are attribution
+    misses, not threshold misses. `c2_compare_arms.csv` and
+    `c2_compare_summary.json` (`decision_match_rate = 0.9625`) agree.
 
 No numerical discrepancy was found between the plotted/table values and their
-source artifacts. The only discrepancies are the stored-label/orientation issues
-above.
+source artifacts. The remaining discrepancies are the provenance/version issues
+above and are documented rather than silently reconciled.
 
 ---
 
@@ -379,6 +402,12 @@ above.
 ```
 python paper/make_results_pack.py
 ```
+
+The script was rerun on 2026-10-21 after its Step 5 assertions were updated. It
+completed without error and regenerated both figures and all three tables from the
+stored artifacts. No experiment, simulation, threshold, or frozen configuration was
+rerun or changed. Step 6 Panel A reads the archived pre-correction readings that
+produced the frozen gate; Step 5 reads the corrected readings.
 
 The script requires the existing environment used for the project:
 Python 3.13.5, `numpy` 2.5.3, `pandas` 2.3.3, `matplotlib` 3.11.2, and

@@ -117,6 +117,7 @@ def _run_one(
         B_over_H=sim_base.B_over_H,
         c7_safety_factor_scale=sim_base.c7_safety_factor_scale,
         c2_quantile_scale=sim_base.c2_quantile_scale,
+        interval_half_width=sim_base.interval_half_width,
         protection_convention=sim_base.protection_convention,
         observation_model=sim_base.observation_model,
     )

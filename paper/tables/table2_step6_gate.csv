@@ -8,4 +8,4 @@ B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,True C0 acted,1,40,0.025,false action; g
 B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,C2-attributed rows,44,80,0.55,37 true C2 + 7 true C0
 B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Precision,37,38,0.9736842105263158,true C2 among acted
 B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Coverage,38,80,0.475,acted / all compared SKUs
-B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Decision match,80,80,1.0,live decision equals stored-reading decision
+B,C2+C0 comparison (80 SKUs),,,,,,,,,,,,Decision match,77,80,0.9625,live decision equals stored-reading decision

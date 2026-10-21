@@ -129,6 +129,12 @@ class SimConfig:
     # `<sim>` stays the single namespace the per-SKU runner configures; the multiplier
     # is applied inside ``aggregate_order_up_to`` via arm (c), not by the simulator.
     c2_quantile_scale: float = 1.0
+    # C2b's injection: the per-period sigma half-width applied to the R-period
+    # aggregate interval. Carried here for the same reason as ``c2_quantile_scale`` --
+    # ``<sim>`` stays the single namespace the per-SKU runner configures -- and read by
+    # arm (c), which passes it to ``aggregate_order_up_to``; the simulator itself does
+    # not use it.
+    interval_half_width: float | None = None
     protection_convention: str = "L+1"
     # What the policy observes as history. See `_run_series` step 4.
     #   censored_sales  the policy sees sales; a stock-out hides unmet demand.

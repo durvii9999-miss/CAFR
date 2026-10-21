@@ -15,10 +15,13 @@ modified. The only existing module touched is the opt-in hook in
 
 ## 1. Research question and motivation
 
-Step 5 measured the attribution gates on the full panel. Only **C2 direct** passed
-its recall bar (0.955, 191/200); the overall verdict was FAIL and the causes were
-recorded in `docs/18_step5_findings.md` and E-8. That result leaves a narrower,
-testable question:
+Step 5 measured the attribution gates on the full panel. In the archived
+pre-correction readings used to fit this gate, only **C2 direct** passed its
+recall bar (0.955, 191/200); the corrected Step 5 rerun gives 0.985 (197/200).
+The overall verdict was FAIL in both cases, and the causes were recorded in
+`docs/18_step5_findings.md`, corrected in
+`docs/20_correction_round_findings.md`, and carried in E-8. That result leaves a
+narrower, testable question:
 
 > When the live monitor makes its first post-injection C2 attribution, can a
 > reliability gate trained on the Step 5 readings decide whether to apply the C2
@@ -54,9 +57,11 @@ and none are below 0.10. All 200 C2 SKUs have `gamma < 1`: range
 **0.020–0.560**, median **0.453**; the 40 C2 test SKUs span **0.020–0.556**,
 median **0.459**. The generator's 95 % coverage-gap median is **−0.120**. The live monitor is Step 5's
 C2 detector, which checks a **90 %** conformal interval (`c2_interval_alpha = 0.90`)
-scaled by the same `gamma`; the Step 5 measurement of that detector is C2 direct
-recall **0.955**. The two coverage objects (the generator's 95 % solve and the
-monitor's 90 % check) are not the same statistic and are not equated here.
+scaled by the same `gamma`; on the pre-correction readings used to fit this gate,
+the Step 5 measurement of that detector was C2 direct recall **0.955** (191/200);
+the corrected rerun gives **0.985** (197/200). The two coverage objects (the
+generator's 95 % solve and the monitor's 90 % check) are not the same statistic
+and are not equated here.
 
 ### 2.2 The reliability gate
 
@@ -164,12 +169,12 @@ first used by the call at `t + 1`, which places an order that arrives at
 | | C2 | C0 |
 |---|---|---|
 | Test SKUs | 40 | 40 |
-| Decisions made | 40 | 18 |
+| Decisions made | 40 | 19 |
 | Decision checkpoint | 38 at t = 120; 2 at t = 124 | 120–192 (median 138) |
 | Action start (`action_t`) | 35 at 121; 2 at 125 | 1 at 121 (false action) |
-| R0 (`not_C2`) | 3 (all attributed C5 at t = 120) | 11 |
+| R0 (`not_C2`) | 3 (all attributed C5 at t = 120) | 12 |
 | R0 (`low_reliability`) | 0 | 6 |
-| No decision | 0 | 22 (no non-C0 attribution at any checkpoint) |
+| No decision | 0 | 21 (no non-C0 attribution at any checkpoint) |
 
 The three true-C2 non-actions were **attribution misses** (the first non-C0
 checkpoint named C5), not threshold misses. The six low-reliability fallbacks were
@@ -268,8 +273,8 @@ the C2 + C0 comparison population.
 | C2-attributed rows in the comparison | 44 (37 true C2 + 7 true C0) |
 | Acted among C2-attributed | 38 (37 true C2 + 1 true C0) |
 | Low-reliability fallbacks | 6 (all true C0) |
-| `not_C2` fallbacks | 14 (3 true C2 attributed C5 + 11 other C0 attributions) |
-| Live decision matches the stored-reading decision | 80 / 80 |
+| `not_C2` fallbacks | 15 (3 true C2 attributed C5 + 12 other C0 attributions) |
+| Live decision matches the stored-reading decision | 77 / 80 |
 
 The one false action was `control:C0:0099` at t = 120 (score 0.630). Its `gamma`
 is 1.0, so resetting the scale to 1.0 was a no-op; its cost and CSL differences
@@ -325,11 +330,9 @@ python experiments/step6_c2_gated.py --stage compare    # 80 SKUs
 python -m pytest -q                                     # 186 passed in 63.57 s
 ```
 
-The comparison JSON records `elapsed_s = 10833.3`, but that is a wall-clock
-artifact of the machine suspending during the run: the progress log shows
-70/80 SKUs at 118.4 s, and re-timing the last-selected C0 SKU took **0.73 s for
-both arms** (the log's pool fit is 1.4 s). The clean 20-SKU timing is 13.53 s. Do not cite
-10,833 s as compute time.
+The frozen comparison JSON records `elapsed_s = 57.63`, the wall time of the
+comparison run. It is not used as a compute-time estimate. The clean 20-SKU
+timing is 13.53 s.
 
 ---
 

@@ -6,7 +6,8 @@ original full-CAFR design. **No new experiment, dataset, test run, source change
 configuration change was made for this document.** The Step 5 overall **FAIL** and
 **E-8** stand unchanged. The original claim that full CAFR beats accuracy-based
 selection at equal churn is **not** supported by these experiments and is retired.
-Built 2026-10-18 from the frozen repository artifacts.
+Built 2026-10-18 from the frozen repository artifacts; Step 5 values corrected
+2026-10-21 from the 2026-10-20 rerun.
 
 **Scope in one sentence:** a synthetic-panel-only, seed-42 study of which injected
 forecast-error causes the live monitor can attribute, followed by a C2-only
@@ -107,7 +108,7 @@ limitation (§6.6).
 | C0 | Nothing; control | No injection |
 | C1 | Size mean `mu_z`: linear ramp over 40 periods after `tau` | `phi` ∈ {−0.4, −0.2, +0.2, +0.4}; `p` and `k` untouched |
 | C2 | Forecaster's reported interval, not demand: `Q~ = mu_hat + gamma (Q_alpha − mu_hat)` | `gamma` solved per SKU; target coverage gap 0.12 at `alpha=0.95`, `R=3`; bounds (0.02, 8.0) |
-| C2b | Intended modelling-error variant of C2 | Per-period sigma applied without the `sqrt(R)` correction; longest calibration window on a ladder that clears the 0.12 target. **Generator defect — see §3.3** |
+| C2b | Intended modelling-error variant of C2 | Per-period sigma half-width applied to the aggregate interval through arm (c); demand and point forecast untouched. **Corrected; see §3.3** |
 | C3 | Occurrence probability `p`: step at `tau` | `p_new = clip(p ± 0.15, 0.03, 0.60)`; sizes untouched |
 | C4 | Size dispersion: `k → k × factor`, fixed `mu_z` | `factor` ∈ {0.25, 4.0}; `k` resampled to stay in the same CV² band |
 | C5 | Abrupt step in `mu_z` or `p` at `tau` | Step scaled to the detectability budget; occurrence branch used only when feasible |
@@ -146,7 +147,7 @@ Key frozen settings (from `cafr/configs/base.yaml` and `synthetic.yaml`):
 | Monitor checks | Start at burn-in 24; every `stride=4` periods (44 checks over periods 24–196) |
 | Monitor windows | `W_short=24`, `W_sign=96`, `W_cal=30`, `W_occ=36`, `W_sz=24`, `W_class=30`, `W_svc=30`, `W_cusum=96`, `W_base=24` |
 | Evidence floors | C1 8 nonzero; C3 10; C4 10; C2 30 coverage observations; C6 30 periods; C7 30 periods / 2 unmet cycles; C5 8 baseline nonzero |
-| Detection thresholds | `|z_b| > 1.96`; `binomial_p=0.05`; `tau_cov=0.10`; `tau_occ=0.10`; C2 interval level 0.90; `delta_svc=0.10`; `ADI*=4.0`; `CV2*=0.49`; CUSUM `k=0.25`, `h=4.0`; C3 AUC 0.65 / FZ 0.30; C4 `r=1.5`, 2 windows, occurrence-AUC guard 0.65; C6 3 windows, 1,000 bootstrap draws, stability 0.90; confidence gate `tau_conf=0.35` |
+| Detection thresholds | `|z_b| > 1.96`; `binomial_p=0.05`; `tau_cov=0.10`; `tau_occ=0.10`; C2 interval level 0.90; `delta_svc=0.10`; `ADI*=4.0`; `CV2*=0.49`; CUSUM `k=0.25`, calibrated `h=10.642717`; C3 AUC 0.65 / FZ 0.30; C4 `r=1.5`, 2 windows, occurrence AUC reported as a diagnostic; C6 3 windows, 1,000 bootstrap draws, stability 0.90; confidence gate `tau_conf=0.35` |
 | Step 5 gate bars | Recall 0.60 (C1–C6); C0 false-positive rate ≤ 0.10; no row-normalised off-diagonal > 0.40; priority-sensitivity max |Δ macro-F1| ≤ 0.10 |
 
 No threshold or frozen parameter was changed to make a gate pass.
@@ -165,7 +166,7 @@ No threshold or frozen parameter was changed to make a gate pass.
 - **Off-diagonal confusion (gate 5.3):** row-normalised confusion over C0–C7; the
   gate fails if any off-diagonal entry exceeds 0.40. C2b is excluded from this
   matrix. The stored gate value for C2 is on the true-C2 row only; a pooled C2 row
-  including C2b is reported descriptively in `docs/18` and the results pack.
+  including C2b is reported descriptively in `docs/20` and the results pack.
 - **Priority sensitivity (gate 5.4):** 10 random permutations of the attribution
   priority order, compared with the base order by macro-F1 over C1–C7; the gate is
   the maximum absolute difference, bar 0.10.
@@ -202,38 +203,38 @@ and no model selection on this panel.
 
 | Panel | N | Correct | Recall | 95% Wilson | Verdict |
 |---|---:|---:|---:|---|---|
-| C1 | 200 | 6 | 0.030 | [0.014, 0.064] | **FAIL** |
-| C2 pooled (C2 + C2b) | 400 | 209 | 0.522 | [0.474, 0.571] | **FAIL** |
-| C2 direct (C2 only) | 200 | 191 | 0.955 | [0.917, 0.976] | **PASS** |
-| C2b variant | 200 | 18 | 0.090 | [0.058, 0.138] | **FAIL** (variant) |
-| C3 | 200 | 11 | 0.055 | [0.031, 0.096] | **FAIL** |
-| C4 | 200 | 0 | 0.000 | [0.000, 0.019] | **FAIL** |
-| C5 | 200 | 22 | 0.110 | [0.074, 0.161] | **FAIL** |
-| C6 | 200 | 29 | 0.145 | [0.103, 0.200] | **FAIL** |
-| C7 (reported, not gated) | 200 | 56 | 0.280 | [0.222, 0.346] | not gated |
+| C1 | 200 | 5 | 0.025 | [0.011, 0.057] | **FAIL** |
+| C2 pooled (C2 + C2b) | 400 | 214 | 0.535 | [0.486, 0.583] | **FAIL** |
+| C2 direct (C2 only) | 200 | 197 | 0.985 | [0.957, 0.995] | **PASS** |
+| C2b variant | 200 | 17 | 0.085 | [0.054, 0.132] | **FAIL** (variant) |
+| C3 | 200 | 12 | 0.060 | [0.035, 0.102] | **FAIL** |
+| C4 | 200 | 15 | 0.075 | [0.046, 0.120] | **FAIL** |
+| C5 | 200 | 7 | 0.035 | [0.017, 0.070] | **FAIL** |
+| C6 | 200 | 33 | 0.165 | [0.120, 0.223] | **FAIL** |
+| C7 (reported, not gated) | 200 | 57 | 0.285 | [0.227, 0.351] | not gated |
 
-Budget-restricted recalls also fail the 0.60 bar: C1 0.050 (n=120), C2 0.522
-(n=400), C3 0.076 (n=144), C4 0.000 (n=39), C5 0.324 (n=68), C6 0.158 (n=184).
+Budget-restricted recalls also fail the 0.60 bar: C1 0.0417 (n=120), C2 0.535
+(n=400), C3 0.0833 (n=144), C4 0.3846 (n=39), C5 0.1029 (n=68), C6 0.1793 (n=184).
 The gate fails on both denominators, so it does not depend on the C2b mapping.
 
 **Only C2 direct passes the recall bar.** The C2 pooled number is the conservative
-gate denominator and fails because the C2b panel is effectively a control panel with
-a different label (§3.3).
+gate denominator and fails because it mixes the direct C2 panel with the C2b
+variant panel (§3.3).
 
 ### 3.2 Gates 5.2–5.6
 
 | Gate | Result | Verdict |
 |---|---|---|
-| 5.2 C0 false positives | **90/200 = 0.450 [0.383, 0.519]**; pre-injection flag diagnostic 0.630 | **FAIL** (bar ≤ 0.10) |
-| 5.3 max off-diagonal | C0 0.145 (C2); C1 **0.545** (C0); C2 0.040 (C5); C3 0.360 (C0); C4 **0.560** (C0); C5 0.230 (C6); C6 **0.480** (C0); C7 0.390 (C0) | **FAIL** (bar ≤ 0.40; C1, C4, C6 fail) |
-| 5.4 priority sensitivity | max |Δ macro-F1| = **0.0111**; base macro-F1 0.1498 | **PASS** (bar ≤ 0.10) |
+| 5.2 C0 false positives | **81/200 = 0.405 [0.339, 0.474]**; pre-injection flag diagnostic 0.575 | **FAIL** (bar ≤ 0.10) |
+| 5.3 max off-diagonal | C0 0.145 (C2); C1 **0.585** (C0); C2 0.005 (C4/C5/C6); C3 0.375 (C0); C4 **0.575** (C0); C5 0.250 (C0); C6 **0.505** (C0); C7 **0.425** (C0) | **FAIL** (bar ≤ 0.40; C1, C4, C6, C7 fail) |
+| 5.4 priority sensitivity | max |Δ macro-F1| = **0.0135**; base macro-F1 0.1634 | **PASS** (bar ≤ 0.10) |
 | 5.5 outputs | confusion matrix and statistic distributions produced | **PASS** |
-| 5.6 budget-restricted reporting | C4 0.000 on 72 generator-budget-cleared SKUs; C5 0.110 on 200; see denominator note §9 | reported, fails the 0.60 bar |
+| 5.6 budget-restricted reporting | C4 0.1806 on 72 generator-budget-cleared SKUs; C5 0.035 on 200; see denominator note §9 | reported, fails the 0.60 bar |
 
-The 90 C0 false positives were called C2 29, C6 27, C5 15, C7 13, C1 5, C3 1.
+The 81 C0 false positives were called C2 29, C6 27, C7 13, C1 6, C4 3, C5 2, C3 1.
 Every gate 5.3 failure is **abstention to C0**, not cross-cause confusion: C1, C4,
-and C6 are labelled C0 at 0.545, 0.560, and 0.480. The largest true cross-cause
-confusion is C5 → C6 at 0.230.
+C6, and C7 are labelled C0 at 0.585, 0.575, 0.505, and 0.425. The largest true
+cross-cause confusion is C5 ↔ C6 at 0.235.
 
 ### 3.3 Why Step 5 failed
 
@@ -241,35 +242,43 @@ confusion is C5 → C6 at 0.230.
   for the bias statistic: the expected `|z_b| ≈ 3.48|phi|` is at most 1.39 even with
   a frozen forecast, below the 1.96 bar. The live adaptive forecaster absorbs the
   rest; its `|z_b| > 1.96` crossing rate was 0.000 on C1 versus 0.067 on C0.
-- **C2 — supported on the direct panel.** Recall 0.955, firing 0.540 versus 0.145
-  on control (two-proportion z = +9.28); coverage-gap median −0.567 versus 0.000.
-- **C2b — generator defect, not a detector result.** `inject_C2b` returns the
-  untouched baseline demand and records the intended per-period-sigma modelling
-  error in metadata. Step 5 applies `c2_calib_window` only to the simulator's
-  quantile window, not the generator's per-period-sigma half-width to the
-  forecaster's reported interval. The measured C2b gap median is +0.033 (q10 −0.100,
-  q90 +0.100); `p < 0.05` on 9.5% of C2b SKUs versus 14.5% of controls. The panel is
-  statistically indistinguishable from control. Its 0.090 recall is **not** a
-  detector failure.
+- **C2 — supported on the direct panel.** Recall 0.985, firing 0.990 versus 0.145
+  on control (two-proportion z = +17.05); coverage-gap median −0.567 versus 0.000.
+- **C2b — corrected generator, still a failed gate.** The correction carries the
+  generator's per-period-sigma half-width through panel generation, Step 5, arm (c),
+  and inventory, so the aggregate policy interval now carries the intended modelling
+  error; demand and the point forecast are untouched. The rebuilt panel's signed
+  generator coverage-gap median is −0.176 (absolute median 0.176). The Step 5 monitor
+  still evaluates its one-period conformal interval, and C2b attribution recall is
+  17/200 = 0.085 [0.054, 0.132]. This is a real interval variant that still misses
+  the 0.60 bar, not a detector pass.
 - **C3 — undetectable injection as generated.** Median injected `Δp` is +0.031
   (q10 −0.167, q90 +0.188). One sampling sd of an occurrence rate over 36 periods
   near `p=0.2` is about 0.048, and `tau_occ=0.10`; the step is within one standard
   error for most SKUs. The forecaster also tracks the step within about 5 periods.
-- **C4 — specification limitation.** The injection is strong (`k → k × {0.25, 4.0}`
-  at fixed `mu_z`), but the rule's occurrence-AUC guard `AUC ≥ 0.65` is
-  unsatisfiable on this panel: the AUC is 0.65 or more on 1.6% of all SKUs and 0% of
-  C4 SKUs. The rule fired on 0 of 1,800 SKUs.
-- **C5 — detector calibration limitation.** The occurrence CUSUM alarms on 99.0% of
-  controls, so the alarm is saturated. The step-versus-drift BIC that must arbitrate
-  it passes on 3.9% of SKUs. The size CUSUM is better but still not calibrated to the
-  10% false-alarm bar.
+  The rule fires 0.060 on C3 versus 0.010 on C0 (z = +2.72), but that is 12 SKUs.
+- **C4 — specification limitation removed; recall still low.** The injection is
+  strong (`k → k × {0.25, 4.0}` at fixed `mu_z`). The correction removed the
+  unsatisfiable occurrence-AUC guard from the firing condition; AUC remains a
+  diagnostic (C4-panel median 0.435, estimable on 96/200 SKUs). The rule fires on
+  15/200 C4 SKUs (0.075 [0.046, 0.120]), so the recall bar is still missed.
+- **C5 — detector calibration limitation.** The injection is strong: median `Δp`
+  is 0.204 and every C5 SKU clears the generator's detectability budget. The
+  correction calibrated the CUSUM threshold on 120 training-control SKUs and 2,880
+  pre-injection checks, selecting `h=10.642717` with a measured per-check false-alarm
+  rate of 0.04896 against the 0.05 target. On held-out C0 controls the C5 rule fires
+  on 10/200 SKUs at any check (0.050 [0.027, 0.090]); the occurrence CUSUM alarms on
+  40/200 controls (0.200 [0.150, 0.261]). C5 recall is 7/200 = 0.035 [0.017, 0.070],
+  so the verdict remains **FAIL** despite the control calibration behaving as
+  targeted.
 - **C6 — both generator and detector.** The ADI/CV² cell moves from its initial value
   on 47.1% of SKUs, but the bootstrap-stability guard passes on only 14.2%; the rule
-  fires on 0.195 of controls versus 0.180 of C6 SKUs (z = −0.38).
-- **C7 — documented negative.** Recall 0.280, not gated. The policy-outcome service
-  statistic separates C7 from control on this synthetic panel (0.305 vs 0.070,
-  z = +6.02), but this does not reverse the Step 4.9 forecast-diagnostic negative; on
-  RUF the cause remains unidentifiable.
+  fires on 0.195 of controls versus 0.200 of C6 SKUs (z = +0.12). Recall is
+  33/200 = 0.165.
+- **C7 — documented negative.** Recall 57/200 = 0.285, not gated. The policy-outcome
+  service statistic separates C7 from control on this synthetic panel (0.310 vs
+  0.070, z = +6.12), but this does not reverse the Step 4.9 forecast-diagnostic
+  negative; on RUF the cause remains unidentifiable.
 
 **Overall Step 5 verdict: FAIL.** E-8 in `ESCALATIONS.md` remains the authoritative
 escalation. This document does not relax or reopen any Step 5 gate.
@@ -449,9 +458,9 @@ It is **not** the C2+C0 comparison precision.
 | C2-attributed rows | 44 (37 true C2 + 7 true C0) |
 | Acted among C2-attributed | 38 (37 true C2 + 1 true C0) |
 | Low-reliability fallbacks | 6 (all true C0) |
-| `not_C2` fallbacks | 14 (3 true C2 attributed C5 + 11 true C0) |
-| No decision | 22 (all true C0) |
-| Live decision equals stored-reading decision | 80/80 |
+| `not_C2` fallbacks | 15 (3 true C2 attributed C5 + 12 true C0) |
+| No decision | 21 (all true C0) |
+| Live decision equals stored-reading decision | 77/80 |
 
 The single false action was `control:C0:0099` at `t=120` (score 0.630). Its `gamma`
 is 1.0, so resetting the scale to 1.0 was a no-op; its cost and CSL differences are
@@ -523,10 +532,11 @@ beyond this seed and panel, real-world validity, or publication novelty.
    measured. A leak-free replication would fit the pool on train SKUs only or freeze
    it at burn-in.
 7. **Step 5 attribution is largely unvalidated.** Only C2 direct passes the recall
-   bar. C1 and C3 are undetectable as generated; C4's rule is blocked by an
-   unsatisfiable guard; C5's CUSUM is saturated; C6 fails on both generator and
-   detector; C7 is a documented negative. The C2b panel is a generator defect, so its
-   0.090 recall is not a detector result. No six-cause attribution claim is possible.
+   bar (0.985, 197/200). C1 and C3 are undetectable as generated; C4's unsatisfiable
+   guard was removed but recall is 0.075; C5's CUSUM was recalibrated but recall is
+   0.035; C6 fails on both generator and detector; C7 is a documented negative. The
+   C2b generator now carries its interval error into the policy, but its recall is
+   0.085, so it also fails. No six-cause attribution claim is possible.
 8. **C2-only, one-time remedy.** Step 6 repairs one C2 scale, once per SKU. It does
    not adapt over time, does not address C2b or any other cause, and does not test a
    multi-cause policy. The result is conditional on C2 attribution.
@@ -578,7 +588,8 @@ beyond this seed and panel, real-world validity, or publication novelty.
 | `results/step6/c2_compare_paired.csv` | 80 rows: per-SKU differences and actions |
 | `results/step6/c2_compare_run.log` | Comparison log; contains the suspend-time artifact |
 | `results/step6/c2_smoke_*`, `c2_timing_*` | Smoke and timing checks |
-| `docs/18_step5_findings.md` | Authoritative Step 5 narrative |
+| `docs/18_step5_findings.md` | Original Step 5 narrative (pre-correction) |
+| `docs/20_correction_round_findings.md` | Corrected Step 5 rerun and verdicts |
 | `docs/19_step6_c2_gated_findings.md` | Authoritative Step 6 narrative |
 | `ESCALATIONS.md` E-8 | Step 5 FAIL escalation; unchanged |
 | `paper/RESULTS_PACK.md` | Frozen results pack and provenance |
@@ -633,8 +644,8 @@ provider.
 
 The Step 5 run took **869.5 s** for 1,800 SKUs with 0 errors. The Step 6 gate run and
 the clean 20-SKU timing run are recorded in `docs/19` (13.53 s for 20 SKUs; pool fit
-1.4 s). The `c2_compare_summary.json` field `elapsed_s = 10833.3` is a machine-suspend
-artifact and **must not** be cited as compute time.
+1.4 s). The `c2_compare_summary.json` field `elapsed_s = 57.63` is the frozen
+comparison run's wall time and is not used as a compute-time estimate.
 
 ---
 
@@ -652,8 +663,8 @@ The following claims are not supported by the executed experiments:
 - **“The 95% service target is met.”** Gated C2 CSL is 0.8625; C0 is 0.8818.
 - **“The attribution pipeline detects six causes.”** Step 5 fails overall; only C2
   direct passes its recall bar. C1, C3, C4, C5, C6, and C7 are negatives.
-- **“The C2b detector works.”** The C2b panel is a generator defect and is
-  indistinguishable from control.
+- **“The C2b detector works.”** The C2b panel now carries the interval error, but
+  recall is 0.085; the detector does not clear the bar.
 - **“The reliability gate is a validated general classifier.”** It is a seed-42
   feasibility gate; all-cause test precision is 0.822, not 0.974.
 - **“0.974 is the full-panel precision.”** It is the precision on the 80-SKU C2+C0
@@ -677,26 +688,26 @@ modified.
 
 1. **`step5_summary.json` confusion keys.** `confusion` and
    `confusion_rownormalised` are stored in a column-oriented/mislabeled form and do
-   not match the row-normalised table in `docs/18`. The confusion matrix in
+   not match the row-normalised table in `docs/20`. The confusion matrix in
    `step5_confusion.parquet` and the recomputation from
    `step5_readings.parquet` are row = truth, column = attributed. The recomputed
-   values match `docs/18`.
+   values match `docs/20`.
 2. **`step5_confusion.parquet` excludes C2b.** It is 8×8 (C0–C7). C2b counts and the
    C2 pooled denominator come from `step5_readings.parquet`.
 3. **Step 5 recall intervals are not stored.** `step5_summary.json` stores the C2
    pooled recall and C2b recall but not the C2 direct count or the Wilson intervals.
    The intervals in §3.1 are computed from the integer counts and match the rounded
-   values in `docs/18`.
+   values in `docs/20`.
 4. **Step 5 “final reading” shorthand.** The results pack captions describe the
    recall as being measured at the final reading. The implementation instead uses the
    first post-`tau` non-C0 attribution; only undetected SKUs fall back to the final
    reading. The counts in §3.1 are the implementation's counts. This is a caption
    imprecision, not a numerical discrepancy.
-5. **Step 5 gate 5.3 C2 row.** The stored gate value for C2 is 0.040 on the true-C2
-   row. `docs/18` and the results pack also report 0.335 for a pooled C2 row that
+5. **Step 5 gate 5.3 C2 row.** The stored gate value for C2 is 0.005 on the true-C2
+   row. `docs/20` and the results pack also report 0.238 for a pooled C2 row that
    includes C2b; both are below the 0.40 bar. The gate itself used the true-C2 value.
 6. **Step 5 budget-restricted denominators.** Gate 5.1's budget-restricted recall
-   uses evidence availability (`evany_*`): C4 n=39, C5 n=68. `docs/18` §5.6 and E-8
+   uses evidence availability (`evany_*`): C4 n=39, C5 n=68. `docs/20` and E-8
    additionally report the generator's budget-flag denominators: C4 n=72, C5 n=200.
    Both sets fail the 0.60 bar; they are not the same denominator and should not be
    compared directly.

@@ -1,7 +1,7 @@
 {
   "label": "compare",
   "n_skus": 80,
-  "elapsed_s": 92.84889578819275,
+  "elapsed_s": 57.633567571640015,
   "baseline": {
     "mean_cost": 2564.6102718741386,
     "mean_cost_per_period": 37.71485693932557,
