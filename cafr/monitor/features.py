@@ -156,10 +156,11 @@ def conformal_interval(
     r = np.sort(r)
     k_lo = max(1, int(np.floor((n + 1) * (1.0 - alpha) / 2.0)))
     k_hi = min(n, int(np.ceil((n + 1) * (1.0 - (1.0 - alpha) / 2.0))))
-    return (
-        float(mu + scale * r[k_lo - 1]),
-        float(mu + scale * r[k_hi - 1]),
-    )
+    # Clip to non-negative demand support [0, inf). Negative bounds are non-physical
+    # for count/intermittent demand and cause false under-coverage on zero-demand runs.
+    lo_val = max(0.0, float(mu + scale * r[k_lo - 1]))
+    hi_val = max(0.0, float(mu + scale * r[k_hi - 1]))
+    return (lo_val, hi_val)
 
 
 def compute_dispersion_stats(
