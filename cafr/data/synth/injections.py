@@ -645,9 +645,16 @@ def inject_C6_v2(
 ):
     """C6 candidate redesign: linear interpolation in ``p`` to separated destination targets.
 
+    Indexing convention:
+    - Pre-injection baseline: ``t < tau`` (indices 0 .. tau-1), p_t = p_init.
+    - Transition ramp: exactly ``w_ramp`` indices ``t in [tau, tau + w_ramp - 1]``
+      (e.g. for tau=120, w_ramp=24, the 24 ramp indices are t = 120 .. 143), where
+      p_t linearly interpolates from p_init to target_p.
+    - Destination regime: begins at index ``t = tau + w_ramp`` (e.g. t = 144) and
+      holds constant at target_p for all ``t >= tau + w_ramp`` (indices 144 .. T-1).
+
     Linearly interpolates from initial ``p`` to ``target_up`` (0.45) if ``p < 0.25``
     or to ``target_down`` (0.10) if ``p >= 0.25`` over ``w_ramp`` periods.
-    For ``t >= tau + w_ramp``, ``p_t`` remains sustained at the destination target.
     ``mu_z`` and ``k`` (demand sizes) remain untouched.
     """
     target_p = target_up if p < 0.25 else target_down

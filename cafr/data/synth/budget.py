@@ -66,31 +66,81 @@ def check_c6_budget(
     adi_star: float = 4.0,
     min_sigma: float = 2.0,
 ) -> dict:
-    """Pre-specified detectability budget calculation for C6 intermittency transition.
+    """Heuristic detectability calculation for C6 intermittency transition.
 
-    Diagnostic metadata only: does NOT exclude SKUs, change H-5 eligibility,
-    alter monitor behavior, or affect attribution.
+    HEURISTIC METADATA ONLY: This calculation is a stylized Gaussian approximation
+    on expected counts in a w_class window, NOT a finite-sample statistical guarantee
+    (it does not account for joint CV^2 stability, transient forecaster lag, or finite-sample
+    bootstrap variance). It is recorded purely as diagnostic design metadata. It must
+    NEVER filter SKUs, change H-5 eligibility, alter monitor behavior, or affect attribution.
 
     Checks:
     1. Theoretical crossing: p_init and p_target strictly straddle p_star = 1.0 / adi_star (0.25).
+       If either value equals p_star, the condition is not strictly crossing.
     2. Destination separation: In a w_class window, expected nonzeros mu_N = w_class * p_target
        has distance from the boundary N_star = w_class * p_star of at least min_sigma standard deviations:
        z_sep = |mu_N - N_star| / sqrt(w_class * p_target * (1 - p_target)) >= min_sigma.
     """
-    p_star = 1.0 / float(adi_star)
-    crosses = bool((p_init - p_star) * (p_target - p_star) < 0.0)
+    try:
+        p_init_f = float(p_init)
+        p_target_f = float(p_target)
+        w_class_i = int(w_class)
+        adi_star_f = float(adi_star)
+        min_sigma_f = float(min_sigma)
+    except (TypeError, ValueError):
+        return {
+            "p_init": float("nan"),
+            "p_target": float("nan"),
+            "p_star": float("nan"),
+            "crosses": False,
+            "mu_N": 0.0,
+            "N_star": 0.0,
+            "sigma_N": 0.0,
+            "z_sep": 0.0,
+            "cleared": False,
+        }
 
-    mu_N = float(w_class * p_target)
-    N_star = float(w_class * p_star)
-    var_N = float(w_class * p_target * (1.0 - p_target))
+    if (
+        not np.isfinite(p_init_f)
+        or not np.isfinite(p_target_f)
+        or not np.isfinite(adi_star_f)
+        or not np.isfinite(min_sigma_f)
+        or p_init_f <= 0.0
+        or p_init_f >= 1.0
+        or p_target_f <= 0.0
+        or p_target_f >= 1.0
+        or adi_star_f <= 0.0
+        or w_class_i <= 0
+        or min_sigma_f < 0.0
+    ):
+        p_star_safe = float(1.0 / adi_star_f) if np.isfinite(adi_star_f) and adi_star_f > 0 else float("nan")
+        return {
+            "p_init": p_init_f,
+            "p_target": p_target_f,
+            "p_star": p_star_safe,
+            "crosses": False,
+            "mu_N": 0.0,
+            "N_star": 0.0,
+            "sigma_N": 0.0,
+            "z_sep": 0.0,
+            "cleared": False,
+        }
+
+    p_star = 1.0 / adi_star_f
+    # Strict straddling: product must be strictly negative
+    crosses = bool((p_init_f - p_star) * (p_target_f - p_star) < 0.0)
+
+    mu_N = float(w_class_i * p_target_f)
+    N_star = float(w_class_i * p_star)
+    var_N = float(w_class_i * p_target_f * (1.0 - p_target_f))
     sigma_N = float(np.sqrt(var_N)) if var_N > 0 else 0.0
     z_sep = float(abs(mu_N - N_star) / sigma_N) if sigma_N > 0 else 0.0
 
-    clears = bool(crosses and z_sep >= float(min_sigma))
+    clears = bool(crosses and z_sep >= min_sigma_f)
     return {
-        "p_init": float(p_init),
-        "p_target": float(p_target),
-        "p_star": float(p_star),
+        "p_init": p_init_f,
+        "p_target": p_target_f,
+        "p_star": p_star,
         "crosses": crosses,
         "mu_N": mu_N,
         "N_star": N_star,
@@ -98,4 +148,3 @@ def check_c6_budget(
         "z_sep": z_sep,
         "cleared": clears,
     }
-
