@@ -64,6 +64,7 @@ __all__ = [
     "inject_C4",
     "inject_C5",
     "inject_C6",
+    "inject_C6_v2",
     "inject_C7",
     "inject_mixture",
     "INJECTORS",
@@ -626,6 +627,59 @@ def inject_C6(T: int, tau: int, p: float, k: float, mu_z: float, rng: np.random.
         "p_end": float(p_t[-1]),
         "adi_end": float(1.0 / p_t[-1]),
         "adi_crosses_star": bool(1.0 / p_t[-1] >= 4.0 or 1.0 / p >= 4.0),
+        "demand_touched": True,
+    }
+
+
+def inject_C6_v2(
+    T: int,
+    tau: int,
+    p: float,
+    k: float,
+    mu_z: float,
+    rng: np.random.Generator,
+    *,
+    w_ramp: int = 24,
+    target_up: float = 0.45,
+    target_down: float = 0.10,
+):
+    """C6 candidate redesign: linear interpolation in ``p`` to separated destination targets.
+
+    Linearly interpolates from initial ``p`` to ``target_up`` (0.45) if ``p < 0.25``
+    or to ``target_down`` (0.10) if ``p >= 0.25`` over ``w_ramp`` periods.
+    For ``t >= tau + w_ramp``, ``p_t`` remains sustained at the destination target.
+    ``mu_z`` and ``k`` (demand sizes) remain untouched.
+    """
+    target_p = target_up if p < 0.25 else target_down
+
+    t_idx = np.arange(T)
+    p_t = np.full(T, float(p), dtype="float64")
+
+    # Linear interpolation over [tau, tau + w_ramp)
+    ramp_mask = (t_idx >= tau) & (t_idx < tau + w_ramp)
+    if w_ramp > 0:
+        frac = (t_idx[ramp_mask] - tau) / float(w_ramp)
+        p_t[ramp_mask] = p + (target_p - p) * frac
+
+    # Sustained destination regime: t >= tau + w_ramp
+    dest_mask = t_idx >= tau + w_ramp
+    p_t[dest_mask] = target_p
+
+    # Defensive clipping to valid probability bounds
+    p_t = np.clip(p_t, 0.03, 0.60)
+
+    delta = rng.binomial(1, p_t).astype("float64")
+    z = rng.gamma(shape=k, scale=mu_z / k, size=T)
+
+    crosses = bool((p < 0.25 and p_t[-1] > 0.25) or (p >= 0.25 and p_t[-1] < 0.25))
+    return delta * z, delta, z, {
+        "p_init": float(p),
+        "p_target": float(target_p),
+        "p_end": float(p_t[-1]),
+        "w_ramp": int(w_ramp),
+        "adi_init": float(1.0 / p) if p > 0 else float("inf"),
+        "adi_end": float(1.0 / p_t[-1]) if p_t[-1] > 0 else float("inf"),
+        "adi_crosses_star": crosses,
         "demand_touched": True,
     }
 

@@ -9,7 +9,9 @@ budget-restricted recall of §29.3.
 
 from __future__ import annotations
 
-__all__ = ["check_c5_budget", "check_c4_budget", "check_c6_learnability"]
+import numpy as np
+
+__all__ = ["check_c5_budget", "check_c4_budget", "check_c6_learnability", "check_c6_budget"]
 
 
 def check_c5_budget(delta_sigma: float, p: float) -> bool:
@@ -54,3 +56,46 @@ def check_c6_learnability(auc_c6: float, auc_c0: float, tol: float = 0.10) -> bo
     as attribution confusion that says nothing about CAFR.
     """
     return float(auc_c6) >= float(auc_c0) - float(tol)
+
+
+def check_c6_budget(
+    p_init: float,
+    p_target: float,
+    *,
+    w_class: int = 30,
+    adi_star: float = 4.0,
+    min_sigma: float = 2.0,
+) -> dict:
+    """Pre-specified detectability budget calculation for C6 intermittency transition.
+
+    Diagnostic metadata only: does NOT exclude SKUs, change H-5 eligibility,
+    alter monitor behavior, or affect attribution.
+
+    Checks:
+    1. Theoretical crossing: p_init and p_target strictly straddle p_star = 1.0 / adi_star (0.25).
+    2. Destination separation: In a w_class window, expected nonzeros mu_N = w_class * p_target
+       has distance from the boundary N_star = w_class * p_star of at least min_sigma standard deviations:
+       z_sep = |mu_N - N_star| / sqrt(w_class * p_target * (1 - p_target)) >= min_sigma.
+    """
+    p_star = 1.0 / float(adi_star)
+    crosses = bool((p_init - p_star) * (p_target - p_star) < 0.0)
+
+    mu_N = float(w_class * p_target)
+    N_star = float(w_class * p_star)
+    var_N = float(w_class * p_target * (1.0 - p_target))
+    sigma_N = float(np.sqrt(var_N)) if var_N > 0 else 0.0
+    z_sep = float(abs(mu_N - N_star) / sigma_N) if sigma_N > 0 else 0.0
+
+    clears = bool(crosses and z_sep >= float(min_sigma))
+    return {
+        "p_init": float(p_init),
+        "p_target": float(p_target),
+        "p_star": float(p_star),
+        "crosses": crosses,
+        "mu_N": mu_N,
+        "N_star": N_star,
+        "sigma_N": sigma_N,
+        "z_sep": z_sep,
+        "cleared": clears,
+    }
+
