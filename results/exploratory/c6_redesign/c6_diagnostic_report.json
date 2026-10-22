@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "title": "C6 Generator Redesign Training-Only Diagnostic",
+    "protocol": "modulo-5 zero-leakage training partition (i % 5 < 3)",
+    "quarantined_splits": "val (i % 5 == 3, 40 SKUs), test (i % 5 == 4, 40 SKUs)",
+    "n_train_c0": 120,
+    "n_train_c6": 120,
+    "seed": 42,
+    "cusum_h": 10.642717449394974,
+    "elapsed_seconds": 234.72159910202026
+  },
+  "c0_controls": {
+    "n_evaluated": 120,
+    "c0_to_c6_false_positives": 14,
+    "c0_raw_c6_fired": 42,
+    "c0_h5_dead": 7,
+    "all_attributions": {
+      "C0": 82,
+      "C6": 14,
+      "C7": 8,
+      "C2": 7,
+      "C1": 5,
+      "C5": 2,
+      "C4": 1,
+      "C3": 1
+    }
+  },
+  "c6_baseline": {
+    "variant": "Baseline (inject_C6)",
+    "denominator": 120,
+    "c6_recall": 21,
+    "c6_recall_rate": 0.175,
+    "rule_c6_any_firings": 50,
+    "rule_c6_any_rate": 0.4166666666666667,
+    "h5_dead_abstentions": 8,
+    "c6_changed_sustained": 87,
+    "stability_vetoed": 63,
+    "stability_passed": 22,
+    "theoretical_crossing": 120,
+    "budget_cleared": 0,
+    "attributions_overall": {
+      "C0": 56,
+      "C6": 21,
+      "C7": 17,
+      "C3": 16,
+      "C2": 7,
+      "C4": 2,
+      "C1": 1
+    },
+    "preemptions_on_fired": {
+      "total_fired": 50,
+      "recalled_C6": 21,
+      "preempted_by_C2": 2,
+      "preempted_by_C3": 7,
+      "preempted_by_C5": 0,
+      "preempted_by_C7": 10,
+      "preempted_by_C4": 0,
+      "preempted_by_C1": 0,
+      "decayed_to_C0": 10
+    }
+  },
+  "c6_candidate": {
+    "variant": "Candidate (inject_C6_v2)",
+    "denominator": 120,
+    "c6_recall": 31,
+    "c6_recall_rate": 0.25833333333333336,
+    "rule_c6_any_firings": 85,
+    "rule_c6_any_rate": 0.7083333333333334,
+    "h5_dead_abstentions": 8,
+    "c6_changed_sustained": 92,
+    "stability_vetoed": 49,
+    "stability_passed": 38,
+    "theoretical_crossing": 120,
+    "budget_cleared": 120,
+    "attributions_overall": {
+      "C0": 42,
+      "C6": 31,
+      "C3": 25,
+      "C7": 9,
+      "C2": 9,
+      "C4": 2,
+      "C1": 2
+    },
+    "preemptions_on_fired": {
+      "total_fired": 85,
+      "recalled_C6": 30,
+      "preempted_by_C2": 6,
+      "preempted_by_C3": 17,
+      "preempted_by_C5": 0,
+      "preempted_by_C7": 6,
+      "preempted_by_C4": 2,
+      "preempted_by_C1": 0,
+      "decayed_to_C0": 24
+    }
+  }
+}
