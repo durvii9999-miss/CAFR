@@ -156,9 +156,19 @@ def _run_one(
         st = base.last_state
         res = base._residuals.to_array()
         rr = res[-q_win:] if res.size else res
-        lo, hi = conformal_interval(
-            float(st.mu), rr, q_alpha, scale=q_scale, min_evidence=8
-        )
+        half_w = cfg['sim'].get('interval_half_width')
+        if half_w is not None and pd.notna(half_w) and np.isfinite(float(half_w)):
+            w = float(half_w)
+            mu_f = float(st.mu)
+            if np.isfinite(mu_f):
+                lo = max(0.0, mu_f - w)
+                hi = max(0.0, mu_f + w)
+            else:
+                lo, hi = float('nan'), float('nan')
+        else:
+            lo, hi = conformal_interval(
+                float(st.mu), rr, q_alpha, scale=q_scale, min_evidence=8
+            )
         # Stock-out proxy. Under `observation_model: demand` the censoring mask is
         # False by construction, so the C-guard has nothing to read (H-3). The proxy
         # is post-fulfilment on-hand: zero on a positive-demand period means demand

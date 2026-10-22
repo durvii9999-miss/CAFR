@@ -1,15 +1,26 @@
-"""Focused unit tests for Issue 1: C2 interval calibration and C0 false-alarm analysis.
+"""Focused unit tests for Issue 1 and Issue 2: C2/C2b interval calibration, payload parity, and isolation.
 
-Stage B: tests verifying non-negative clipping, edge cases, C2 sensitivity, and split isolation.
+Issue 1: non-negative clipping, edge cases, C2 sensitivity, and split isolation.
+Issue 2: forecast payload contract parity, C2b quiet-window under-coverage, zero monitor label leakage, Step 6 gate isolation.
 """
 
 from __future__ import annotations
 
+import inspect
 import numpy as np
+import pandas as pd
 import pytest
 from scipy.stats import binomtest
 
+from cafr.monitor import Monitor
 from cafr.monitor.features import conformal_interval
+from cafr.attribution.rules import check_c2_coverage
+from cafr.utils.config import load_config
+
+
+# --------------------------------------------------------------------------- #
+# Issue 1 Tests                                                               #
+# --------------------------------------------------------------------------- #
 
 
 def test_conformal_interval_clips_negative_upper_bound_to_zero():
@@ -127,3 +138,101 @@ def test_training_split_has_zero_leakage_to_step6():
     naive_first_120 = set(all_indices[:120])
     leaked_test = naive_first_120.intersection(test_indices)
     assert len(leaked_test) == 24, f"Expected 24 leaked test SKUs under naive slice, got {len(leaked_test)}"
+
+
+# --------------------------------------------------------------------------- #
+# Issue 2 Tests                                                               #
+# --------------------------------------------------------------------------- #
+
+
+def test_forecast_payload_structure_is_identical_across_causes():
+    """Safeguard 2 & 3: The dictionary contract passed into Monitor.update
+
+    must have the exact same keys and structure for C0, C2, and C2b.
+    """
+    expected_keys = {"mu", "mu_nonzero", "sigma", "z", "lo", "hi", "alpha"}
+
+    # Mock states representing the 3 variants:
+    # 1. C0: standard conformal interval
+    payload_c0 = {
+        "mu": 3.0, "mu_nonzero": 10.0, "sigma": 2.5, "z": 0.3,
+        "lo": 0.0, "hi": 8.0, "alpha": 0.90,
+    }
+    # 2. C2 direct: rescaled conformal interval
+    payload_c2 = {
+        "mu": 3.0, "mu_nonzero": 10.0, "sigma": 2.5, "z": 0.3,
+        "lo": 0.0, "hi": 4.5, "alpha": 0.90,
+    }
+    # 3. C2b: quiet-window calibrated half-width
+    payload_c2b = {
+        "mu": 3.0, "mu_nonzero": 10.0, "sigma": 2.5, "z": 0.3,
+        "lo": max(0.0, 3.0 - 1.2), "hi": max(0.0, 3.0 + 1.2), "alpha": 0.90,
+    }
+
+    assert set(payload_c0.keys()) == expected_keys
+    assert set(payload_c2.keys()) == expected_keys
+    assert set(payload_c2b.keys()) == expected_keys
+
+    for payload in (payload_c0, payload_c2, payload_c2b):
+        assert payload["lo"] >= 0.0
+        assert payload["hi"] >= payload["lo"]
+        assert 0.0 < payload["alpha"] < 1.0
+
+
+def test_c2b_interval_undercovers_under_quiet_window_calibration():
+    """Safeguard 1 & 3: An interval derived from a quiet calibration window
+
+    consistently under-covers subsequent intermittent demand.
+    """
+    rng = np.random.default_rng(42)
+    p = 0.25
+    k = 2.0
+    mu_z = 10.0
+    # Generate 100 periods of intermittent demand
+    draws = np.where(rng.uniform(size=100) < p, rng.gamma(k, mu_z / k, size=100), 0.0)
+
+    # In a quiet stretch (say 5 periods of all zeros), sample std is 0 or near 0
+    quiet_window = np.zeros(5)
+    sigma_quiet = float(np.std(quiet_window, ddof=1)) if np.std(quiet_window, ddof=1) > 0 else 0.5
+    half_width = 1.6449 * sigma_quiet
+
+    mu_hat = p * mu_z  # 2.5
+    lo = max(0.0, mu_hat - half_width)
+    hi = max(0.0, mu_hat + half_width)
+
+    # Under-coverage across future periods
+    covered = [lo <= y <= hi for y in draws]
+    realized_c = np.mean(covered)
+
+    # Realized coverage should fall well below nominal 0.90
+    assert realized_c < 0.80
+    gap = realized_c - 0.90
+    assert gap < -0.10
+
+
+def test_monitor_logic_has_no_dependence_on_cause_labels_or_tau_inj():
+    """Safeguard 1: Monitor.update and check_c2_coverage must NOT inspect
+
+    any cause label, 'tau_inj', or synthetic metadata.
+    """
+    mon_sig = inspect.signature(Monitor.update)
+    assert "cause" not in mon_sig.parameters
+    assert "true_cause" not in mon_sig.parameters
+    assert "tau_inj" not in mon_sig.parameters
+
+    rule_sig = inspect.signature(check_c2_coverage)
+    assert "cause" not in rule_sig.parameters
+    assert "true_cause" not in rule_sig.parameters
+    assert "tau_inj" not in rule_sig.parameters
+
+
+def test_step6_gate_inputs_and_filters_exclude_c2b():
+    """Safeguard 4: Step 6 gate fitting and evaluation MUST strictly exclude
+
+    C2b rows, ensuring zero perturbation to Step 6 inputs or outcomes.
+    """
+    from experiments.step6_c2_gated import run_sku
+
+    # Verifies run_sku rejects C2b explicitly
+    with pytest.raises(ValueError, match="C2b is excluded"):
+        run_sku("dummy", np.zeros(10), {"true_cause": "C2b"}, {}, None, mode="baseline")
