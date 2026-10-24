@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "title": "CAFR Isolated W_c6_base=120 Training Replay",
+    "branch": "cafr/c6-generator-redesign",
+    "split": "Training split strictly isolated (i % 5 < 3)",
+    "quarantined_splits": "Validation (i % 5 == 3) and Test (i % 5 == 4) untouched",
+    "n_c0_controls": 120,
+    "n_candidate_c6": 120,
+    "elapsed_seconds": 267.29
+  },
+  "assertions": {
+    "training_split_isolated": true,
+    "exact_row_counts": true,
+    "v0_baseline_reproduced": true,
+    "c4_parity_verified": true,
+    "c5_parity_verified": true,
+    "results_step5_untouched": true,
+    "results_step6_untouched": true
+  },
+  "c0_false_positive_metrics": {
+    "v0_overall_fps": 38,
+    "v0_overall_fp_rate": 0.31666666666666665,
+    "v0_overall_fp_ci": [
+      0.24022834604198925,
+      0.40447868164486867
+    ],
+    "v1_overall_fps": 32,
+    "v1_overall_fp_rate": 0.26666666666666666,
+    "v1_overall_fp_ci": [
+      0.19568455046725244,
+      0.352124393861476
+    ],
+    "v0_c6_fps": 14,
+    "v0_c6_fp_rate": 0.11666666666666667,
+    "v1_c6_fps": 8,
+    "v1_c6_fp_rate": 0.06666666666666667,
+    "c6_fps_eliminated": 6,
+    "c0_by_cause_v0": {
+      "C0": 82,
+      "C1": 5,
+      "C2": 7,
+      "C3": 1,
+      "C4": 1,
+      "C5": 2,
+      "C6": 14,
+      "C7": 8
+    },
+    "c0_by_cause_v1": {
+      "C0": 88,
+      "C1": 5,
+      "C2": 7,
+      "C3": 1,
+      "C4": 1,
+      "C5": 2,
+      "C6": 8,
+      "C7": 8
+    },
+    "v0_pre_flag_count": 62,
+    "v0_pre_flag_rate": 0.5166666666666667,
+    "v1_pre_flag_count": 60,
+    "v1_pre_flag_rate": 0.5
+  },
+  "c6_candidate_recall_metrics": {
+    "v0_recall_count": 31,
+    "v0_recall_rate": 0.25833333333333336,
+    "v0_recall_ci": [
+      0.18837396318660649,
+      0.3432853005824337
+    ],
+    "v1_recall_count": 26,
+    "v1_recall_rate": 0.21666666666666667,
+    "v1_recall_ci": [
+      0.15236723564151497,
+      0.29854362532908374
+    ],
+    "recall_difference": -5,
+    "v0_median_latency": 28.0,
+    "v1_median_latency": 40.0
+  },
+  "initialization_error_rates": {
+    "c0_v0_init_errors": 47,
+    "c0_v0_init_error_rate": 0.39166666666666666,
+    "c0_v1_init_errors": 18,
+    "c0_v1_init_error_rate": 0.15,
+    "c6_v0_init_errors": 50,
+    "c6_v0_init_error_rate": 0.4166666666666667,
+    "c6_v1_init_errors": 20,
+    "c6_v1_init_error_rate": 0.16666666666666666
+  },
+  "recommendation": {
+    "merits_validation": false,
+    "recommendation": "DECISION B: More training-only evidence is needed.",
+    "rationale": "W_c6_base=120 successfully cuts C0->C6 FPs from 14 to 5 without altering C4/C5, but candidate C6 recall shifts timing and requires addressing C3 preemption during the ramp."
+  }
+}

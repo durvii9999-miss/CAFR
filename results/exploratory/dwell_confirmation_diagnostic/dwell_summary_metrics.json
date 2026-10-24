@@ -1,0 +1,118 @@
+{
+  "metadata": {
+    "title": "Hypothesis 1 Replay: Multi-Checkpoint Confirmation Gate (Dwell Latching)",
+    "protocol": "Strictly offline replay of saved training trajectories (no simulations rerun)",
+    "n_evaluated": 360,
+    "elapsed_seconds": 0.69
+  },
+  "assertions": {
+    "split_isolation_passed": true,
+    "row_counts_passed": true,
+    "no_duplicate_keys": true,
+    "v0_baseline_reproduced": true
+  },
+  "c0_false_positives": {
+    "v0_fp_count": 38,
+    "v0_fp_rate": 0.31666666666666665,
+    "policy1_dwell_fp_count": 19,
+    "policy1_dwell_fp_rate": 0.15833333333333333,
+    "fp_reduction_count": 19,
+    "fp_reduction_pp": 0.15833333333333333,
+    "eliminated_by_cause": {
+      "C6": 6,
+      "C1": 5,
+      "C2": 3,
+      "C7": 2,
+      "C5": 1,
+      "C4": 1,
+      "C3": 1
+    },
+    "surviving_c6_fps": 8
+  },
+  "genuine_cause_recall_policy1_immediate_t4": {
+    "c6_candidate": {
+      "v0_recall_count": 31,
+      "v0_recall_rate": 0.25833333333333336,
+      "dwell_confirmed_count": 20,
+      "dwell_confirmed_rate": 0.16666666666666666,
+      "suppressed_recall_count": 11,
+      "suppressed_recall_pp": 0.09166666666666666,
+      "relative_recall_loss": 0.3548387096774194,
+      "detection_delay_periods": 4.0
+    },
+    "c3_true": {
+      "v0_recall_count": 11,
+      "v0_recall_rate": 0.09166666666666666,
+      "dwell_confirmed_count": 4,
+      "dwell_confirmed_rate": 0.03333333333333333,
+      "suppressed_recall_count": 7,
+      "suppressed_recall_pp": 0.058333333333333334,
+      "relative_recall_loss": 0.6363636363636364,
+      "detection_delay_periods": 4.0
+    }
+  },
+  "genuine_cause_recall_policy2_windowed_consecutive": {
+    "c6_candidate": {
+      "v0_recall_count": 31,
+      "consecutive_confirmed_count": 22,
+      "consecutive_confirmed_rate": 0.18333333333333332,
+      "suppressed_count": 9,
+      "mean_delay_periods": 6.181818181818182,
+      "median_delay_periods": 4.0,
+      "max_delay_periods": 36.0
+    },
+    "c3_true": {
+      "v0_recall_count": 11,
+      "consecutive_confirmed_count": 7,
+      "consecutive_confirmed_rate": 0.058333333333333334,
+      "suppressed_count": 4,
+      "mean_delay_periods": 8.571428571428571,
+      "median_delay_periods": 4.0,
+      "max_delay_periods": 20.0
+    }
+  },
+  "suppressed_sku_identities": {
+    "c6_suppressed_at_t4": [
+      "single:C6:0010",
+      "single:C6:0025",
+      "single:C6:0032",
+      "single:C6:0050",
+      "single:C6:0056",
+      "single:C6:0057",
+      "single:C6:0097",
+      "single:C6:0101",
+      "single:C6:0180",
+      "single:C6:0182",
+      "single:C6:0192"
+    ],
+    "c3_suppressed_at_t4": [
+      "single:C3:0025",
+      "single:C3:0026",
+      "single:C3:0055",
+      "single:C3:0081",
+      "single:C3:0132",
+      "single:C3:0171",
+      "single:C3:0172"
+    ]
+  },
+  "data_completeness_audit": {
+    "fully_faithful_replay": [
+      "C6_candidate",
+      "C3_true",
+      "C0_to_C6",
+      "C0_to_C3"
+    ],
+    "derived_proven_eliminations": [
+      "C0_to_C1 (all 5 n=1)",
+      "C0_to_C4 (1 n=1)",
+      "C0_to_C2 (3 n=1)",
+      "C0_to_C7 (2 n=1)"
+    ],
+    "unresolved_ambiguity": [
+      "C0_to_C2 (4 n>=2)",
+      "C0_to_C7 (6 n>=2)",
+      "C0_to_C5 (2 n=2)"
+    ],
+    "missing_true_cohorts": "True C1, C2, C4, C5, C7 series were not in exploratory training datasets; recall impact on them cannot be replayed without new simulation"
+  }
+}

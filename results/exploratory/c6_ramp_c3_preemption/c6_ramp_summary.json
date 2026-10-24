@@ -1,0 +1,117 @@
+{
+  "metadata": {
+    "title": "CAFR C6 Ramp Detection vs C3 Preemption Diagnosis",
+    "branch": "cafr/c6-generator-redesign",
+    "split": "Training split strictly isolated (i % 5 < 3)",
+    "n_c0": 120,
+    "n_candidate_c6": 120,
+    "n_true_c3": 120,
+    "elapsed_seconds": 4.08
+  },
+  "baseline_reproduction": {
+    "v0_c0_fps": 38,
+    "v0_c0_c6_fps": 14,
+    "v0_c6_recall": 31,
+    "v1_c0_fps": 32,
+    "v1_c0_c6_fps": 8,
+    "v1_c6_recall": 26,
+    "v1_c3_recall": 11
+  },
+  "c6_missed_categorization": {
+    "No_C6_Signal_Stability_Veto": 28,
+    "Detected_C6": 26,
+    "C6_Fired_Low_Confidence_Or_Transient": 21,
+    "C3_Preemption_Simultaneous_Or_Prior": 17,
+    "Other_Cause_Preemption_C2": 7,
+    "C3_Preemption_After_C6_Unlatched": 5,
+    "Other_Cause_Preemption_C7": 5,
+    "Other_Cause_Preemption_No_C6_C7": 4,
+    "C3_Preemption_Sole_Evidence": 2,
+    "Other_Cause_Preemption_C4": 2,
+    "Other_Cause_Preemption_No_C6_C2": 1,
+    "No_C6_Signal_Cell_Never_Sustained": 1,
+    "Other_Cause_Preemption_No_C6_C1": 1
+  },
+  "counterfactual_comparison": {
+    "CF0_W120_Baseline": {
+      "policy": "Production Priority (C5 > C1 > C4 > C2 > C3 > C6 > C7)",
+      "c0_total_fps": 32,
+      "c0_fp_rate": 0.26666666666666666,
+      "c0_c6_fps": 8,
+      "c6_recall": 26,
+      "c6_recall_rate": 0.21666666666666667,
+      "c3_recall": 11,
+      "c3_recall_rate": 0.09166666666666666
+    },
+    "CF1_Priority_Swap_C6_over_C3": {
+      "policy": "Priority Swap (C5 > C1 > C4 > C2 > C6 > C3 > C7)",
+      "c0_total_fps": 32,
+      "c0_fp_rate": 0.26666666666666666,
+      "c0_c6_fps": 8,
+      "c6_recall": 33,
+      "c6_recall_rate": 0.275,
+      "c3_recall": 9,
+      "c3_recall_rate": 0.075,
+      "c6_recall_diff_ci": [
+        0.016666666666666666,
+        0.10833333333333334
+      ],
+      "c3_recall_diff_ci": [
+        -0.041666666666666664,
+        0.0
+      ],
+      "c0_fp_diff_ci": [
+        0.0,
+        0.0
+      ]
+    },
+    "CF2_C3_Deferral_Gate": {
+      "policy": "2-Check Deferral on C3 when C6 is incubating",
+      "c0_total_fps": 32,
+      "c0_fp_rate": 0.26666666666666666,
+      "c0_c6_fps": 9,
+      "c6_recall": 39,
+      "c6_recall_rate": 0.325,
+      "c3_recall": 6,
+      "c3_recall_rate": 0.05,
+      "c6_recall_diff_ci": [
+        0.05,
+        0.175
+      ],
+      "c3_recall_diff_ci": [
+        -0.075,
+        -0.008333333333333333
+      ],
+      "c0_fp_diff_ci": [
+        0.0,
+        0.0
+      ]
+    },
+    "CF3_Margin_Tie_Break": {
+      "policy": "Confidence Margin Tie-Break when C3 and C6 fire",
+      "c0_total_fps": 32,
+      "c0_fp_rate": 0.26666666666666666,
+      "c0_c6_fps": 8,
+      "c6_recall": 25,
+      "c6_recall_rate": 0.20833333333333334,
+      "c3_recall": 11,
+      "c3_recall_rate": 0.09166666666666666,
+      "c6_recall_diff_ci": [
+        -0.025,
+        0.0
+      ],
+      "c3_recall_diff_ci": [
+        0.0,
+        0.0
+      ],
+      "c0_fp_diff_ci": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "conclusion": {
+    "defensible_conclusion": "C6 recall (26/120, 21.7%) under W_c6_base=120 is limited by two primary mechanisms: (1) unfulfilled C6 detection criteria due to short post-ramp observation / stability veto (50 SKUs, 41.7%), and (2) ramp preemption by competing causes (44 SKUs, 36.7%), led by C3 (24 SKUs, 20.0%) and C2/C7 (17 SKUs, 14.2%). Counterfactual evaluation reveals: (a) Simple priority swap (CF-1: C6 > C3) recovers +7 C6 detections (to 33/120, 27.5%) with zero C0 FP impact, while losing 2 genuine C3 detections. (b) A 2-check C3 ramp deferral gate (CF-2) recovers +13 C6 detections (to 39/120, 32.5%) by giving incubating C6 transitions time to mature, but sacrifices 5 true C3 detections (dropping C3 recall from 11 to 6). (c) Margin arbitration (CF-3) does not recover C6 because C3 occurrence margin consistently exceeds C6 stability margin. Crucially, even with deferral, maximum C6 recall remains capped at ~32.5% because 50/120 series never produce a stable, sustained cell transition in the available post-ramp horizon.",
+    "proceed_to_validation": false
+  }
+}

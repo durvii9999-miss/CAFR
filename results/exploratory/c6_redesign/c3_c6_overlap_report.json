@@ -1,0 +1,498 @@
+{
+  "metadata": {
+    "title": "CAFR C3-C6 Attribution Overlap and Bounded Deferral Diagnostic",
+    "protocol": "Training split only (i % 5 < 3), paired comparison across V0, V1, V2",
+    "quarantined_splits": "Validation (i % 5 == 3) and Test (i % 5 == 4) untouched",
+    "n_c0": 120,
+    "n_c6_candidate": 120,
+    "n_c3": 120,
+    "total_series": 360,
+    "elapsed_seconds": 522.75
+  },
+  "v0_verification": {
+    "c0_to_c6_fp": 14,
+    "c0_to_c6_fp_rate": 0.11666666666666667,
+    "c6_candidate_recall": 31,
+    "c6_candidate_recall_rate": 0.25833333333333336,
+    "matches_saved_diagnostic": true
+  },
+  "summary_table": {
+    "c6_recall": {
+      "V0": "31/120 (25.8%)",
+      "V1": "37/120 (30.8%)",
+      "V2": "41/120 (34.2%)"
+    },
+    "c0_fp_to_c6": {
+      "V0": "14/120 (11.7%)",
+      "V1": "14/120 (11.7%)",
+      "V2": "14/120 (11.7%)"
+    },
+    "c0_overall_fp_rate": {
+      "V0": "38/120 (31.7%)",
+      "V1": "38/120 (31.7%)",
+      "V2": "38/120 (31.7%)"
+    },
+    "c3_recall": {
+      "V0": "11/120 (9.2%)",
+      "V1": "9/120 (7.5%)",
+      "V2": "8/120 (6.7%)"
+    },
+    "c3_to_c6_misattribution": {
+      "V0": "20/120 (16.7%)",
+      "V1": "22/120 (18.3%)",
+      "V2": "23/120 (19.2%)"
+    },
+    "three_class_macro_f1": {
+      "V0": 0.3336,
+      "V1": 0.3433,
+      "V2": 0.3506
+    }
+  },
+  "paired_differences": {
+    "c6_recall_v1_minus_v0": {
+      "observed_diff": 0.05,
+      "ci_95": [
+        0.016666666666666666,
+        0.09166666666666666
+      ],
+      "std_err": 0.020230645328725098
+    },
+    "c6_recall_v2_minus_v0": {
+      "observed_diff": 0.08333333333333333,
+      "ci_95": [
+        0.03333333333333333,
+        0.14166666666666666
+      ],
+      "std_err": 0.02597207367753124
+    },
+    "c0_c6_fp_v1_minus_v0": {
+      "observed_diff": 0.0,
+      "ci_95": [
+        0.0,
+        0.0
+      ],
+      "std_err": 0.0
+    },
+    "c0_c6_fp_v2_minus_v0": {
+      "observed_diff": 0.0,
+      "ci_95": [
+        0.0,
+        0.0
+      ],
+      "std_err": 0.0
+    },
+    "c3_recall_v1_minus_v0": {
+      "observed_diff": -0.016666666666666666,
+      "ci_95": [
+        -0.041666666666666664,
+        0.0
+      ],
+      "std_err": 0.011608479150795097
+    },
+    "c3_recall_v2_minus_v0": {
+      "observed_diff": -0.025,
+      "ci_95": [
+        -0.058333333333333334,
+        0.0
+      ],
+      "std_err": 0.013917115137484493
+    },
+    "c3_to_c6_v1_minus_v0": {
+      "observed_diff": 0.016666666666666666,
+      "ci_95": [
+        0.0,
+        0.041666666666666664
+      ],
+      "std_err": 0.011608479150795097
+    },
+    "c3_to_c6_v2_minus_v0": {
+      "observed_diff": 0.025,
+      "ci_95": [
+        0.0,
+        0.058333333333333334
+      ],
+      "std_err": 0.013917115137484493
+    }
+  },
+  "per_class_f1": {
+    "v0": {
+      "C0": {
+        "precision": 0.4270833333333333,
+        "recall": 0.6833333333333333,
+        "f1": 0.5256410256410257
+      },
+      "C3": {
+        "precision": 0.2972972972972973,
+        "recall": 0.09166666666666666,
+        "f1": 0.14012738853503184
+      },
+      "C6": {
+        "precision": 0.47692307692307695,
+        "recall": 0.25833333333333336,
+        "f1": 0.33513513513513515
+      }
+    },
+    "v1": {
+      "C0": {
+        "precision": 0.4270833333333333,
+        "recall": 0.6833333333333333,
+        "f1": 0.5256410256410257
+      },
+      "C3": {
+        "precision": 0.3103448275862069,
+        "recall": 0.075,
+        "f1": 0.12080536912751678
+      },
+      "C6": {
+        "precision": 0.5068493150684932,
+        "recall": 0.30833333333333335,
+        "f1": 0.38341968911917096
+      }
+    },
+    "v2": {
+      "C0": {
+        "precision": 0.4270833333333333,
+        "recall": 0.6833333333333333,
+        "f1": 0.5256410256410257
+      },
+      "C3": {
+        "precision": 0.34782608695652173,
+        "recall": 0.06666666666666667,
+        "f1": 0.11188811188811189
+      },
+      "C6": {
+        "precision": 0.5256410256410257,
+        "recall": 0.3416666666666667,
+        "f1": 0.41414141414141414
+      }
+    }
+  },
+  "cohort_breakdowns": {
+    "C0": {
+      "v0": {
+        "attributed_counts": {
+          "C0": 82,
+          "C6": 14,
+          "C7": 8,
+          "C2": 7,
+          "C1": 5,
+          "C5": 2,
+          "C4": 1,
+          "C3": 1
+        },
+        "recall": 0.6833333333333333,
+        "recall_count": 82,
+        "c6_count": 14,
+        "c3_count": 1,
+        "c0_count": 82
+      },
+      "v1": {
+        "attributed_counts": {
+          "C0": 82,
+          "C6": 14,
+          "C7": 8,
+          "C2": 7,
+          "C1": 5,
+          "C5": 2,
+          "C4": 1,
+          "C3": 1
+        },
+        "recall": 0.6833333333333333,
+        "recall_count": 82,
+        "c6_count": 14,
+        "c3_count": 1,
+        "c0_count": 82
+      },
+      "v2": {
+        "attributed_counts": {
+          "C0": 82,
+          "C6": 14,
+          "C7": 8,
+          "C2": 7,
+          "C1": 5,
+          "C5": 2,
+          "C4": 1,
+          "C3": 1
+        },
+        "recall": 0.6833333333333333,
+        "recall_count": 82,
+        "c6_count": 14,
+        "c3_count": 1,
+        "c0_count": 82
+      }
+    },
+    "C6_candidate": {
+      "v0": {
+        "attributed_counts": {
+          "C0": 42,
+          "C6": 31,
+          "C3": 25,
+          "C7": 9,
+          "C2": 9,
+          "C4": 2,
+          "C1": 2
+        },
+        "recall": 0.25833333333333336,
+        "recall_count": 31,
+        "c6_count": 31,
+        "c3_count": 25,
+        "c0_count": 42
+      },
+      "v1": {
+        "attributed_counts": {
+          "C0": 42,
+          "C6": 37,
+          "C3": 19,
+          "C7": 9,
+          "C2": 9,
+          "C4": 2,
+          "C1": 2
+        },
+        "recall": 0.30833333333333335,
+        "recall_count": 37,
+        "c6_count": 37,
+        "c3_count": 19,
+        "c0_count": 42
+      },
+      "v2": {
+        "attributed_counts": {
+          "C0": 42,
+          "C6": 41,
+          "C3": 14,
+          "C2": 10,
+          "C7": 9,
+          "C4": 2,
+          "C1": 2
+        },
+        "recall": 0.3416666666666667,
+        "recall_count": 41,
+        "c6_count": 41,
+        "c3_count": 14,
+        "c0_count": 42
+      }
+    },
+    "C3": {
+      "v0": {
+        "attributed_counts": {
+          "C0": 68,
+          "C6": 20,
+          "C3": 11,
+          "C2": 7,
+          "C7": 6,
+          "C4": 4,
+          "C5": 2,
+          "C1": 2
+        },
+        "recall": 0.09166666666666666,
+        "recall_count": 11,
+        "c6_count": 20,
+        "c3_count": 11,
+        "c0_count": 68
+      },
+      "v1": {
+        "attributed_counts": {
+          "C0": 68,
+          "C6": 22,
+          "C3": 9,
+          "C2": 7,
+          "C7": 6,
+          "C4": 4,
+          "C5": 2,
+          "C1": 2
+        },
+        "recall": 0.075,
+        "recall_count": 9,
+        "c6_count": 22,
+        "c3_count": 9,
+        "c0_count": 68
+      },
+      "v2": {
+        "attributed_counts": {
+          "C0": 68,
+          "C6": 23,
+          "C3": 8,
+          "C2": 7,
+          "C7": 6,
+          "C4": 4,
+          "C5": 2,
+          "C1": 2
+        },
+        "recall": 0.06666666666666667,
+        "recall_count": 8,
+        "c6_count": 23,
+        "c3_count": 8,
+        "c0_count": 68
+      }
+    }
+  },
+  "per_sku_changes": {
+    "c6_candidate_v1_changes": [
+      {
+        "sku_id": "single:C6:0042",
+        "v0_cause": "C3",
+        "v1_cause": "C6",
+        "v0_t": 160.0,
+        "v1_t": 160.0
+      },
+      {
+        "sku_id": "single:C6:0070",
+        "v0_cause": "C3",
+        "v1_cause": "C6",
+        "v0_t": 152.0,
+        "v1_t": 152.0
+      },
+      {
+        "sku_id": "single:C6:0117",
+        "v0_cause": "C3",
+        "v1_cause": "C6",
+        "v0_t": 152.0,
+        "v1_t": 152.0
+      },
+      {
+        "sku_id": "single:C6:0151",
+        "v0_cause": "C3",
+        "v1_cause": "C6",
+        "v0_t": 156.0,
+        "v1_t": 156.0
+      },
+      {
+        "sku_id": "single:C6:0156",
+        "v0_cause": "C3",
+        "v1_cause": "C6",
+        "v0_t": 164.0,
+        "v1_t": 164.0
+      },
+      {
+        "sku_id": "single:C6:0186",
+        "v0_cause": "C3",
+        "v1_cause": "C6",
+        "v0_t": 156.0,
+        "v1_t": 156.0
+      }
+    ],
+    "c6_candidate_v2_changes": [
+      {
+        "sku_id": "single:C6:0000",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 160.0,
+        "v2_t": 168.0,
+        "v2_deferral_events": 2
+      },
+      {
+        "sku_id": "single:C6:0001",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 152.0,
+        "v2_t": 156.0,
+        "v2_deferral_events": 1
+      },
+      {
+        "sku_id": "single:C6:0020",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 148.0,
+        "v2_t": 152.0,
+        "v2_deferral_events": 1
+      },
+      {
+        "sku_id": "single:C6:0042",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 160.0,
+        "v2_t": 160.0,
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C6:0070",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 152.0,
+        "v2_t": 152.0,
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C6:0117",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 152.0,
+        "v2_t": 152.0,
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C6:0136",
+        "v0_cause": "C3",
+        "v2_cause": "C2",
+        "v0_t": 156.0,
+        "v2_t": 160.0,
+        "v2_deferral_events": 1
+      },
+      {
+        "sku_id": "single:C6:0151",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 156.0,
+        "v2_t": 156.0,
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C6:0156",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 164.0,
+        "v2_t": 164.0,
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C6:0186",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 156.0,
+        "v2_t": 156.0,
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C6:0197",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v0_t": 152.0,
+        "v2_t": 164.0,
+        "v2_deferral_events": 3
+      }
+    ],
+    "c3_v1_changes": [
+      {
+        "sku_id": "single:C3:0081",
+        "v0_cause": "C3",
+        "v1_cause": "C6"
+      },
+      {
+        "sku_id": "single:C3:0171",
+        "v0_cause": "C3",
+        "v1_cause": "C6"
+      }
+    ],
+    "c3_v2_changes": [
+      {
+        "sku_id": "single:C3:0026",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v2_deferral_events": 1
+      },
+      {
+        "sku_id": "single:C3:0081",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v2_deferral_events": 0
+      },
+      {
+        "sku_id": "single:C3:0171",
+        "v0_cause": "C3",
+        "v2_cause": "C6",
+        "v2_deferral_events": 0
+      }
+    ],
+    "c0_v1_changes": [],
+    "c0_v2_changes": []
+  }
+}

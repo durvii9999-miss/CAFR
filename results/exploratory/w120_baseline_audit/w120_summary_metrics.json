@@ -1,0 +1,73 @@
+{
+  "audit_metadata": {
+    "title": "CAFR W=120 Baseline Feasibility Audit",
+    "branch": "cafr/c6-generator-redesign",
+    "split_evaluated": "Training split only (i % 5 < 3)",
+    "quarantined_splits": "Validation (i % 5 == 3) and Test (i % 5 == 4) strictly untouched",
+    "n_c0_controls": 120,
+    "n_candidate_c6": 120
+  },
+  "timeline_and_information_availability": {
+    "generator_pre_injection_window": "t in [0, 119] (120 periods, stationary DGP)",
+    "generator_fault_injection_start": "t = 120 (ramp over 120..143, destination at 144..199)",
+    "monitor_monitoring_start": "t = 24 (check_from = burn_in = 24)",
+    "monitor_attribution_decision_start": "t = 120 (detect_from = 120)",
+    "periods_available_at_monitoring_start": 24,
+    "periods_available_at_decision_start": 120,
+    "availability_verdict": "120 periods are NOT available before monitoring begins (t=24). They ARE available before fault injection and attribution decisions (t=120)."
+  },
+  "leakage_audit": {
+    "synthetic_ground_truth_used_in_monitor": false,
+    "post_injection_data_used_in_w120": false,
+    "causal_ordering_respected_at_t120": true,
+    "leakage_verdict": "PASSED. W=120 uses only observed demand in t in [0, 119], with zero access to ground-truth cells or post-injection data."
+  },
+  "initialization_error_rates": {
+    "c0_w24_error_count": 47,
+    "c0_w24_error_rate": 0.39166666666666666,
+    "c0_w120_error_count": 18,
+    "c0_w120_error_rate": 0.15,
+    "c0_error_reduction_relative": 0.6170212765957447,
+    "c6_w24_error_count": 50,
+    "c6_w24_error_rate": 0.4166666666666667,
+    "c6_w120_error_count": 20,
+    "c6_w120_error_rate": 0.16666666666666666,
+    "c6_error_reduction_relative": 0.6
+  },
+  "false_positive_impact": {
+    "c0_c6_fps_w24": 14,
+    "c0_c6_fps_w24_rate": 0.11666666666666667,
+    "c0_c6_fps_w120": 5,
+    "c0_c6_fps_w120_rate": 0.041666666666666664,
+    "c0_fps_eliminated": 9,
+    "c0_total_fps_w24": 38,
+    "c0_total_fps_w24_rate": 0.31666666666666665,
+    "c0_total_fps_w120": 29,
+    "c0_total_fps_w120_rate": 0.24166666666666667
+  },
+  "candidate_c6_recall_impact": {
+    "c6_recall_w24": 31,
+    "c6_recall_w24_rate": 0.25833333333333336,
+    "c6_retained_at_t120": 21,
+    "c6_retained_at_t120_rate": 0.175,
+    "c6_unlatched_at_t120": 10,
+    "nature_of_unlatched_detections": "All 10 unlatched detections at t=120 were false alarms caused by W=24 initialization error before the injection took effect. Genuine injection destination is reached post-t=144."
+  },
+  "confounding_audit": {
+    "c4_affected": true,
+    "c4_confounding_details": "In Monitor.read(), y_base for C4 dispersion ratio is y[:max(b, w4)], where b=min(W_base, n). Setting global W_base=120 alters C4's baseline from 24 to 120 periods.",
+    "c5_affected": true,
+    "c5_confounding_details": "In Monitor.read(), base_sz for C5 CUSUM scale sigma_base uses base_slice=slice(0, b). Setting global W_base=120 alters CUSUM calibration from 24 to 120 periods.",
+    "c6_isolation_requirement": "Any implementation of W=120 must be isolated to C6 (e.g. W_c6_base), and must NOT globally alter W_base."
+  },
+  "limitations_of_saved_data": {
+    "saved_trajectories_status": "Existing parquet files record boolean firings under W=24. They do not record rolling cell strings for all checkpoints or full 7-cause rule firings post-t=144.",
+    "requirement_for_full_evaluation": "A full pipeline replay on training data is required to measure post-144 C6 recall and ensure no new preemption or false positives emerge."
+  },
+  "final_audit_decision": {
+    "decision": "B. More training-only evidence is needed.",
+    "justification": "W=120 is mechanistically sound and eliminates 9 of 14 C0 false positives, but: (1) 120 periods are not available at monitoring start (t=24); (2) changing global W_base confounds C4 and C5; (3) post-144 recall under the isolated 7-cause pipeline must be verified on training data before any validation trial.",
+    "prohibit_validation_trial": true,
+    "prohibit_production_changes": true
+  }
+}

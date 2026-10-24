@@ -1,0 +1,178 @@
+{
+  "metadata": {
+    "title": "CAFR C6 Burn-In Initialization Repair Diagnostic",
+    "branch": "cafr/c6-generator-redesign",
+    "split": "Training split strictly isolated (i % 5 < 3)",
+    "quarantined_splits": "Validation (i % 5 == 3) and Test (i % 5 == 4) untouched",
+    "n_c0_controls": 120,
+    "n_candidate_c6": 120
+  },
+  "v0_baseline_reproduction": {
+    "c0_total_fp_count": 38,
+    "c0_total_fp_rate": 0.31666666666666665,
+    "c0_c6_fp_count": 14,
+    "c0_c6_fp_rate": 0.11666666666666667,
+    "c6_recall_count": 31,
+    "c6_recall_rate": 0.25833333333333336,
+    "verified_against_benchmark": true
+  },
+  "mechanism_diagnostics": {
+    "c0_init_error_count_w24": 47,
+    "c0_init_error_rate_w24": 0.39166666666666666,
+    "c6_fps_with_init_error": 10,
+    "c6_fps_with_boundary_cv2": 4,
+    "c0_burn_nonzero_mean": 6.525,
+    "c0_burn_nonzero_median": 6.0,
+    "c6_burn_nonzero_mean": 6.133333333333334,
+    "c6_burn_nonzero_median": 6.0,
+    "c6_detected_with_n_pos_le_5": 17,
+    "c6_detected_with_n_pos_le_5_fraction": 0.5483870967741935
+  },
+  "v1_evidence_floor_sensitivity": [
+    {
+      "N_min": 2,
+      "c0_c6_fp_count": 14,
+      "c0_c6_fp_rate": 0.11666666666666667,
+      "c0_total_fp_count": 38,
+      "c0_total_fp_rate": 0.31666666666666665,
+      "c6_recall_count": 31,
+      "c6_recall_rate": 0.25833333333333336,
+      "c6_lost_detections": 0
+    },
+    {
+      "N_min": 3,
+      "c0_c6_fp_count": 14,
+      "c0_c6_fp_rate": 0.11666666666666667,
+      "c0_total_fp_count": 38,
+      "c0_total_fp_rate": 0.31666666666666665,
+      "c6_recall_count": 29,
+      "c6_recall_rate": 0.24166666666666667,
+      "c6_lost_detections": 2
+    },
+    {
+      "N_min": 4,
+      "c0_c6_fp_count": 14,
+      "c0_c6_fp_rate": 0.11666666666666667,
+      "c0_total_fp_count": 38,
+      "c0_total_fp_rate": 0.31666666666666665,
+      "c6_recall_count": 25,
+      "c6_recall_rate": 0.20833333333333334,
+      "c6_lost_detections": 6
+    },
+    {
+      "N_min": 5,
+      "c0_c6_fp_count": 12,
+      "c0_c6_fp_rate": 0.1,
+      "c0_total_fp_count": 36,
+      "c0_total_fp_rate": 0.3,
+      "c6_recall_count": 21,
+      "c6_recall_rate": 0.175,
+      "c6_lost_detections": 10
+    },
+    {
+      "N_min": 6,
+      "c0_c6_fp_count": 8,
+      "c0_c6_fp_rate": 0.06666666666666667,
+      "c0_total_fp_count": 32,
+      "c0_total_fp_rate": 0.26666666666666666,
+      "c6_recall_count": 14,
+      "c6_recall_rate": 0.11666666666666667,
+      "c6_lost_detections": 17
+    },
+    {
+      "N_min": 7,
+      "c0_c6_fp_count": 8,
+      "c0_c6_fp_rate": 0.06666666666666667,
+      "c0_total_fp_count": 32,
+      "c0_total_fp_rate": 0.26666666666666666,
+      "c6_recall_count": 7,
+      "c6_recall_rate": 0.058333333333333334,
+      "c6_lost_detections": 24
+    },
+    {
+      "N_min": 8,
+      "c0_c6_fp_count": 7,
+      "c0_c6_fp_rate": 0.058333333333333334,
+      "c0_total_fp_count": 31,
+      "c0_total_fp_rate": 0.25833333333333336,
+      "c6_recall_count": 7,
+      "c6_recall_rate": 0.058333333333333334,
+      "c6_lost_detections": 24
+    },
+    {
+      "N_min": 9,
+      "c0_c6_fp_count": 7,
+      "c0_c6_fp_rate": 0.058333333333333334,
+      "c0_total_fp_count": 31,
+      "c0_total_fp_rate": 0.25833333333333336,
+      "c6_recall_count": 7,
+      "c6_recall_rate": 0.058333333333333334,
+      "c6_lost_detections": 24
+    },
+    {
+      "N_min": 10,
+      "c0_c6_fp_count": 5,
+      "c0_c6_fp_rate": 0.041666666666666664,
+      "c0_total_fp_count": 29,
+      "c0_total_fp_rate": 0.24166666666666667,
+      "c6_recall_count": 4,
+      "c6_recall_rate": 0.03333333333333333,
+      "c6_lost_detections": 27
+    }
+  ],
+  "v2_shrinkage_sensitivity": [
+    {
+      "M_prior_weight": 0,
+      "c0_init_errors": 47,
+      "c0_init_error_rate": 0.39166666666666666,
+      "c6_init_errors": 50,
+      "c6_init_error_rate": 0.4166666666666667
+    },
+    {
+      "M_prior_weight": 2,
+      "c0_init_errors": 40,
+      "c0_init_error_rate": 0.3333333333333333,
+      "c6_init_errors": 38,
+      "c6_init_error_rate": 0.31666666666666665
+    },
+    {
+      "M_prior_weight": 4,
+      "c0_init_errors": 53,
+      "c0_init_error_rate": 0.44166666666666665,
+      "c6_init_errors": 45,
+      "c6_init_error_rate": 0.375
+    },
+    {
+      "M_prior_weight": 6,
+      "c0_init_errors": 61,
+      "c0_init_error_rate": 0.5083333333333333,
+      "c6_init_errors": 51,
+      "c6_init_error_rate": 0.425
+    },
+    {
+      "M_prior_weight": 8,
+      "c0_init_errors": 69,
+      "c0_init_error_rate": 0.575,
+      "c6_init_errors": 60,
+      "c6_init_error_rate": 0.5
+    },
+    {
+      "M_prior_weight": 12,
+      "c0_init_errors": 75,
+      "c0_init_error_rate": 0.625,
+      "c6_init_errors": 64,
+      "c6_init_error_rate": 0.5333333333333333
+    }
+  ],
+  "expanded_baseline_w120": {
+    "c0_init_error_count_w120": 18,
+    "c0_init_error_rate_w120": 0.15,
+    "c6_fps_fixed_by_w120": 8
+  },
+  "decision_and_recommendation": {
+    "v1_minimum_evidence_recommendation": "REJECT (Destroys 54.8% of genuine C6 recall at N_min=6 to eliminate 6 FPs; disfavors genuine intermittent demand)",
+    "v2_shrinkage_recommendation": "REJECT (Catalog heterogeneity causes shrinkage to collapse cells toward pooled mean, increasing init errors from 39% up to 63%)",
+    "expanded_baseline_recommendation": "ARCHITECTURAL NOTE ONLY (Expanding baseline window W_base to 120 reduces init errors to 15%, but is an architectural change beyond exploratory scope)",
+    "proceed_to_validation": false
+  }
+}
