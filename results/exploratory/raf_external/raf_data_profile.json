@@ -1,0 +1,117 @@
+{
+  "panel": "raf",
+  "dataset_name": "Royal Air Force (RAF) 5000 Spare Parts Demand Dataset",
+  "sources": [
+    {
+      "candidate": "Primary (XLS)",
+      "repository": "https://github.com/danieldehaan96/spdf",
+      "file_url": "https://raw.githubusercontent.com/danieldehaan96/spdf/main/RAF%20data%20-%207%20years%20demand%20%20-%205000%20items.xls",
+      "filename": "RAF data - 7 years demand - 5000 items.xls",
+      "file_size_bytes": 3001344,
+      "sha256": "1165f2d54759bf7661becc39a2e80265626b59965c61f2ad8ad12a3d7940cf09",
+      "license": "No stated license (historical academic distribution)",
+      "retrieval_date": "2026-10-24"
+    },
+    {
+      "candidate": "Cross-verification (GluonTS TAR)",
+      "repository": "https://github.com/canerturkmen/gluon-ts",
+      "file_url": "https://raw.githubusercontent.com/canerturkmen/gluon-ts/intermittent-datasets/datasets/intermittent_raf.tar.gz",
+      "filename": "intermittent_raf.tar.gz",
+      "file_size_bytes": 204987,
+      "sha256": "66d9674b964b32c0db7243d40cdf50401b3611f0e833a179d01e98d25bfa234c",
+      "license": "Apache-2.0 (GluonTS repo)",
+      "retrieval_date": "2026-10-24"
+    }
+  ],
+  "n_skus": 5000,
+  "n_periods": 84,
+  "period_range": {
+    "start": "1996-01",
+    "end": "2002-12",
+    "frequency": "1M",
+    "start_column": "JAN96",
+    "end_column": "DEC02"
+  },
+  "burn_in_periods": 24,
+  "evaluated_periods": 60,
+  "rev2_assumed_periods": 84,
+  "panel_length_shortfall": 0,
+  "total_demand_units": 605764.0,
+  "mean_demand_per_sku_period": 1.442295238095238,
+  "zero_fraction": 0.8983452380952381,
+  "all_values_non_negative": true,
+  "all_values_integer_valued": true,
+  "any_nan_in_demand": false,
+  "lead_time_months_summary": {
+    "min": 0.0,
+    "p25": 5.0,
+    "median": 9.0,
+    "mean": 8.7088,
+    "p75": 12.0,
+    "max": 33.0
+  },
+  "price_gbp_summary": {
+    "min": 0.0,
+    "p25": 1.91825,
+    "median": 11.165500000000002,
+    "mean": 102.32104939999999,
+    "p75": 64.5925,
+    "max": 9131.992
+  },
+  "nonzero_periods_per_sku": {
+    "min": 3,
+    "p10": 5.0,
+    "p25": 6.0,
+    "median": 8.0,
+    "p75": 10.0,
+    "p90": 12.0,
+    "max": 20
+  },
+  "adi_full_series": {
+    "min": 4.2,
+    "p25": 8.4,
+    "median": 10.5,
+    "p75": 14.0,
+    "max": 28.0
+  },
+  "cv_squared_full_series": {
+    "min": 0.0,
+    "p25": 0.17952369051719752,
+    "median": 0.4598995964688629,
+    "p75": 0.9019632479870863,
+    "max": 11.879348148148145,
+    "n_undefined": 0
+  },
+  "syntetos_boylan_full_series": {
+    "intermittent": 2597,
+    "lumpy": 2403
+  },
+  "rev2_reachable_2x2_burn_in": {
+    "high_lowdisp": 2442,
+    "dead": 1383,
+    "high_highdisp": 1175
+  },
+  "rev2_reachable_2x2_full_series": {
+    "high_lowdisp": 2597,
+    "high_highdisp": 2403
+  },
+  "dead_skus_in_burn_in": 1383,
+  "dead_skus_full_series": 0,
+  "censoring_observed": false,
+  "cause_labels_available": false,
+  "inventory_cost_parameters_available": false,
+  "detector_evidence_support_fraction": {
+    "C1": {
+      "W=24": 0.0122
+    },
+    "C3": {
+      "W=60": 0.194,
+      "W=48": 0.089,
+      "W=36": 0.0148,
+      "W=24": 0.0
+    },
+    "C4": {
+      "W=24": 0.0
+    }
+  }
+}
