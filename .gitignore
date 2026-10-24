@@ -23,6 +23,8 @@ htmlcov/
 data/raw/v2/
 data/m5/
 data/synth/
+# Raw RAF external benchmark archives (proprietary provenance; local copy retained on disk)
+results/exploratory/raf_external/raw/
 
 # --- Results ---------------------------------------------------------------
 # Keep results/ tracked but ignore the bulky per-SKU logs. The paper's reported
